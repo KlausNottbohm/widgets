@@ -79,7 +79,6 @@ Parameter.
 
 ************************************************/
 
-
 // Liste der Parlamente und deren Zahlen
 // (notwendig für die Parameter-Angabe).
 // NICHT ANDERS ZUORDNEN!
@@ -576,7 +575,7 @@ async function getPollData(parliament_ids) {
 
                             const results = Object.entries(data.Surveys[keys[i]].Results);
 
-                            for (k = 0; k < results.length; k++) {
+                            for (let k = 0; k < results.length; k++) {
                                 meanResults[parseInt(results[k][0])] += parseFloat(results[k][1]);
                             }
                         }
@@ -589,7 +588,7 @@ async function getPollData(parliament_ids) {
 
                                 const results = Object.entries(data.Surveys[keys[i]].Results);
 
-                                for (k = 0; k < results.length; k++) {
+                                for (let k = 0; k < results.length; k++) {
                                     meanResultsPast[parseInt(results[k][0])] += parseFloat(results[k][1]);
                                 }
                             }
@@ -599,7 +598,7 @@ async function getPollData(parliament_ids) {
 
                         const results = [];
 
-                        for (k = 0; k < meanResults.length; k++) {
+                        for (let k = 0; k < meanResults.length; k++) {
                             let p;
 
                             if (showComparative && meanResultsPast[k]) {
