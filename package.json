@@ -1,0 +1,9 @@
+{
+  "name": "widgets",
+  "version": "0.0.0",
+  "description": "Widgets",
+  "main": "server.js",
+  "author": {
+    "name": ""
+  }
+}
