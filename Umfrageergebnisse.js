@@ -130,6 +130,7 @@ const meanDaysAgoPoll = 14;
 // abgerufen werden?
 // Standard: 6
 const refreshHours = 6;
+const refreshSeconds = 10;
 
 
 /** *********************************/
@@ -244,7 +245,7 @@ async function createWidget() {
     const nextRefresh = Date.now() + (1000 * 60 * 60 * refreshHours);
     list.refreshAfterDate = new Date(nextRefresh);
 
-    if (widgetSize != 'small') {
+    if (widgetSize !== 'small') {
         list.setPadding(20, 20, 20, 20);
     }
 
@@ -279,7 +280,7 @@ async function createWidget() {
         return list;
     }
 
-    let headerText = (widgetSize == 'small' ? parliaments[poll.parliament_id] : 'Sonntagsfrage ' + parliaments[poll.parliament_id]);
+    let headerText = (widgetSize === 'small' ? parliaments[poll.parliament_id] : 'Sonntagsfrage ' + parliaments[poll.parliament_id]);
 
     if (poll.is_mean)
         headerText += ' Ø';
@@ -305,7 +306,7 @@ async function createWidget() {
     const bodyColumns = [];
     bodyColumns[0] = body.addStack();
 
-    if (widgetSize == 'small') {
+    if (widgetSize === 'small') {
         body.addSpacer();
     } else {
         body.addSpacer(20);
@@ -313,13 +314,13 @@ async function createWidget() {
 
     bodyColumns[1] = body.addStack();
 
-    if (widgetSize == 'small')
+    if (widgetSize === 'small')
         body.addSpacer(10);
 
     bodyColumns[0].layoutVertically();
     bodyColumns[1].layoutVertically();
 
-    const maxSlots = (widgetSize == 'large' ? 10 : 6);
+    const maxSlots = (widgetSize === 'large' ? 10 : 6);
 
     let maxParties = (poll.results.length <= maxSlots ? poll.results.length : maxSlots);
 
@@ -329,7 +330,7 @@ async function createWidget() {
         const p = poll.results[i][0];
         const v = parseFloat(poll.results[i][1]);
 
-        if (p === "0" && (widgetSize != 'large' && ignoreOthersOnSmallAndMedium)) {
+        if (p === "0" && (widgetSize !== 'large' && ignoreOthersOnSmallAndMedium)) {
             maxParties++;
             continue;
         }
@@ -344,7 +345,7 @@ async function createWidget() {
         }
 
         bodyItem.layoutVertically();
-        bodyItem.setPadding((widgetSize == 'large' ? 20 : 10), 0, 0, 0);
+        bodyItem.setPadding((widgetSize === 'large' ? 20 : 10), 0, 0, 0);
 
         const bodyItemData = bodyItem.addStack();
         bodyItemData.layoutHorizontally();
@@ -366,11 +367,11 @@ async function createWidget() {
 
         partyName.textColor = new Color(party.color);
 
-        if (widgetSize != 'small') {
+        if (widgetSize !== 'small') {
             bodyItemData.addSpacer();
 
             const partyPercentage = bodyItemData.addText((poll.is_mean ? v.toFixed(1) : v) + '?%' + (poll.has_comparative ? ' ' + getDeviationMarker(v, parseFloat(poll.results[i][2])) : ''));
-            partyPercentage.font = (widgetSize == "medium" ? Font.blackSystemFont(10) : Font.mediumSystemFont(14));
+            partyPercentage.font = (widgetSize === "medium" ? Font.blackSystemFont(10) : Font.mediumSystemFont(14));
             partyPercentage.textColor = new Color(party.color);
         } else {
             const partyPercentage = bodyItem.addText(v + '?%' + (poll.has_comparative ? ' ' + getDeviationMarker(v, parseFloat(poll.results[i][2])) : ''));
@@ -378,10 +379,10 @@ async function createWidget() {
             partyPercentage.textColor = new Color(party.color);
         }
 
-        if (widgetSize != 'small') {
+        if (widgetSize !== 'small') {
             let bar = '?'.repeat(Math.floor(v));
 
-            if (Math.floor(v - 0.5) == Math.floor(v)) {
+            if (Math.floor(v - 0.5) === Math.floor(v)) {
                 bar += '?'
             }
 
@@ -395,7 +396,7 @@ async function createWidget() {
         }
     }
 
-    if (widgetSize != 'small') {
+    if (widgetSize !== 'small') {
         list.addSpacer(20);
     } else {
         list.addSpacer();
@@ -433,12 +434,12 @@ async function createWidget() {
     const footerDate = footer.addText(diffText);
     footerDate.font = Font.regularSystemFont(7);
 
-    if (widgetSize != 'small') {
+    if (widgetSize !== 'small') {
         footer.addSpacer();
 
         let footerSourceText = poll.institute;
 
-        if (poll.tasker != '') {
+        if (poll.tasker !== '') {
             footerSourceText += ' für ' + poll.tasker;
         }
 
@@ -451,7 +452,7 @@ async function createWidget() {
         footerSource.font = Font.italicSystemFont(7);
     }
 
-    if (widgetSize == 'large') {
+    if (widgetSize === 'large') {
         list.addSpacer();
 
         const socket = list.addStack();
@@ -634,11 +635,11 @@ async function getPollData(parliament_ids) {
                     tasker_id = data.Surveys[keys[i]].Tasker_ID;
                     institute_id = data.Surveys[keys[i]].Institute_ID;
 
-                    if (instituteSelector > 0 && instituteSelector != parseInt(institute_id)) {
+                    if (instituteSelector > 0 && instituteSelector !== parseInt(institute_id)) {
                         continue;
                     }
 
-                    if (taskerSelector > 0 && taskerSelector != parseInt(tasker_id)) {
+                    if (taskerSelector > 0 && taskerSelector !== parseInt(tasker_id)) {
                         continue;
                     }
 
@@ -661,7 +662,7 @@ async function getPollData(parliament_ids) {
 
                         for (let k = 0; k < results.length; k++) {
                             for (let l = 0; l < pastResults.length; l++) {
-                                if (results[k][0] == pastResults[l][0]) {
+                                if (results[k][0] === pastResults[l][0]) {
                                     results[k][2] = pastResults[l][1];
                                 }
                             }
