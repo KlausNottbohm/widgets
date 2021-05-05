@@ -1,4 +1,5 @@
-const apiUrl = "https://pass.telekom.de/api/service/generic/v1/status";
+const apiUrl = "https://pass.telekom.de/api/service/generic/v1/status";
+
 let widget = await createWidget()
 widget.backgroundColor = new Color("#777777")
 if (!config.runsInWidget) {
@@ -78,7 +79,8 @@ async function createWidget(items) {
         }
 
     } catch (err) {
-        list.addText("Error fetching JSON from https://pass.telekom.de/api/service/generic/v1/status")
+        list.addText("Error fetching JSON from https://pass.telekom.de/api/service/generic/v1/status")
+
     }
 
     // Add time of last widget refresh:
