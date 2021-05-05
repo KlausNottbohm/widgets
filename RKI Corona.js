@@ -181,7 +181,7 @@ async function createWidget(items) {
         let aux = cityData.features[i].attributes.AnzahlFall;
 
         // min = (aux < min || min == undefined ? aux : min);
-        max = (aux > max || max == undefined ? aux : max);
+        max = (aux > max || max === undefined ? aux : max);
     }
 
     min = 0;
@@ -215,7 +215,7 @@ async function createWidget(items) {
 
         let dayColor;
 
-        if (dayOfWeek == 0 || dayOfWeek == 6) {
+        if (dayOfWeek === 0 || dayOfWeek === 6) {
             dayColor = accentColor2;
         } else {
             dayColor = Color.white();
