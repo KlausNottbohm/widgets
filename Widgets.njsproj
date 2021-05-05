@@ -37,6 +37,9 @@
     <Content Include="telekom.js">
       <SubType>Code</SubType>
     </Content>
+    <Content Include="todo.txt">
+      <SubType>Code</SubType>
+    </Content>
     <Content Include="Umfrageergebnisse.js">
       <SubType>Code</SubType>
     </Content>

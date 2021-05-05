@@ -1,0 +1,18 @@
+5.5.21
+// example for notification with web site
+        const delaySeconds = 10;
+
+        let currentDT = new Date;
+        let newDT = new Date(currentDT.getTime() + (delaySeconds * 1000));
+
+        let notify1 = new Notification();
+        notify1.title = "Upcoming Notification";
+        notify1.body = "An actionable notification coming up in " + delaySeconds + " seconds.";
+        await notify1.schedule();
+
+        let notify2 = new Notification();
+        notify2.title = "Open Website";
+        notify2.body = "Open the Automators forum";
+        notify2.openURL = "https://docarchive.azurewebsites.net/app/BADocument/FilterPDFs";
+        notify2.setTriggerDate(newDT);
+        await notify2.schedule();
