@@ -1,27 +1,17 @@
 // Variables used by Scriptable.
 // These must be at the very top of the file. Do not edit.
-// icon-color: blue; icon-glyph: magic;
+
 const apiUrl = "https://pass.telekom.de/api/service/generic/v1/status";
-// usedVolumeStr: 839, 31 MB
-// remainingTimeStr: 12 Tage 5 Std.
-// hasOffers: true
-// remainingSeconds: 1055447
-// usedAt: 1620191668000
-// validityPeriod: 5
-// usedPercentage: 33
-// title:
-// initialVolume: 2684354560
-// initialVolumeStr: 2, 5 GB
-// passType: 101
-// nextUpdate: 10800
-// subscriptions: speedon, roamLikeHome, tns, m4mBundle, migtest
-// usedVolume: 880088349
-// passStage: 1
-// passName: Data Flex 2, 5 GB
 
+const conGrayout = Color.darkGray();
+const conPercentageLow = 10;
+const conRemainingDaysLow = 2;
+const conPercentageVeryLow = 1;
+const conRemainingHoursVeryLow = 6;
 
-let widget = await createWidget()
-widget.backgroundColor = new Color("#777777")
+let widget = await createWidget();
+// antiquewhite
+widget.backgroundColor = new Color("#faebd7");
 if (!config.runsInWidget) {
     await widget.presentSmall()
 }
@@ -35,9 +25,25 @@ async function createWidget(items) {
     let path = fm.joinPath(dir, "scriptable-telekom.json")
 
     const list = new ListWidget()
-    list.addSpacer(16)
+    list.addSpacer(10)
 
     try {
+        // usedVolumeStr: 839, 31 MB
+        // remainingTimeStr: 12 Tage 5 Std.
+        // hasOffers: true
+        // remainingSeconds: 1055447
+        // usedAt: 1620191668000
+        // validityPeriod: 5
+        // usedPercentage: 33
+        // title:
+        // initialVolume: 2684354560
+        // initialVolumeStr: 2, 5 GB
+        // passType: 101
+        // nextUpdate: 10800
+        // subscriptions: speedon, roamLikeHome, tns, m4mBundle, migtest
+        // usedVolume: 880088349
+        // passStage: 1
+        // passName: Data Flex 2, 5 GB
         let r = new Request(apiUrl)
         // API only answers for mobile Safari
         r.headers = {
@@ -66,8 +72,8 @@ async function createWidget(items) {
         // now data contains data from server or from local file
         showObject(data);
 
-        const line1 = list.addText("Telekom")
-        line1.font = Font.mediumSystemFont(12)
+        const line1 = list.addText("Used data")
+        line1.font = Font.title2()
 
         const line2 = list.addText(data.usedPercentage + "%")
         line2.font = Font.boldSystemFont(20);
@@ -78,23 +84,25 @@ async function createWidget(items) {
         else if (data.usedPercentage >= 90) {
             line2.textColor = Color.red();
         }
-        const conNotifyPercentage = 90;
-        if (data.usedPercentage >= conNotifyPercentage) {
+
+        const myRemainingData = 100 - data.usedPercentage;
+        // notify if less than LowDays left
+        const conRemainingSecondsLow = 60 * 60 * 24 * conRemainingDaysLow;
+        const conRemainingSecondsVeryLow = 60 * 60 * conRemainingHoursVeryLow;
+        if (myRemainingData <= conPercentageVeryLow || (data.remainingSeconds && data.remainingSeconds <= conRemainingSecondsVeryLow)){
             let notify1 = new Notification();
-            let myRemaining = 100 - data.usedPercentage;
-            let myString = "Remaining data less than " + myRemaining.toString() + "%";
-            notify1.title = "Low Telekom data";
+            let myRemainingHours = (data.remainingSeconds / (60 * 60)).toFixed(0);
+            let myString = "Remaining: " + myRemainingData.toString() + "% - " + myRemainingHours + " hours";
+            notify1.title = "Telekom data very low!";
             notify1.body = myString;
             await notify1.schedule();
         }
-
-        // notify if less than 2 days left
-        const conRemainingDays = 2;
-        const conRemainingSeconds = 60 * 60 * 24 * conRemainingDays;
-        if (data.remainingSeconds && data.remainingSeconds <= conRemainingSeconds) {
+        else if (myRemainingData <= conPercentageLow || (data.remainingSeconds && data.remainingSeconds <= conRemainingSecondsLow)) {
             let notify1 = new Notification();
-            notify1.title = "Telekom data expiration";
-            notify1.body = "Remaining time less than " + conRemainingDays + " days";
+            let myRemainingDays = (data.remainingSeconds / (60 * 60 * 24)).toFixed(0);
+            let myString = "Remaining: " + myRemainingData.toString() + "% - " + myRemainingDays + " days";
+            notify1.title = "Remaining Telekom data";
+            notify1.body = myString;
             await notify1.schedule();
         }
 
@@ -105,7 +113,7 @@ async function createWidget(items) {
 
         let line4, line5
         if (data.remainingSeconds) {
-            line4 = list.addText("Remaining until:");
+            line4 = list.addText("Runs until:");
             line4.font = Font.mediumSystemFont(12);
 
             // calc end of current pack
@@ -114,20 +122,21 @@ async function createWidget(items) {
             line5.font = Font.mediumSystemFont(12);
         }
         list.addSpacer(4);
-
+        let myDateColor = Color.black();
         // Gray out if local data instead of Telekom API data:
         if (fresh === 0) {
-            line1.textColor = Color.darkGray()
-            line2.textColor = Color.darkGray()
-            line3.textColor = Color.darkGray()
+            myDateColor = conGrayout;
+            line1.textColor = conGrayout
+            line2.textColor = conGrayout
+            line3.textColor = conGrayout
             if (data.remainingTimeStr) {
-                line4.textColor = Color.darkGray()
-                line5.textColor = Color.darkGray()
+                line4.textColor = conGrayout
+                line5.textColor = conGrayout
             }
         }
         // Add time of last widget refresh:
-        addDateLine(new Date(), "App refresh", true);
-        addDateLine(new Date(data.usedAt), "Server refresh");
+        addDateLine(new Date(), "App refresh", myDateColor, true);
+        addDateLine(new Date(data.usedAt), "Server refresh", myDateColor);
     }
     catch (err) {
         list.addText("Error fetching JSON from https://pass.telekom.de/api/service/generic/v1/status")
@@ -136,25 +145,26 @@ async function createWidget(items) {
 
     return list
 
-    function addDateLine(pDate, pTitle, pShowTime) {
+    function addDateLine(pDate, pTitle, pColor, pShowTime) {
         const footer = list.addStack();
         footer.layoutHorizontally();
         let myTitle = footer.addText(pTitle);
         myTitle.font = Font.mediumSystemFont(10);
-        //timeLabel.centerAlignText();
-        myTitle.textColor = Color.black();
+        myTitle.textColor = pColor; 
 
         footer.addSpacer(4)
-        //const now = pDate; //new Date();
         let timeLabel = footer.addDate(pDate);
-        timeLabel.font = Font.mediumSystemFont(10);
+        timeLabel.font = Font.italicSystemFont(10);
         if (pShowTime) {
             timeLabel.applyTimeStyle();
         }
-        //timeLabel.centerAlignText();
-        timeLabel.textColor = Color.darkGray();
+        timeLabel.textColor = pColor;
     }
 }
+function newFunction() {
+    return Color.darkGray();
+}
+
 /**
  * show members of pObject
  * @param {any} pObject
