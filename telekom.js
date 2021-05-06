@@ -1,5 +1,6 @@
 // Variables used by Scriptable.
 // These must be at the very top of the file. Do not edit.
+const conVersion = "210506";
 
 const apiUrl = "https://pass.telekom.de/api/service/generic/v1/status";
 
