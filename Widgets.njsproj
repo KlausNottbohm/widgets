@@ -40,6 +40,8 @@
     <Content Include="todo.txt">
       <SubType>Code</SubType>
     </Content>
+    <Content Include="tsconfig.json" />
+    <Content Include="Typescript\src\telekom.ts" />
     <Content Include="Umfrageergebnisse.js">
       <SubType>Code</SubType>
     </Content>

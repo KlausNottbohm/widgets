@@ -1,0 +1,16 @@
+﻿{
+  "compileOnSave": true,
+  "compilerOptions": {
+    "outDir": "./TypeScript/built",
+    "allowJs": true,
+    "target": "es6",
+    "sourceMap": true,
+    "strictNullChecks": true,
+    //"strictPropertyInitialization": true,
+    //"noImplicitAny": true,
+    "lib": [ "es6", "dom", "scripthost", "es2016.array.include" ]
+  },
+  "include": [
+    "./TypeScript/src/**/*"
+  ]
+}
