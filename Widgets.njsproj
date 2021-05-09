@@ -29,6 +29,7 @@
     <DebugSymbols>true</DebugSymbols>
   </PropertyGroup>
   <ItemGroup>
+    <Content Include="Random Scriptable API 1.js" />
     <Content Include="RKI Corona.js">
       <SubType>Code</SubType>
     </Content>
