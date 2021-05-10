@@ -1,3 +1,6 @@
+﻿// Variables used by Scriptable.
+// These must be at the very top of the file. Do not edit.
+// icon-color: deep-brown; icon-glyph: id-card;
 // Variables used by Scriptable.
 // These must be at the very top of the file. Do not edit.
 // icon-color: deep-gray; icon-glyph: magic;
@@ -18,9 +21,9 @@ const colorLow = new Color('#FAD643', 1); // < 50
 const colorMed = new Color('#E8B365', 1); // < 100
 const colorHigh = new Color('#DD5045', 1); // < 200
 const colorUltra = new Color('#8E0000', 1); // >= 200
-
+// Landkreis Inzidenz
 const apiUrl = (location) => `https://services7.arcgis.com/mOBPykOjAyBO2ZKk/arcgis/rest/services/RKI_Landkreisdaten/FeatureServer/0/query?where=1%3D1&outFields=GEN,EWZ,cases,death_rate,deaths,cases7_per_100k,cases7_bl_per_100k,BL,county&geometry=${location.longitude.toFixed(3)}%2C${location.latitude.toFixed(3)}&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelWithin&returnGeometry=false&outSR=4326&f=json`;
-
+// Intensivbetten
 const diviApiUrl = (location) => `https://services7.arcgis.com/mOBPykOjAyBO2ZKk/arcgis/rest/services/DIVI_Intensivregister_Landkreise/FeatureServer/0/query?where=1%3D1&outFields=*&geometry=${location.longitude.toFixed(3)}%2C${location.latitude.toFixed(3)}&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelWithin&returnGeometry=false&outSR=4326&f=json`;
 
 const widgetHeight = 338;
@@ -35,14 +38,12 @@ const bedsLineWidth = 12;
 
 
 const saveIncidenceLatLon = (location) => {
-    let fm = FileManager.iCloud();
-    let path = fm.joinPath(fm.documentsDirectory(), 'covid19latlon.json');
+    let { fm, path } = getPath();
     fm.writeString(path, JSON.stringify(location));
 };
 
 const getSavedIncidenceLatLon = () => {
-    let fm = FileManager.iCloud();
-    let path = fm.joinPath(fm.documentsDirectory(), 'covid19latlon.json');
+    let { fm, path } = getPath();
     let data = fm.readString(path);
     return JSON.parse(data);
 };
@@ -59,6 +60,13 @@ await widget.presentMedium();
 Script.setWidget(widget);
 Script.complete();
 
+function getPath() {
+    let fm = FileManager.local();
+    let dir = fm.documentsDirectory();
+    let path = fm.joinPath(dir, "covid19latlon.json");
+    return { fm, path };
+}
+
 async function createWidget(items) {
     let location;
 
@@ -73,7 +81,7 @@ async function createWidget(items) {
         Location.setAccuracyToThreeKilometers();
         try {
             location = await Location.current();
-            console.log('get current lat/lon');
+            console.log('get current lat/lon ' + location.longitude + " " + location.latitude);
             saveIncidenceLatLon(location);
         } catch (e) {
             console.log('using saved lat/lon');
@@ -86,7 +94,7 @@ async function createWidget(items) {
     if (!locationData || !locationData.features || !locationData.features.length) {
         const errorList = new ListWidget();
         errorList.backgroundColor = new Color('#191a1d', 1);
-        errorList.addText('Keine Ergebnisse fu?r den aktuellen Ort gefunden.');
+        errorList.addText('Keine Ergebnisse für den aktuellen Ort gefunden.');
         return errorList;
     }
 
@@ -95,7 +103,7 @@ async function createWidget(items) {
     if (!diviLocationData || !diviLocationData.features || !diviLocationData.features.length) {
         const errorList = new ListWidget();
         errorList.backgroundColor = new Color('#191a1d', 1);
-        errorList.addText('Keine DIVI-Ergebnisse fu?r den aktuellen Ort gefunden.');
+        errorList.addText('Keine DIVI-Ergebnisse für den aktuellen Ort gefunden.');
         return errorList;
     }
 
@@ -127,7 +135,7 @@ async function createWidget(items) {
 
     drawContext.setTextColor(Color.white());
     drawContext.setFont(Font.mediumSystemFont(26));
-    drawContext.drawText('?? 7-Tage-Inzidenz'.toUpperCase() + ' ' + cityName, new Point(25, 25));
+    drawContext.drawText('🦠 7-Tage-Inzidenz'.toUpperCase() + ' ' + cityName, new Point(25, 25));
 
 
     //  Draw graph for ICU beds
@@ -139,7 +147,7 @@ async function createWidget(items) {
     drawLine(new Point(bedsPaddingLeft, bedsGraphBaseline), new Point(bedsRight, bedsGraphBaseline), bedsLineWidth, new Color('#939598', 1));
     let bedsRect = new Rect(bedsPaddingLeft, bedsGraphBaseline - 40, bedsRight - freeBedsWidth - bedsPaddingLeft - 10, 26);
     drawContext.setFont(Font.mediumSystemFont(26));
-    drawContext.drawTextInRect('?? ' + beds + ' Intensivbetten'.toUpperCase(), bedsRect)
+    drawContext.drawTextInRect('🛏 ' + beds + ' Intensivbetten'.toUpperCase(), bedsRect)
 
     // Portion representing free beds
     drawLine(new Point(bedsRight - freeBedsWidth, bedsGraphBaseline), new Point(bedsRight, bedsGraphBaseline), bedsLineWidth, new Color('#4D8802', 1));
