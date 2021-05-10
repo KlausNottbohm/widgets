@@ -1,3 +1,6 @@
+
+10.5.21
+. Wi-Fi = prefs:root=WIFI (see https://ios.gadgethacks.com/how-to/always-updated-list-ios-app-url-scheme-names-paths-for-shortcuts-0184033/)
 5.5.21
 // example for notification with web site
         const delaySeconds = 10;

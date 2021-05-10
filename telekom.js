@@ -20,7 +20,7 @@ if (!config.runsInWidget) {
 Script.setWidget(widget)
 Script.complete()
 
-async function createWidget(items) {
+async function createWidget() {
     let fm = FileManager.local()
     let dir = fm.documentsDirectory()
     let path = fm.joinPath(dir, "scriptable-telekom.json")
@@ -71,10 +71,8 @@ async function createWidget(items) {
         }
 
         // now data contains data from server or from local file
-        showObject(data);
-
-        const line1 = list.addText("Used data")
-        line1.font = Font.title2()
+        //showObject(data);
+        showLink(list, "Used data");
 
         const line2 = list.addText(data.usedPercentage + "%")
         line2.font = Font.boldSystemFont(20);
@@ -135,12 +133,13 @@ async function createWidget(items) {
                 line5.textColor = conGrayout
             }
         }
+
         // Add time of last widget refresh:
         addDateLine(new Date(), "App refresh", myDateColor, true);
         addDateLine(new Date(data.usedAt), "Server refresh", myDateColor);
     }
     catch (err) {
-        list.addText("Error fetching JSON from https://pass.telekom.de/api/service/generic/v1/status")
+        list.addText("error")
         showObject(err);
     }
 
@@ -162,8 +161,21 @@ async function createWidget(items) {
         timeLabel.textColor = pColor;
     }
 }
-function newFunction() {
-    return Color.darkGray();
+function showLink(widget, title) {
+    widget.addSpacer(8)
+    // Add button to open documentation
+    let linkSymbol = SFSymbol.named("arrow.up.forward")
+    let footerStack = widget.addStack()
+    let linkStack = footerStack.addStack()
+    // if the widget is small, link does not work!
+    linkStack.url = "https://pass.telekom.de";
+    let linkElement = linkStack.addText(title)
+    linkElement.font = Font.title2(); //Font.mediumSystemFont(13)
+    linkElement.textColor = Color.blue()
+    linkStack.addSpacer(3)
+    let linkSymbolElement = linkStack.addImage(linkSymbol.image)
+    linkSymbolElement.imageSize = new Size(11, 11)
+    linkSymbolElement.tintColor = Color.blue()
 }
 
 /**
@@ -180,6 +192,9 @@ function showObject(pObject) {
             for (var key in pObject) {
                 console.log(key + ": " + pObject[key]);
             }
+        }
+        else if (typeof pObject === "function") {
+            console.log("Object is a function");
         }
         else {
             console.log(pObject);
