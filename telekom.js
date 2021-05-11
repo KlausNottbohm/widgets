@@ -1,8 +1,9 @@
 // Variables used by Scriptable.
 // These must be at the very top of the file. Do not edit.
-const conVersion = "210506 1";
+const conVersion = "210511";
 
 const apiUrl = "https://pass.telekom.de/api/service/generic/v1/status";
+const conTelekomURL = "https://pass.telekom.de";
 
 const conGrayout = Color.darkGray();
 const conPercentageLow = 10;
@@ -94,6 +95,7 @@ async function createWidget() {
             let myString = "Remaining: " + myRemainingData.toString() + "% - " + myRemainingHours + " hours";
             notify1.title = "Telekom data very low!";
             notify1.body = myString;
+            notify1.openURL = conTelekomURL;
             await notify1.schedule();
         }
         else if (myRemainingData <= conPercentageLow || (data.remainingSeconds && data.remainingSeconds <= conRemainingSecondsLow)) {
@@ -102,6 +104,7 @@ async function createWidget() {
             let myString = "Remaining: " + myRemainingData.toString() + "% - " + myRemainingDays + " days";
             notify1.title = "Remaining Telekom data";
             notify1.body = myString;
+            notify1.openURL = conTelekomURL;
             await notify1.schedule();
         }
 
@@ -161,6 +164,7 @@ async function createWidget() {
         timeLabel.textColor = pColor;
     }
 }
+
 function showLink(widget, title) {
     widget.addSpacer(8)
     // Add button to open documentation
@@ -168,7 +172,7 @@ function showLink(widget, title) {
     let footerStack = widget.addStack()
     let linkStack = footerStack.addStack()
     // if the widget is small, link does not work!
-    linkStack.url = "https://pass.telekom.de";
+    linkStack.url = conTelekomURL;
     let linkElement = linkStack.addText(title)
     linkElement.font = Font.title2(); //Font.mediumSystemFont(13)
     linkElement.textColor = Color.blue()
