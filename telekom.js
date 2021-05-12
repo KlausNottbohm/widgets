@@ -1,10 +1,12 @@
 // Variables used by Scriptable.
 // These must be at the very top of the file. Do not edit.
-const conVersion = "210511";
+const conVersion = "210512";
 
 const apiUrl = "https://pass.telekom.de/api/service/generic/v1/status";
 const conTelekomURL = "https://pass.telekom.de";
 
+// antiquewhite
+const conAntiqueWhite = new Color("#faebd7"); 
 const conGrayout = Color.darkGray();
 const conPercentageLow = 10;
 const conRemainingDaysLow = 2;
@@ -12,8 +14,7 @@ const conPercentageVeryLow = 1;
 const conRemainingHoursVeryLow = 6;
 
 let widget = await createWidget();
-// antiquewhite
-widget.backgroundColor = new Color("#faebd7");
+widget.backgroundColor = conAntiqueWhite;
 if (!config.runsInWidget) {
     await widget.presentSmall()
 }
@@ -61,7 +62,8 @@ async function createWidget() {
             fresh = 1;
         }
         catch (err) {
-            showObject(err);
+            //showObject(err, "Err1");
+            console.error(err);
             // Read data from iCloud file
             data = JSON.parse(fm.readString(path), null);
             if (!data || !data.usedPercentage) {
@@ -72,7 +74,7 @@ async function createWidget() {
         }
 
         // now data contains data from server or from local file
-        //showObject(data);
+        //showObject(data, "Data");
         showLink(list, "Used data");
 
         const line2 = list.addText(data.usedPercentage + "%")
@@ -128,7 +130,6 @@ async function createWidget() {
         // Gray out if local data instead of Telekom API data:
         if (fresh === 0) {
             myDateColor = conGrayout;
-            line1.textColor = conGrayout
             line2.textColor = conGrayout
             line3.textColor = conGrayout
             if (data.remainingTimeStr) {
@@ -143,7 +144,8 @@ async function createWidget() {
     }
     catch (err) {
         list.addText("error")
-        showObject(err);
+        console.error(err);
+        //showObject(err, "Err2");
     }
 
     return list
@@ -186,8 +188,10 @@ function showLink(widget, title) {
  * show members of pObject
  * @param {any} pObject
  */
-function showObject(pObject) {
-    console.log("showObject: " + Date.now.toString());
+function showObject(pObject, title) {
+    let myTitle = title ? title : "No title";
+    console.log(`showObject ${myTitle}: ${new Date().toLocaleString()}`);
+    console.log(`type- ${typeof (pObject)}`);
     if (pObject === null) {
         console.log("object is null");
     }
@@ -201,7 +205,7 @@ function showObject(pObject) {
             console.log("Object is a function");
         }
         else {
-            console.log(pObject);
+            console.log(`${pObject}`);
         }
     }
 }
