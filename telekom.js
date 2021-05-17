@@ -1,6 +1,6 @@
 // Variables used by Scriptable.
 // These must be at the very top of the file. Do not edit.
-const conVersion = "210512";
+const conVersion = "210517";
 
 const apiUrl = "https://pass.telekom.de/api/service/generic/v1/status";
 const conTelekomURL = "https://pass.telekom.de";
@@ -102,10 +102,18 @@ async function createWidget() {
         }
         else if (myRemainingData <= conPercentageLow || (data.remainingSeconds && data.remainingSeconds <= conRemainingSecondsLow)) {
             let notify1 = new Notification();
-            let myRemainingDays = (data.remainingSeconds / (60 * 60 * 24)).toFixed(0);
-            let myString = "Remaining: " + myRemainingData.toString() + "% - " + myRemainingDays + " days";
             notify1.title = "Remaining Telekom data";
-            notify1.body = myString;
+            if (data.remainingSeconds < 60 * 60 * 24) {
+                // less than 1 day-> show hours
+                let myRemaininghours = (data.remainingSeconds / (60 * 60)).toFixed(0);
+                let myString = "Remaining: " + myRemainingData.toString() + "% - " + myRemaininghours + " hours";
+                notify1.body = myString;
+            }
+            else {
+                let myRemainingDays = (data.remainingSeconds / (60 * 60 * 24)).toFixed(0);
+                let myString = "Remaining: " + myRemainingData.toString() + "% - " + myRemainingDays + " days";
+                notify1.body = myString;
+            }
             notify1.openURL = conTelekomURL;
             await notify1.schedule();
         }
@@ -115,15 +123,21 @@ async function createWidget() {
 
         list.addSpacer(16)
 
-        let line4, line5
+        let line4, line5, line6
         if (data.remainingSeconds) {
             line4 = list.addText("Runs until:");
             line4.font = Font.mediumSystemFont(12);
+            let myUntilStack = list.addStack();
+            myUntilStack.spacing = 4;
 
             // calc end of current pack
             let myEndDate = new Date(new Date(data.usedAt).getTime() + data.remainingSeconds * 1000);
-            line5 = list.addDate(myEndDate);
+            line5 = myUntilStack.addDate(myEndDate);
             line5.font = Font.mediumSystemFont(12);
+            // show hour
+            line6 = myUntilStack.addDate(myEndDate);
+            line6.applyTimeStyle();
+            line6.font = Font.mediumSystemFont(12);
         }
         list.addSpacer(4);
         let myDateColor = Color.black();
@@ -156,14 +170,25 @@ async function createWidget() {
         let myTitle = footer.addText(pTitle);
         myTitle.font = Font.mediumSystemFont(10);
         myTitle.textColor = pColor; 
-
-        footer.addSpacer(4)
-        let timeLabel = footer.addDate(pDate);
-        timeLabel.font = Font.italicSystemFont(10);
-        if (pShowTime) {
-            timeLabel.applyTimeStyle();
+        let myHoursSince = (new Date() - pDate) / (1000 * 60 * 60); 
+        if (myHoursSince <= 24) {
+            // if today, show time
+            addDateOrTime(true);
         }
-        timeLabel.textColor = pColor;
+        else {
+            // if older show day
+            addDateOrTime(false);
+        }
+
+        function addDateOrTime(pShowTime) {
+            footer.addSpacer(4);
+            let timeLabel = footer.addDate(pDate);
+            timeLabel.font = Font.italicSystemFont(10);
+            if (pShowTime) {
+                timeLabel.applyTimeStyle();
+            }
+            timeLabel.textColor = pColor;
+        }
     }
 }
 
