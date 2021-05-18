@@ -1,6 +1,6 @@
 // Variables used by Scriptable.
 // These must be at the very top of the file. Do not edit.
-const conVersion = "210517";
+const conVersion = "210518";
 
 const apiUrl = "https://pass.telekom.de/api/service/generic/v1/status";
 const conTelekomURL = "https://pass.telekom.de";
@@ -62,14 +62,17 @@ async function createWidget() {
             fresh = 1;
         }
         catch (err) {
-            //showObject(err, "Err1");
-            console.error(err);
-            // Read data from iCloud file
-            data = JSON.parse(fm.readString(path), null);
-            if (!data || !data.usedPercentage) {
-                const errorList = new ListWidget();
-                errorList.addText("Please disable WiFi for initial execution.");
-                return errorList;
+            try {
+                // if reading from pass.telekom.de not possible-> read data from iCloud file
+                data = JSON.parse(fm.readString(path), null);
+                if (!data || !data.usedPercentage) {
+                    const errorList = new ListWidget();
+                    errorList.addText("Please disable WiFi for initial execution.");
+                    return errorList;
+                }
+            } catch (errInner) {
+                console.error("errInner");
+                console.error(errInner);
             }
         }
 
@@ -158,6 +161,7 @@ async function createWidget() {
     }
     catch (err) {
         list.addText("error")
+        console.error("Err2");
         console.error(err);
         //showObject(err, "Err2");
     }
