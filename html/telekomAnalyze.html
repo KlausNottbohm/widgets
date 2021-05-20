@@ -2,9 +2,37 @@
 <html>
 <head>
     <title>Data Binding with KnockoutJS</title>
+    <style>
+        table, th, td {
+            border: 1px solid black;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 15px;
+        }
+        th {
+            text-align: left;
+        }
+    </style>
 </head>
 <body>
     <input type="file" data-bind="event:{change:loadFile($element.files[0]) }">
+    <!--usedVolume: iEle.mData.usedVolume,
+    mDate: myDate,
+    mEndDate: myEndDate-->
+    <table>
+        <thead>
+            <tr><th>Date</th><th>End date</th><th>Used data (MB)</th><th>Start Volume (MB)</th></tr>
+        </thead>
+        <tbody data-bind="foreach: records">
+            <tr>
+                <td data-bind="text: mDate.toLocaleString('DE')"></td>
+                <td data-bind="text: mEndDate.toLocaleString('DE')"></td>
+                <td data-bind="text: (usedVolume/1000000).toLocaleString('DE')"></td>
+                <td data-bind="text: (initialVolume/1000000).toLocaleString('DE')"></td>
+            </tr>
+        </tbody>
+    </table>
     <textarea rows="40" cols="80" data-bind="text: name"></textarea>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/knockout/3.5.1/knockout-latest.debug.js"
