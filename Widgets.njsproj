@@ -29,6 +29,12 @@
     <DebugSymbols>true</DebugSymbols>
   </PropertyGroup>
   <ItemGroup>
+    <Content Include="html\telekomAnalyze.js">
+      <SubType>Code</SubType>
+    </Content>
+    <Content Include="html\telekomAnalyze.html">
+      <SubType>Code</SubType>
+    </Content>
     <Content Include="Random Scriptable API 1.js" />
     <Content Include="RKI Corona.js">
       <SubType>Code</SubType>
@@ -51,6 +57,7 @@
     </Content>
   </ItemGroup>
   <ItemGroup>
+    <Folder Include="html\" />
     <Folder Include="Typescript\" />
     <Folder Include="Typescript\src\" />
   </ItemGroup>

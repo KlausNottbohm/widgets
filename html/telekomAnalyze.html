@@ -1,0 +1,22 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <title>Data Binding with KnockoutJS</title>
+</head>
+<body>
+    <input type="file" data-bind="event:{change:loadFile($element.files[0]) }">
+    <textarea rows="40" cols="80" data-bind="text: name"></textarea>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/knockout/3.5.1/knockout-latest.debug.js"
+            integrity="sha512-per7WBYe3cT9aIDMoF74rYR7wpEDPqyncWqWzBGmJBnhp8H3ZD5fRdTM16IO5ePUEuBlH9DMKF7rHvuazhvDBA==" crossorigin="anonymous" referrerpolicy="no-referrer">
+    </script>
+    <script src="telekomAnalyze.js">
+
+    </script>
+
+    <script>
+        let myVM = new viewModel();
+        ko.applyBindings(myVM);
+    </script>
+</body>
+</html>
