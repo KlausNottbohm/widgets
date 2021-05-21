@@ -81,16 +81,17 @@ async function createWidget() {
             }
             // sort descending
             myHistory.sort((left, right) => right.mDate - left.mDate);
-            for (let iData of myHistory) {
-                console.log(new Date(iData.mDate));
-                showObject(iData.mData);
-            }
+            //for (let iData of myHistory) {
+            //    console.log(new Date(iData.mDate));
+            //    showObject(iData.mData);
+            //}
             let myOneDayBack = new Date().getTime() - 24 * 60 * 60 * 1000;
-            //if (myHistory.length <= 0)
-            { // || myHistory[0].mDate.getTime() < myOneDayBack) {
+            if (myHistory.length <= 0 || myHistory[0].mDate.getTime() < myOneDayBack || Math.abs(myHistory[0].mData.usedVolume - data.usedVolume) > data.initialVolume / 50) {
                 let myNewEntry = { mDate: new Date().getTime(), mData: data };
                 myHistory.unshift(myNewEntry);
                 myCloud.writeString(myHistorypath, JSON.stringify(myHistory, null, 2));
+                console.log("New history entry written");
+                showObject(myNewEntry.mData);
             }
         }
         catch (err) {
@@ -212,7 +213,7 @@ async function createWidget() {
         addDateOrTime(myDateLine, false);
         myDateLine.addSpacer(4);
         addDateOrTime(myDateLine, true);
-        
+
         //let myHoursSince = (new Date() - pDate) / (1000 * 60 * 60);
         //if (myHoursSince <= 24) {
         //    // if today, show time

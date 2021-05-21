@@ -29,6 +29,7 @@
     <DebugSymbols>true</DebugSymbols>
   </PropertyGroup>
   <ItemGroup>
+    <Content Include="html\telekomHistory.json" />
     <Content Include="html\telekomAnalyze.js">
       <SubType>Code</SubType>
     </Content>

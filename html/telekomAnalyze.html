@@ -1,46 +1,69 @@
 ﻿<!DOCTYPE html>
 <html>
 <head>
-    <title>Data Binding with KnockoutJS</title>
+    <title>Analyze Telekom data</title>
     <style>
         table, th, td {
             border: 1px solid black;
             border-collapse: collapse;
         }
+
         th, td {
             padding: 15px;
         }
+
         th {
             text-align: left;
         }
     </style>
 </head>
 <body>
-    <input type="file" data-bind="event:{change:loadFile($element.files[0]) }">
+    <input type="file" data-bind="event:{change:onLoadFile($element.files[0]) }">
+    <button data-bind="click:onShowJsonClick">Toggle JSON data</button>
     <!--usedVolume: iEle.mData.usedVolume,
     mDate: myDate,
     mEndDate: myEndDate-->
-    <table>
+    <table style="margin:10px">
         <thead>
-            <tr><th>Date</th><th>End date</th><th>Used data (MB)</th><th>Start Volume (MB)</th></tr>
+            <tr>
+                <th>Date</th>
+                <th>Used data (MB)</th>
+                <th>Rest data (%)</th>
+                <th>Rest time (%)</th>
+            </tr>
         </thead>
         <tbody data-bind="foreach: records">
             <tr>
-                <td data-bind="text: mDate.toLocaleString('DE')"></td>
-                <td data-bind="text: mEndDate.toLocaleString('DE')"></td>
-                <td data-bind="text: (usedVolume/1000000).toLocaleString('DE')"></td>
-                <td data-bind="text: (initialVolume/1000000).toLocaleString('DE')"></td>
+                <td colspan="100" style="background-color:antiquewhite">
+                    <h5 style="margin:5px">
+                        Data for pass ending
+                        <span data-bind="text:mEndDate.toLocaleString('DE')"></span>
+                        <span>Initial volume: </span>
+                        <span data-bind="text:(initialVolume/1000000).toLocaleString('DE')"></span>
+                    </h5>
+                </td>
             </tr>
+            <!-- ko foreach: records -->
+            <tr>
+                <td data-bind="text: mDate.toLocaleString('DE')"></td>
+                <td data-bind="text: (usedVolume/1000000).toLocaleString('DE')"></td>
+                <td data-bind="text: (remainingDataPercentage).toFixed(0)"></td>
+                <td data-bind="text: (remainingTimePercentage).toFixed(0)"></td>
+            </tr>
+            <!-- /ko -->
         </tbody>
     </table>
-    <textarea rows="40" cols="80" data-bind="text: name"></textarea>
+    <textarea rows="40" cols="80" data-bind="text: mJsonData, visible: mShowJson"></textarea>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/knockout/3.5.1/knockout-latest.debug.js"
             integrity="sha512-per7WBYe3cT9aIDMoF74rYR7wpEDPqyncWqWzBGmJBnhp8H3ZD5fRdTM16IO5ePUEuBlH9DMKF7rHvuazhvDBA==" crossorigin="anonymous" referrerpolicy="no-referrer">
     </script>
-    <script src="telekomAnalyze.js">
+    <!-- jQuery, if needed
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>-->
+    <!-- #scriptTag : assign fake data to telekomJSON -->
+    <script type="text/javascript" src="telekomHistory.json"></script>
 
-    </script>
+    <script src="telekomAnalyze.js"></script>
 
     <script>
         let myVM = new viewModel();

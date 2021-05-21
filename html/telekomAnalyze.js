@@ -1,11 +1,16 @@
-var viewModel = function () {
+function viewModel() {
     var self = this;
-    let myTestData = '[{"mDate": 1621530346191,"mData": {"usedVolumeStr": "52,43 MB","remainingTimeStr": "27 Tage 21 Std.","hasOffers": true,"remainingSeconds": 2409929,"usedAt": 1621526313000,"validityPeriod": 5,"usedPercentage": 3,"title": "","initialVolume": 2684354560,"initialVolumeStr": "2,5 GB","passType": 101,"nextUpdate": 10800,"subscriptions": ["speedon","roamLikeHome","tns","m4mBundle","migtest"],"usedVolume": 54978560,"passStage": 1,"passName": "Data Flex 2,5 GB"}},{"mDate": 1621511830853,"mData": {"usedVolumeStr": "28,2 MB","remainingTimeStr": "28 Tage 2 Std.","hasOffers": true,"remainingSeconds": 2428444,"usedAt": 1621491824000,"validityPeriod": 5,"usedPercentage": 2,"title": "","initialVolume": 2684354560,"initialVolumeStr": "2,5 GB","passType": 101,"nextUpdate": 10800,"subscriptions": ["speedon","roamLikeHome","tns","m4mBundle","migtest"],"usedVolume": 29576867,"passStage": 1,"passName": "Data Flex 2,5 GB"}}]';
-    self.name = ko.observable(myTestData);
+    self.mShowJson = ko.observable(false);
+    self.onShowJsonClick = () => { self.mShowJson(!self.mShowJson()); };
+
+    // read in #scriptTag
+    let myTestData = createFakeJson(); //JSON.stringify(telekomJSON);    
+
+    self.mJsonData = ko.observable(myTestData);
     self.records = ko.observableArray();
     showData(myTestData);
 
-    self.loadFile = function (file) {
+    self.onLoadFile = function (file) {
         if (!file) {
             return;
         }
@@ -16,61 +21,74 @@ var viewModel = function () {
         showData(text);
     }
     function showData(text) {
-        let myJsonPretty = text; //JSON.stringify(myObject, null, 2);
+        let myJsonPretty = text;
 
         //console.log(text);
-        self.name(myJsonPretty);
-        let myArray = handleJson(text);
-        self.records(myArray);
+        self.mJsonData(myJsonPretty);
+        let myArray = JsonToDateEntries(text);
+        let myPasses = dateEntriesToRecords(myArray);
+        self.records(myPasses);
     }
+
 };
 
+/**
+ * convert date entries to pass records: passEnd[(mDate, mData)]
+ * @param {any} myArray
+ */
+function dateEntriesToRecords(myArray) {
+    let myPasses = [];
+    for (let iEle of myArray) {
+        let myPassExists = false;
+        for (let iInner of myPasses) {
+            // diff in msecs
+            let myDiff = Math.abs(iInner.mEndDate.getTime() - iEle.mEndDate.getTime());
+            // same minute?
+            if (myDiff < 60 * 1000) {
+                myPassExists = true;
+                iInner.records.push(iEle);
+                break;
+            }
+        }
+        if (!myPassExists) {
+            let myPass = { mEndDate: iEle.mEndDate, initialVolume: iEle.initialVolume, records: [iEle] };
+            myPasses.push(myPass);
+        }
+    }
+    return myPasses;
+}
 
-
-function handleJson(pJson) {
+/**
+ * convert json string to records format (passEnd(mDate, mData))
+ * @param {any} pJson
+ */
+function JsonToDateEntries(pJson) {
     let myObject = JSON.parse(pJson);
-    // usedVolumeStr: 839, 31 MB
-    // remainingTimeStr: 12 Tage 5 Std.
-    // hasOffers: true
+    myObject.sort(function (left, right) { return left.mDate - right.mDate; });
     // remainingSeconds: 1055447
     // usedAt: 1620191668000
-    // validityPeriod: 5
     // usedPercentage: 33
-    // title:
     // initialVolume: 2684354560
-    // initialVolumeStr: 2, 5 GB
-    // passType: 101
-    // nextUpdate: 10800
-    // subscriptions: speedon, roamLikeHome, tns, m4mBundle, migtest
     // usedVolume: 880088349
-    // passStage: 1
-    // passName: Data Flex 2, 5 GB
     let myRecords = [];
-    // remove fakeData after testing
-    let myFakeData = {
-        initialVolume: 2000000,
-        remainingSeconds: 3600,
-        usedAt: new Date(2021, 3, 20, 18),
-        usedVolume: 500000,
-        mDate: new Date(2021, 3, 20, 18),
-        mEndDate: new Date(new Date(2021, 3, 20, 18).getTime() + 1000 * 3600)
-    };
-    myRecords.push(myFakeData);
 
     for (let iEle of myObject) {
         let myDate = new Date(iEle.mDate);
         console.log("");
-        let myEndDate = new Date(myDate.getTime() + 1000 * iEle.mData.remainingSeconds)
+        let myEndDate = calcEndDate(myDate, iEle.mData.remainingSeconds);
         let myData = {
             initialVolume: iEle.mData.initialVolume,
             remainingSeconds: iEle.mData.remainingSeconds,
             usedAt: iEle.mData.usedAt,
-            usedPercentage: iEle.mData.usedPercentage,
+            //usedPercentage: iEle.mData.usedPercentage,
             usedVolume: iEle.mData.usedVolume,
             mDate: myDate,
+            remainingDataPercentage: 100 - 100 * (iEle.mData.usedVolume / iEle.mData.initialVolume),  //100 - iEle.mData.usedPercentage,
+            remainingTimePercentage: 100 * iEle.mData.remainingSeconds / (30 * 24 * 60 * 60),
             mEndDate: myEndDate
         };
         myRecords.push(myData);
+        // #region console output
         //console.log(`myDate ${myDate}`);
         //console.log(`myEndDate ${myEndDate}`);
         //console.log(`initialVolume ${myData.initialVolume}`);
@@ -78,6 +96,45 @@ function handleJson(pJson) {
         //console.log(`usedAt ${myData.usedAt}`);
         //console.log(`usedPercentage ${myData.usedPercentage}`);
         //console.log(`usedVolume ${myData.usedVolume}`);
+        // #endregion
     }
     return myRecords;
+}
+/**
+ * create fake json string
+ * */
+function createFakeJson() {
+    let myEndDate = new Date(2021, 3, 18, 16);
+    let myHoursBeforeEnd1 = 2;
+    let myHoursBeforeEnd2 = 20 * 24;
+    let myFakeData1 = {
+        mDate: (myEndDate.getTime() - myHoursBeforeEnd1 * 1000 * 60 * 60),
+        mData: {
+            initialVolume: 200000000,
+            remainingSeconds: myHoursBeforeEnd1 * 60 * 60,
+            usedAt: (new Date(2021, 3, 20, 18)).getTime(),
+            usedVolume: 50000000
+        }
+    };
+    telekomJSON.push(myFakeData1);
+    let myFakeData2 = {
+        mDate: (myEndDate.getTime() - myHoursBeforeEnd2 * 1000 * 60 * 60),
+        mData: {
+            initialVolume: 200000000,
+            remainingSeconds: myHoursBeforeEnd2 * 60 * 60,
+            usedAt: (new Date(2021, 3, 1, 18)).getTime(),
+            usedVolume: 500000
+        },
+    };
+    telekomJSON.push(myFakeData2);
+    let myTestData = JSON.stringify(telekomJSON, null, 2);
+    return myTestData;
+}
+/**
+ * calc end date from current + remaining seconds
+ * @param {any} myDate
+ * @param {any} remainingSeconds
+ */
+function calcEndDate(myDate, remainingSeconds) {
+    return new Date(myDate.getTime() + 1000 * remainingSeconds);
 }
