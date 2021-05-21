@@ -1,6 +1,6 @@
 // Variables used by Scriptable.
 // These must be at the very top of the file. Do not edit.
-const conVersion = "210518";
+const conVersion = "210521";
 
 const apiUrl = "https://pass.telekom.de/api/service/generic/v1/status";
 const conTelekomURL = "https://pass.telekom.de";
@@ -16,7 +16,7 @@ const conRemainingHoursVeryLow = 6;
 let widget = await createWidget();
 widget.backgroundColor = conAntiqueWhite;
 if (!config.runsInWidget) {
-    await widget.presentSmall()
+    await widget.presentLarge()
 }
 
 Script.setWidget(widget)
@@ -78,9 +78,15 @@ async function createWidget() {
 
         // now data contains data from server or from local file
         //showObject(data, "Data");
-        showLink(list, "Used data");
+        showLink(list, "Rest data/time");
+        let myRestData = 100 - data.usedPercentage;
+        let myRestTime = 100 * data.remainingSeconds / (30 * 24 * 60 * 60);
+        let myRestText = `${myRestData.toFixed(0)}% / ${myRestTime.toFixed(0)}%`;
+        const line2 = list.addText(myRestText);
 
-        const line2 = list.addText(data.usedPercentage + "%")
+        //showLink(list, "Used data");
+
+        //const line2 = list.addText(data.usedPercentage + "%")
         line2.font = Font.boldSystemFont(20);
         line2.textColor = Color.green();
         if (data.usedPercentage >= 75) {

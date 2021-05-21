@@ -1,6 +1,6 @@
 // Variables used by Scriptable.
 // These must be at the very top of the file. Do not edit.
-const conVersion = "210518";
+const conVersion = "210521";
 
 const apiUrl = "https://pass.telekom.de/api/service/generic/v1/status";
 const conTelekomURL = "https://pass.telekom.de";
@@ -16,7 +16,7 @@ const conRemainingHoursVeryLow = 6;
 let widget = await createWidget();
 widget.backgroundColor = conAntiqueWhite;
 if (!config.runsInWidget) {
-    await widget.presentSmall()
+    await widget.presentLarge()
 }
 
 Script.setWidget(widget)
@@ -81,20 +81,35 @@ async function createWidget() {
             }
             // sort descending
             myHistory.sort((left, right) => right.mDate - left.mDate);
+            console.log(`${myHistory.length} history records so far`);
+
             //for (let iData of myHistory) {
             //    console.log(new Date(iData.mDate));
             //    showObject(iData.mData);
             //}
             let myOneDayBack = new Date().getTime() - 24 * 60 * 60 * 1000;
-            if (myHistory.length <= 0 || myHistory[0].mDate.getTime() < myOneDayBack || Math.abs(myHistory[0].mData.usedVolume - data.usedVolume) > data.initialVolume / 50) {
-                let myNewEntry = { mDate: new Date().getTime(), mData: data };
+            let myDataDiff = Math.abs(myHistory[0].mData.usedVolume - data.usedVolume);
+            let myLimit = data.initialVolume / 50;
+
+            //let myText = `datelimit ${new Date(myOneDayBack)} myHistory[0] ${new Date(myHistory[0].mDate)} myDataDiff ${myDataDiff} myLimit ${myLimit}`;
+            //console.log(myText);
+
+            if (myHistory.length <= 0 || myHistory[0].mDate < myOneDayBack || myDataDiff > myLimit) {
+                let myNewEntry = { mDate: (new Date()).getTime(), mData: data };
                 myHistory.unshift(myNewEntry);
                 myCloud.writeString(myHistorypath, JSON.stringify(myHistory, null, 2));
                 console.log("New history entry written");
                 showObject(myNewEntry.mData);
             }
+            else {
+                console.log("No record written");
+                //let myText = `myHistory[0].mDate ${new Date(myHistory[0].mDate)} myDataDiff ${myDataDiff} myLimit ${myLimit}`;
+                //console.log(myText);
+            }
         }
         catch (err) {
+            console.error("err");
+            console.error(err);
             try {
                 // if reading from pass.telekom.de not possible-> read data from iCloud file
                 data = JSON.parse(fm.readString(path), null);
@@ -111,9 +126,11 @@ async function createWidget() {
 
         // now data contains data from server or from local file
         //showObject(data, "Data");
-        showLink(list, "Used data");
-
-        const line2 = list.addText(data.usedPercentage + "%")
+        showLink(list, "Rest data/time");
+        let myRestData = 100 - data.usedPercentage;
+        let myRestTime = 100 * data.remainingSeconds / (30 * 24 * 60 * 60);
+        let myRestText = `${myRestData.toFixed(0)}% / ${myRestTime.toFixed(0)}%`;
+        const line2 = list.addText(myRestText);
         line2.font = Font.boldSystemFont(20);
         line2.textColor = Color.green();
         if (data.usedPercentage >= 75) {
