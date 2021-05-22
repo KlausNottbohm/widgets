@@ -10,62 +10,62 @@
 // ---------------------------
 // do not edit after this line
 // ---------------------------
-const DAY_IN_MICROSECONDS = 86400000;
-const lineWeight = 2;
-const vertLineWeight = 36;
-const accentColor1 = new Color('#33cc33', 1);
-const accentColor2 = Color.lightGray();
+const DAY_IN_MICROSECONDS = 24 * 60 * 60 * 1000;
+//const lineWeight = 2;
+//const vertLineWeight = 36;
+//const accentColor1 = new Color('#33cc33', 1);
+//const accentColor2 = Color.lightGray();
 
-// colors for incidence highlighting
-const colorLow = new Color('#FAD643', 1); // < 50
-const colorMed = new Color('#E8B365', 1); // < 100
-const colorHigh = new Color('#DD5045', 1); // < 200
-const colorUltra = new Color('#8E0000', 1); // >= 200
+//// colors for incidence highlighting
+//const colorLow = new Color('#FAD643', 1); // < 50
+//const colorMed = new Color('#E8B365', 1); // < 100
+//const colorHigh = new Color('#DD5045', 1); // < 200
+//const colorUltra = new Color('#8E0000', 1); // >= 200
 // Landkreis Inzidenz
 const apiUrl = (location) => `https://services7.arcgis.com/mOBPykOjAyBO2ZKk/arcgis/rest/services/RKI_Landkreisdaten/FeatureServer/0/query?where=1%3D1&outFields=GEN,EWZ,cases,death_rate,deaths,cases7_per_100k,cases7_bl_per_100k,BL,county&geometry=${location.longitude.toFixed(3)}%2C${location.latitude.toFixed(3)}&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelWithin&returnGeometry=false&outSR=4326&f=json`;
 // Intensivbetten
 const diviApiUrl = (location) => `https://services7.arcgis.com/mOBPykOjAyBO2ZKk/arcgis/rest/services/DIVI_Intensivregister_Landkreise/FeatureServer/0/query?where=1%3D1&outFields=*&geometry=${location.longitude.toFixed(3)}%2C${location.latitude.toFixed(3)}&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelWithin&returnGeometry=false&outSR=4326&f=json`;
 
-const widgetHeight = 338;
-const widgetWidth = 720;
-const graphLow = 200;
-const graphHeight = 100;
-const spaceBetweenDays = 47.5;
-const bedsGraphBaseline = 290;
-const bedsPaddingLeft = 32;
-const bedsPaddingRight = 32;
-const bedsLineWidth = 12;
+//const widgetHeight = 338;
+//const widgetWidth = 720;
+//const graphLow = 200;
+//const graphHeight = 100;
+//const spaceBetweenDays = 47.5;
+//const bedsGraphBaseline = 290;
+//const bedsPaddingLeft = 32;
+//const bedsPaddingRight = 32;
+//const bedsLineWidth = 12;
 
 
-const saveIncidenceLatLon = (location) => {
-    let { fm, path } = getPath();
-    fm.writeString(path, JSON.stringify(location));
-};
+//const saveIncidenceLatLon = (location) => {
+//    let { fm, path } = getPath();
+//    fm.writeString(path, JSON.stringify(location));
+//};
 
-const getSavedIncidenceLatLon = () => {
-    let { fm, path } = getPath();
-    let data = fm.readString(path);
-    return JSON.parse(data);
-};
+//const getSavedIncidenceLatLon = () => {
+//    let { fm, path } = getPath();
+//    let data = fm.readString(path);
+//    return JSON.parse(data);
+//};
 
-let drawContext = new DrawContext();
-drawContext.size = new Size(widgetWidth, widgetHeight);
-drawContext.opaque = false;
+//let drawContext = new DrawContext();
+//drawContext.size = new Size(widgetWidth, widgetHeight);
+//drawContext.opaque = false;
 
-let widget = await createWidget();
-widget.setPadding(0, 0, 0, 0);
-widget.backgroundImage = (drawContext.getImage());
-await widget.presentMedium();
+//let widget = await createWidget();
+//widget.setPadding(0, 0, 0, 0);
+//widget.backgroundImage = (drawContext.getImage());
+//await widget.presentMedium();
 
-Script.setWidget(widget);
-Script.complete();
+//Script.setWidget(widget);
+//Script.complete();
 
-function getPath() {
-    let fm = FileManager.local();
-    let dir = fm.documentsDirectory();
-    let path = fm.joinPath(dir, "covid19latlon.json");
-    return { fm, path };
-}
+//function getPath() {
+//    let fm = FileManager.local();
+//    let dir = fm.documentsDirectory();
+//    let path = fm.joinPath(dir, "covid19latlon.json");
+//    return { fm, path };
+//}
 
 async function createWidget(items) {
     let locations = await getLocations();
@@ -103,20 +103,19 @@ async function createWidget(items) {
     const usedBeds = diviAttr.betten_belegt;
     const cases = diviAttr.faelle_covid_aktuell;
     const list = new ListWidget();
+    // 21 days back
     const date = new Date();
     date.setTime(date.getTime() - 21 * DAY_IN_MICROSECONDS);
+    // 21 days back as mm-dd-yyyy
     const minDate = ('0' + (date.getMonth() + 1)).slice(-2) + '-' + ('0' + date.getDate()).slice(-2) + '-' + date.getFullYear();
-    const apiUrlData = getAPI(county, minDate);
 
-    console.log("apiUrlData");
-    console.log(apiUrlData);
-
-    const cityData = await new Request(apiUrlData).loadJSON();
-
-    if (!cityData || !cityData.features || !cityData.features.length) {
+    let cityData;
+    try {
+        cityData = await getCityData(county, minDate);
+    } catch (e) {
         const errorList = new ListWidget();
         errorList.backgroundColor = new Color('#191a1d', 1);
-        errorList.addText('Keine Statistik gefunden.');
+        errorList.addText(e);
         return errorList;
     }
 
@@ -173,7 +172,6 @@ async function createWidget(items) {
 
     cityData.features.splice(0, 6);
 
-
     for (let i = 0; i < cityData.features.length; i++) {
         let aux = cityData.features[i].attributes.AnzahlFall;
 
@@ -226,6 +224,19 @@ async function createWidget(items) {
     }
 
     return list;
+}
+
+async function getCityData(county, minDate) {
+    const apiUrlData = getAPI(county, minDate);
+
+    console.log("apiUrlData");
+    console.log(apiUrlData);
+
+    const cityData = await new Request(apiUrlData).loadJSON();
+    if (!cityData || !cityData.features || !cityData.features.length) {
+        throw 'Keine Statistik gefunden.';
+    }
+    return cityData;
 }
 
 function getAPI(county, minDate) {

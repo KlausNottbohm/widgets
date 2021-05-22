@@ -1,0 +1,106 @@
+{
+  "URL": "https://services7.arcgis.com/mOBPykOjAyBO2ZKk/arcgis/rest/services/RKI_Landkreisdaten/FeatureServer/0/query?where=1%3D1&outFields=GEN,EWZ,cases,death_rate,deaths,cases7_per_100k,cases7_bl_per_100k,BL,county&geometry=9.944%2C49.309&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelWithin&returnGeometry=false&outSR=4326&f=json",
+  "objectIdFieldName": "OBJECTID",
+  "uniqueIdField": {
+    "name": "OBJECTID",
+    "isSystemMaintained": true
+  },
+  "globalIdFieldName": "",
+  "geometryType": "esriGeometryPolygon",
+  "spatialReference": {
+    "wkid": 4326,
+    "latestWkid": 4326
+  },
+  "fields": [
+    {
+      "name": "GEN",
+      "type": "esriFieldTypeString",
+      "alias": "GEN",
+      "sqlType": "sqlTypeOther",
+      "length": 33,
+      "domain": null,
+      "defaultValue": null
+    },
+    {
+      "name": "EWZ",
+      "type": "esriFieldTypeInteger",
+      "alias": "Einwohnerzahl",
+      "sqlType": "sqlTypeOther",
+      "domain": null,
+      "defaultValue": null
+    },
+    {
+      "name": "cases",
+      "type": "esriFieldTypeInteger",
+      "alias": "Fälle",
+      "sqlType": "sqlTypeOther",
+      "domain": null,
+      "defaultValue": null
+    },
+    {
+      "name": "death_rate",
+      "type": "esriFieldTypeDouble",
+      "alias": "Sterberate",
+      "sqlType": "sqlTypeOther",
+      "domain": null,
+      "defaultValue": null
+    },
+    {
+      "name": "deaths",
+      "type": "esriFieldTypeInteger",
+      "alias": "Todesfälle",
+      "sqlType": "sqlTypeOther",
+      "domain": null,
+      "defaultValue": null
+    },
+    {
+      "name": "cases7_per_100k",
+      "type": "esriFieldTypeDouble",
+      "alias": "Fälle letzte 7 Tage/100.000 EW",
+      "sqlType": "sqlTypeOther",
+      "domain": null,
+      "defaultValue": null
+    },
+    {
+      "name": "cases7_bl_per_100k",
+      "type": "esriFieldTypeDouble",
+      "alias": "Bundeslandweite Fälle der letzten 7 Tage/100.000 EW",
+      "sqlType": "sqlTypeOther",
+      "domain": null,
+      "defaultValue": null
+    },
+    {
+      "name": "BL",
+      "type": "esriFieldTypeString",
+      "alias": "Bundesland",
+      "sqlType": "sqlTypeOther",
+      "length": 256,
+      "domain": null,
+      "defaultValue": null
+    },
+    {
+      "name": "county",
+      "type": "esriFieldTypeString",
+      "alias": "Landkreis",
+      "sqlType": "sqlTypeOther",
+      "length": 256,
+      "domain": null,
+      "defaultValue": null
+    }
+  ],
+  "features": [
+    {
+      "attributes": {
+        "GEN": "Schwäbisch Hall",
+        "EWZ": 196761,
+        "cases": 11127,
+        "death_rate": 2.21982564932147,
+        "deaths": 247,
+        "cases7_per_100k": 97.0720823740477,
+        "cases7_bl_per_100k": 80.1593168674914,
+        "BL": "Baden-Württemberg",
+        "county": "LK Schwäbisch Hall"
+      }
+    }
+  ]
+}

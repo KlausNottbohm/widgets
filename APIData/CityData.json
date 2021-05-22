@@ -1,0 +1,352 @@
+{
+  "URL": "https://services7.arcgis.com/mOBPykOjAyBO2ZKk/arcgis/rest/services/Covid19_RKI_Sums/FeatureServer/0/query?where=Landkreis+LIKE+%27%25LK%20Rhein-Neckar-Kreis%25%27+AND+Meldedatum+%3E+%2704-30-2021%27&objectIds=&time=&resultType=none&outFields=*&returnIdsOnly=false&returnUniqueIdsOnly=false&returnCountOnly=false&returnDistinctValues=false&cacheHint=false&orderByFields=Meldedatum&groupByFieldsForStatistics=&outStatistics=&having=&resultOffset=&resultRecordCount=&sqlFormat=none&f=json&token=",
+  "objectIdFieldName": "ObjectId",
+  "uniqueIdField": {
+    "name": "ObjectId",
+    "isSystemMaintained": true
+  },
+  "globalIdFieldName": "",
+  "fields": [],
+  "features": [
+    {
+      "attributes": {
+        "AnzahlFall": 70,
+        "AnzahlTodesfall": 0,
+        "SummeFall": 20832,
+        "SummeTodesfall": 391,
+        "ObjectId": 99509,
+        "Datenstand": "21.05.2021, 00:00 Uhr",
+        "Meldedatum": 1619827200000,
+        "Bundesland": "Baden-Württemberg",
+        "IdBundesland": 8,
+        "Landkreis": "LK Rhein-Neckar-Kreis",
+        "IdLandkreis": "08226",
+        "AnzahlGenesen": 66,
+        "SummeGenesen": 20402
+      }
+    },
+    {
+      "attributes": {
+        "AnzahlFall": 79,
+        "AnzahlTodesfall": 1,
+        "SummeFall": 20911,
+        "SummeTodesfall": 392,
+        "ObjectId": 99510,
+        "Datenstand": "21.05.2021, 00:00 Uhr",
+        "Meldedatum": 1619913600000,
+        "Bundesland": "Baden-Württemberg",
+        "IdBundesland": 8,
+        "Landkreis": "LK Rhein-Neckar-Kreis",
+        "IdLandkreis": "08226",
+        "AnzahlGenesen": 67,
+        "SummeGenesen": 20469
+      }
+    },
+    {
+      "attributes": {
+        "AnzahlFall": 58,
+        "AnzahlTodesfall": 0,
+        "SummeFall": 20969,
+        "SummeTodesfall": 392,
+        "ObjectId": 99511,
+        "Datenstand": "21.05.2021, 00:00 Uhr",
+        "Meldedatum": 1620000000000,
+        "Bundesland": "Baden-Württemberg",
+        "IdBundesland": 8,
+        "Landkreis": "LK Rhein-Neckar-Kreis",
+        "IdLandkreis": "08226",
+        "AnzahlGenesen": 52,
+        "SummeGenesen": 20521
+      }
+    },
+    {
+      "attributes": {
+        "AnzahlFall": 117,
+        "AnzahlTodesfall": 0,
+        "SummeFall": 21086,
+        "SummeTodesfall": 392,
+        "ObjectId": 99512,
+        "Datenstand": "21.05.2021, 00:00 Uhr",
+        "Meldedatum": 1620086400000,
+        "Bundesland": "Baden-Württemberg",
+        "IdBundesland": 8,
+        "Landkreis": "LK Rhein-Neckar-Kreis",
+        "IdLandkreis": "08226",
+        "AnzahlGenesen": 103,
+        "SummeGenesen": 20624
+      }
+    },
+    {
+      "attributes": {
+        "AnzahlFall": 91,
+        "AnzahlTodesfall": 0,
+        "SummeFall": 21177,
+        "SummeTodesfall": 392,
+        "ObjectId": 99513,
+        "Datenstand": "21.05.2021, 00:00 Uhr",
+        "Meldedatum": 1620172800000,
+        "Bundesland": "Baden-Württemberg",
+        "IdBundesland": 8,
+        "Landkreis": "LK Rhein-Neckar-Kreis",
+        "IdLandkreis": "08226",
+        "AnzahlGenesen": 79,
+        "SummeGenesen": 20703
+      }
+    },
+    {
+      "attributes": {
+        "AnzahlFall": 114,
+        "AnzahlTodesfall": 0,
+        "SummeFall": 21291,
+        "SummeTodesfall": 392,
+        "ObjectId": 99514,
+        "Datenstand": "21.05.2021, 00:00 Uhr",
+        "Meldedatum": 1620259200000,
+        "Bundesland": "Baden-Württemberg",
+        "IdBundesland": 8,
+        "Landkreis": "LK Rhein-Neckar-Kreis",
+        "IdLandkreis": "08226",
+        "AnzahlGenesen": 102,
+        "SummeGenesen": 20805
+      }
+    },
+    {
+      "attributes": {
+        "AnzahlFall": 81,
+        "AnzahlTodesfall": 0,
+        "SummeFall": 21372,
+        "SummeTodesfall": 392,
+        "ObjectId": 99515,
+        "Datenstand": "21.05.2021, 00:00 Uhr",
+        "Meldedatum": 1620345600000,
+        "Bundesland": "Baden-Württemberg",
+        "IdBundesland": 8,
+        "Landkreis": "LK Rhein-Neckar-Kreis",
+        "IdLandkreis": "08226",
+        "AnzahlGenesen": 70,
+        "SummeGenesen": 20875
+      }
+    },
+    {
+      "attributes": {
+        "AnzahlFall": 76,
+        "AnzahlTodesfall": 1,
+        "SummeFall": 21448,
+        "SummeTodesfall": 393,
+        "ObjectId": 99516,
+        "Datenstand": "21.05.2021, 00:00 Uhr",
+        "Meldedatum": 1620432000000,
+        "Bundesland": "Baden-Württemberg",
+        "IdBundesland": 8,
+        "Landkreis": "LK Rhein-Neckar-Kreis",
+        "IdLandkreis": "08226",
+        "AnzahlGenesen": 48,
+        "SummeGenesen": 20923
+      }
+    },
+    {
+      "attributes": {
+        "AnzahlFall": 35,
+        "AnzahlTodesfall": 2,
+        "SummeFall": 21483,
+        "SummeTodesfall": 395,
+        "ObjectId": 99517,
+        "Datenstand": "21.05.2021, 00:00 Uhr",
+        "Meldedatum": 1620518400000,
+        "Bundesland": "Baden-Württemberg",
+        "IdBundesland": 8,
+        "Landkreis": "LK Rhein-Neckar-Kreis",
+        "IdLandkreis": "08226",
+        "AnzahlGenesen": 25,
+        "SummeGenesen": 20948
+      }
+    },
+    {
+      "attributes": {
+        "AnzahlFall": 16,
+        "AnzahlTodesfall": 0,
+        "SummeFall": 21499,
+        "SummeTodesfall": 395,
+        "ObjectId": 99518,
+        "Datenstand": "21.05.2021, 00:00 Uhr",
+        "Meldedatum": 1620604800000,
+        "Bundesland": "Baden-Württemberg",
+        "IdBundesland": 8,
+        "Landkreis": "LK Rhein-Neckar-Kreis",
+        "IdLandkreis": "08226",
+        "AnzahlGenesen": 10,
+        "SummeGenesen": 20958
+      }
+    },
+    {
+      "attributes": {
+        "AnzahlFall": 81,
+        "AnzahlTodesfall": 0,
+        "SummeFall": 21580,
+        "SummeTodesfall": 395,
+        "ObjectId": 99519,
+        "Datenstand": "21.05.2021, 00:00 Uhr",
+        "Meldedatum": 1620691200000,
+        "Bundesland": "Baden-Württemberg",
+        "IdBundesland": 8,
+        "Landkreis": "LK Rhein-Neckar-Kreis",
+        "IdLandkreis": "08226",
+        "AnzahlGenesen": 33,
+        "SummeGenesen": 20991
+      }
+    },
+    {
+      "attributes": {
+        "AnzahlFall": 85,
+        "AnzahlTodesfall": 1,
+        "SummeFall": 21665,
+        "SummeTodesfall": 396,
+        "ObjectId": 99520,
+        "Datenstand": "21.05.2021, 00:00 Uhr",
+        "Meldedatum": 1620777600000,
+        "Bundesland": "Baden-Württemberg",
+        "IdBundesland": 8,
+        "Landkreis": "LK Rhein-Neckar-Kreis",
+        "IdLandkreis": "08226",
+        "AnzahlGenesen": 26,
+        "SummeGenesen": 21017
+      }
+    },
+    {
+      "attributes": {
+        "AnzahlFall": 48,
+        "AnzahlTodesfall": 0,
+        "SummeFall": 21713,
+        "SummeTodesfall": 396,
+        "ObjectId": 99521,
+        "Datenstand": "21.05.2021, 00:00 Uhr",
+        "Meldedatum": 1620864000000,
+        "Bundesland": "Baden-Württemberg",
+        "IdBundesland": 8,
+        "Landkreis": "LK Rhein-Neckar-Kreis",
+        "IdLandkreis": "08226",
+        "AnzahlGenesen": 13,
+        "SummeGenesen": 21030
+      }
+    },
+    {
+      "attributes": {
+        "AnzahlFall": 65,
+        "AnzahlTodesfall": 0,
+        "SummeFall": 21778,
+        "SummeTodesfall": 396,
+        "ObjectId": 99522,
+        "Datenstand": "21.05.2021, 00:00 Uhr",
+        "Meldedatum": 1620950400000,
+        "Bundesland": "Baden-Württemberg",
+        "IdBundesland": 8,
+        "Landkreis": "LK Rhein-Neckar-Kreis",
+        "IdLandkreis": "08226",
+        "AnzahlGenesen": 10,
+        "SummeGenesen": 21040
+      }
+    },
+    {
+      "attributes": {
+        "AnzahlFall": 41,
+        "AnzahlTodesfall": 0,
+        "SummeFall": 21819,
+        "SummeTodesfall": 396,
+        "ObjectId": 99523,
+        "Datenstand": "21.05.2021, 00:00 Uhr",
+        "Meldedatum": 1621036800000,
+        "Bundesland": "Baden-Württemberg",
+        "IdBundesland": 8,
+        "Landkreis": "LK Rhein-Neckar-Kreis",
+        "IdLandkreis": "08226",
+        "AnzahlGenesen": 3,
+        "SummeGenesen": 21043
+      }
+    },
+    {
+      "attributes": {
+        "AnzahlFall": 22,
+        "AnzahlTodesfall": 0,
+        "SummeFall": 21841,
+        "SummeTodesfall": 396,
+        "ObjectId": 99524,
+        "Datenstand": "21.05.2021, 00:00 Uhr",
+        "Meldedatum": 1621123200000,
+        "Bundesland": "Baden-Württemberg",
+        "IdBundesland": 8,
+        "Landkreis": "LK Rhein-Neckar-Kreis",
+        "IdLandkreis": "08226",
+        "AnzahlGenesen": 3,
+        "SummeGenesen": 21046
+      }
+    },
+    {
+      "attributes": {
+        "AnzahlFall": 37,
+        "AnzahlTodesfall": 0,
+        "SummeFall": 21878,
+        "SummeTodesfall": 396,
+        "ObjectId": 99525,
+        "Datenstand": "21.05.2021, 00:00 Uhr",
+        "Meldedatum": 1621209600000,
+        "Bundesland": "Baden-Württemberg",
+        "IdBundesland": 8,
+        "Landkreis": "LK Rhein-Neckar-Kreis",
+        "IdLandkreis": "08226",
+        "AnzahlGenesen": 2,
+        "SummeGenesen": 21048
+      }
+    },
+    {
+      "attributes": {
+        "AnzahlFall": 50,
+        "AnzahlTodesfall": 0,
+        "SummeFall": 21928,
+        "SummeTodesfall": 396,
+        "ObjectId": 99526,
+        "Datenstand": "21.05.2021, 00:00 Uhr",
+        "Meldedatum": 1621296000000,
+        "Bundesland": "Baden-Württemberg",
+        "IdBundesland": 8,
+        "Landkreis": "LK Rhein-Neckar-Kreis",
+        "IdLandkreis": "08226",
+        "AnzahlGenesen": 1,
+        "SummeGenesen": 21049
+      }
+    },
+    {
+      "attributes": {
+        "AnzahlFall": 76,
+        "AnzahlTodesfall": 0,
+        "SummeFall": 22004,
+        "SummeTodesfall": 396,
+        "ObjectId": 99527,
+        "Datenstand": "21.05.2021, 00:00 Uhr",
+        "Meldedatum": 1621382400000,
+        "Bundesland": "Baden-Württemberg",
+        "IdBundesland": 8,
+        "Landkreis": "LK Rhein-Neckar-Kreis",
+        "IdLandkreis": "08226",
+        "AnzahlGenesen": 1,
+        "SummeGenesen": 21050
+      }
+    },
+    {
+      "attributes": {
+        "AnzahlFall": 36,
+        "AnzahlTodesfall": 0,
+        "SummeFall": 22040,
+        "SummeTodesfall": 396,
+        "ObjectId": 99528,
+        "Datenstand": "21.05.2021, 00:00 Uhr",
+        "Meldedatum": 1621468800000,
+        "Bundesland": "Baden-Württemberg",
+        "IdBundesland": 8,
+        "Landkreis": "LK Rhein-Neckar-Kreis",
+        "IdLandkreis": "08226",
+        "AnzahlGenesen": 0,
+        "SummeGenesen": 21050
+      }
+    }
+  ]
+}

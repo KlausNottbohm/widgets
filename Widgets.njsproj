@@ -32,6 +32,12 @@
     <DebugSymbols>true</DebugSymbols>
   </PropertyGroup>
   <ItemGroup>
+    <Content Include="APIData\CityData.json">
+      <SubType>Code</SubType>
+    </Content>
+    <Content Include="APIData\LocationData.json">
+      <SubType>Code</SubType>
+    </Content>
     <Content Include="html\telekomHistory.json" />
     <Content Include="html\telekomAnalyze.js">
       <SubType>Code</SubType>
@@ -63,11 +69,13 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="html\" />
+    <Folder Include="APIData\" />
+    <Folder Include="TypeDefinitions\" />
     <Folder Include="Typescript\" />
     <Folder Include="Typescript\src\" />
   </ItemGroup>
   <ItemGroup>
-    <TypeScriptCompile Include="scriptable.d.ts">
+    <TypeScriptCompile Include="TypeDefinitions\scriptable.d.ts">
       <SubType>Code</SubType>
     </TypeScriptCompile>
   </ItemGroup>
