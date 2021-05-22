@@ -1,4 +1,5 @@
 // Type definitions for non-npm package scriptable-ios 1.6
+// https://github.com/schl3ck/ios-scriptable-types/blob/master/dist/scriptable.d.ts
 // Project: https://scriptable.app/
 // Definitions by: schl3ck <https://github.com/schl3ck>
 //                 FuJuntao <https://github.com/FuJuntao>

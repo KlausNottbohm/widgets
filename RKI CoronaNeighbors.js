@@ -67,30 +67,11 @@ function getPath() {
     return { fm, path };
 }
 
-async function createWidget() {
-    let location;
-    let myArgs = args.widgetParameter;
-    //myArgs = "49.0,8.5";
-
-    if (myArgs) {
-        const fixedCoordinates = myArgs.split(',').map(function (str) { return parseFloat(str); });
-        location = {
-            latitude: fixedCoordinates[0],
-            longitude: fixedCoordinates[1]
-        };
-        console.log('get fixed lat/lon ' + location.latitude + " " + location.longitude);
-    } else {
-        Location.setAccuracyToThreeKilometers();
-        try {
-            location = await Location.current();
-            console.log('get current lat/lon ' + location.latitude + " " + location.longitude);
-            saveIncidenceLatLon(location);
-        } catch (e) {
-            console.log('using saved lat/lon ' + location.latitude + " " + location.longitude);
-            location = getSavedIncidenceLatLon();
-        }
-    }
+async function createWidget(items) {
+    let locations = await getLocations();
     //location.latitude = location.latitude - 0.2;
+    let location = locations[1];
+    showObject(location, "location");
 
     const locationData = await new Request(apiUrl(location)).loadJSON();
     console.log(apiUrl(location));
@@ -125,7 +106,8 @@ async function createWidget() {
     const date = new Date();
     date.setTime(date.getTime() - 21 * DAY_IN_MICROSECONDS);
     const minDate = ('0' + (date.getMonth() + 1)).slice(-2) + '-' + ('0' + date.getDate()).slice(-2) + '-' + date.getFullYear();
-    const apiUrlData = `https://services7.arcgis.com/mOBPykOjAyBO2ZKk/arcgis/rest/services/Covid19_RKI_Sums/FeatureServer/0/query?where=Landkreis+LIKE+%27%25${encodeURIComponent(county)}%25%27+AND+Meldedatum+%3E+%27${encodeURIComponent(minDate)}%27&objectIds=&time=&resultType=none&outFields=*&returnIdsOnly=false&returnUniqueIdsOnly=false&returnCountOnly=false&returnDistinctValues=false&cacheHint=false&orderByFields=Meldedatum&groupByFieldsForStatistics=&outStatistics=&having=&resultOffset=&resultRecordCount=&sqlFormat=none&f=json&token=`;
+    const apiUrlData = getAPI(county, minDate);
+
     console.log("apiUrlData");
     console.log(apiUrlData);
 
@@ -244,6 +226,58 @@ async function createWidget() {
     }
 
     return list;
+}
+
+function getAPI(county, minDate) {
+    return `https://services7.arcgis.com/mOBPykOjAyBO2ZKk/arcgis/rest/services/Covid19_RKI_Sums/FeatureServer/0/query?where=Landkreis+LIKE+%27%25${encodeURIComponent(county)}%25%27+AND+Meldedatum+%3E+%27${encodeURIComponent(minDate)}%27&objectIds=&time=&resultType=none&outFields=*&returnIdsOnly=false&returnUniqueIdsOnly=false&returnCountOnly=false&returnDistinctValues=false&cacheHint=false&orderByFields=Meldedatum&groupByFieldsForStatistics=&outStatistics=&having=&resultOffset=&resultRecordCount=&sqlFormat=none&f=json&token=`;
+}
+/**
+ *  get 5 surrounding locations
+ */
+async function getLocations() {
+    let myLocation = await getLocationHere();
+    let myLocations = [myLocation];
+    //let myNorth = changeLocation(0.2, 0.0);
+    myLocations.push(changeLocation(0.2, 0.0));
+    myLocations.push(changeLocation(-0.2, 0.0));
+    myLocations.push(changeLocation(0.0, 0.2));
+    myLocations.push(changeLocation(0.0, -0.2));
+
+    return myLocations;
+
+    function changeLocation(pLongitude, pLatitude) {
+        // clone object
+        let myNewLocation = {};
+        myNewLocation.longitude = myLocation.longitude + pLongitude;
+        myNewLocation.latitude = myLocation.latitude + pLatitude;
+        return myNewLocation;
+    }
+}
+/**
+ * get location from args, if possible, else from geolocation
+ * */
+async function getLocationHere() {
+    let location;
+
+    if (args.widgetParameter) {
+        const fixedCoordinates = myArgs.split(',').map(function (str) { return parseFloat(str); });
+        location = {
+            latitude: fixedCoordinates[0],
+            longitude: fixedCoordinates[1]
+        };
+        console.log('get fixed lat/lon ' + location.longitude + " " + location.latitude);
+    } else {
+        Location.setAccuracyToThreeKilometers();
+        try {
+            location = await Location.current();
+            console.log('get current lat/lon ' + location.longitude + " " + location.latitude);
+            saveIncidenceLatLon(location);
+        } catch (e) {
+            console.log('using saved lat/lon ' + location.longitude + " " + location.latitude);
+            location = getSavedIncidenceLatLon();
+        }
+    }
+    return location;
 }
 
 function drawTextR(text, rect, color, font) {
