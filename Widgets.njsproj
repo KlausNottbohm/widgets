@@ -4,6 +4,9 @@
     <VSToolsPath Condition="'$(VSToolsPath)' == ''">$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)</VSToolsPath>
     <Name>Widgets</Name>
     <RootNamespace>Widgets</RootNamespace>
+    <EnableTypeScript>true</EnableTypeScript>
+    <TypeScriptSourceMap>true</TypeScriptSourceMap>
+    <TypeScriptModuleKind>CommonJS</TypeScriptModuleKind>
   </PropertyGroup>
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
@@ -37,6 +40,7 @@
       <SubType>Code</SubType>
     </Content>
     <Content Include="Random Scriptable API 1.js" />
+    <Content Include="RKI CoronaNeighbors.js" />
     <Content Include="RKI Corona.js">
       <SubType>Code</SubType>
     </Content>
@@ -61,6 +65,11 @@
     <Folder Include="html\" />
     <Folder Include="Typescript\" />
     <Folder Include="Typescript\src\" />
+  </ItemGroup>
+  <ItemGroup>
+    <TypeScriptCompile Include="scriptable.d.ts">
+      <SubType>Code</SubType>
+    </TypeScriptCompile>
   </ItemGroup>
   <Import Project="$(VSToolsPath)\Node.js Tools\Microsoft.NodejsToolsV2.targets" />
   <ProjectExtensions>
