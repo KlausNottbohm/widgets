@@ -19,12 +19,60 @@
 </head>
 <body>
     <div id="Main">
-        <input type="text" data-bind="value:mLocationString" />
-        <button data-bind="click: onLocationClick">Get data</button>
-        <button data-bind="click: onCurrentLocationClick">Get data for current location</button>
-        <div data-bind="text: 'cityName'"></div>
-        <div data-bind="text: cityName"></div>
-        <textarea rows="40" cols="80" data-bind="text: consoleText"></textarea>
+        <div style="background-color:blanchedalmond; padding:15px">
+            <input type="text" data-bind="value:mLocationString" />
+            <button data-bind="click: onLocationClick">Get data</button>
+            <button data-bind="click: onCurrentLocationClick">Get data for current location</button>
+            <button data-bind="click:onShowJsonClick">Toggle JSON data</button>
+        </div>
+
+        <h3 data-bind="text: cityName"></h3>
+        <div>
+            <span>EinwohnerZahl</span>
+            <span data-bind="text:myEinwohnerZahl()"></span>
+        </div>        
+        <div>
+            <span>beds</span>
+            <span data-bind="text:beds"></span>
+        </div>
+        <div>
+            <span>freeBeds</span>
+            <span data-bind="text:freeBeds"></span>
+        </div>
+        <div>
+            <span>cases</span>
+            <span data-bind="text:cases"></span>
+        </div>
+        <br />
+
+        <table style="margin:10px">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Incidence</th>
+                    <th>AnzahlFall</th>
+                    <th>AnzahlTodesfall</th>
+                    <th>SummeFall</th>
+                    <th>SummeTodesfall</th>
+                    <th>AnzahlGenesen</th>
+                    <th>SummeGenesen</th>
+                </tr>
+            </thead>
+            <tbody data-bind="foreach: myCityDataWithIncidences">
+                <tr data-bind="with:attributes">
+                    <td data-bind="text: (new Date(Meldedatum)).toLocaleString('DE')"></td>
+                    <td data-bind="text: Incidence"></td>
+                    <td data-bind="text: AnzahlFall"></td>
+                    <td data-bind="text: AnzahlTodesfall"></td>
+                    <td data-bind="text: SummeFall"></td>
+                    <td data-bind="text: SummeTodesfall"></td>
+                    <td data-bind="text: AnzahlGenesen"></td>
+                    <td data-bind="text: SummeGenesen"></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <textarea rows="40" cols="80" data-bind="text: consoleText, visible: mShowJson"></textarea>
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/knockout/3.5.1/knockout-latest.debug.js"

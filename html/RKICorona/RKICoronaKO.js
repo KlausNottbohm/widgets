@@ -10,12 +10,16 @@ window.onload = (event) => {
 function viewModel() {
     var self = this;
     self.cityName = ko.observable();
+    self.myEinwohnerZahl = ko.observable();
     self.beds = ko.observable();
     self.freeBeds = ko.observable();
     self.cases = ko.observable();
     self.myCityDataWithIncidences = ko.observable();
     self.consoleText = ko.observable("");
     self.mLocationString = ko.observable();
+
+    self.mShowJson = ko.observable(false);
+    self.onShowJsonClick = () => { self.mShowJson(!self.mShowJson()); };
 
     self.onLocationClick = function () {
         InitializeData(self.mLocationString());
@@ -39,8 +43,9 @@ function viewModel() {
     async function setDataFromLocation(pLocation) {
 
         try {
-            var { cityName, beds, freeBeds, cases, myCityDataWithIncidences } = await getDataFromServer(pLocation);
+            var { cityName, myEinwohnerZahl, beds, freeBeds, cases, myCityDataWithIncidences } = await getDataFromServer(pLocation);
             self.cityName(cityName);
+            self.myEinwohnerZahl(myEinwohnerZahl.toLocaleString("DE"));
             self.beds(beds);
             self.freeBeds(freeBeds);
             self.cases(cases);
@@ -69,7 +74,8 @@ async function getDataFromServer(location) {
     const diviAttrs = diviLocationData.features[0].attributes;
 
     const cityName = locationAttrs.GEN;
-    const myEinwohnerZahlBy100000 = locationAttrs.EWZ / 100000;
+
+    const myEinwohnerZahl = locationAttrs.EWZ;
     const county = locationAttrs.county;
     const freeBeds = diviAttrs.betten_frei;
     const beds = diviAttrs.betten_gesamt;
@@ -81,15 +87,15 @@ async function getDataFromServer(location) {
 
     let cityData = await getCityData(county, myDate21DaysBackString);
     // calculate incidence in place.
-    let myCityDataWithIncidences = calcIncidences(cityData, myEinwohnerZahlBy100000);
-    return { cityName, beds, freeBeds, cases, myCityDataWithIncidences };
+    let myCityDataWithIncidences = calcIncidences(cityData, myEinwohnerZahl);
+    return { cityName, myEinwohnerZahl, beds, freeBeds, cases, myCityDataWithIncidences };
 
     /**
     * calc Incidences for last 7 AnzahlFall and store in Incidence
     * @param {any} cityData
-    * @param {any} myEinwohnerZahlBy100000
+    * @param {any} pEinwohnerZahl
     */
-    function calcIncidences(pCityData, myEinwohnerZahlBy100000) {
+    function calcIncidences(pCityData, pEinwohnerZahl) {
         let myCityDataWithIncidences = pCityData.features.slice();
         for (let i = myCityDataWithIncidences.length - 1; i >= 6; i--) {
             let sum = 0;
@@ -98,7 +104,7 @@ async function getDataFromServer(location) {
                 sum += myCityDataWithIncidences[i - j].attributes.AnzahlFall;
             }
 
-            sum /= myEinwohnerZahlBy100000;
+            sum /= pEinwohnerZahl/100000;
             myCityDataWithIncidences[i].attributes.Incidence = Math.round(sum);
         }
 
