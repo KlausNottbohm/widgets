@@ -82,10 +82,11 @@ async function getDataFromServer(location) {
     const usedBeds = diviAttrs.betten_belegt;
     const cases = diviAttrs.faelle_covid_aktuell;
 
-    const myDate21DaysBack = new Date(new Date().getTime() - 21 * DAY_IN_MICROSECONDS);
-    const myDate21DaysBackString = ('0' + (myDate21DaysBack.getMonth() + 1)).slice(-2) + '-' + ('0' + myDate21DaysBack.getDate()).slice(-2) + '-' + myDate21DaysBack.getFullYear();
+    const conDaysBack = 60;
+    const myDateDaysBack = new Date(new Date().getTime() - conDaysBack * DAY_IN_MICROSECONDS);
+    const myDateDaysBackString = ('0' + (myDateDaysBack.getMonth() + 1)).slice(-2) + '-' + ('0' + myDateDaysBack.getDate()).slice(-2) + '-' + myDateDaysBack.getFullYear();
 
-    let cityData = await getCityData(county, myDate21DaysBackString);
+    let cityData = await getCityData(county, myDateDaysBackString);
     // calculate incidence in place.
     let myCityDataWithIncidences = calcIncidences(cityData, myEinwohnerZahl);
     return { cityName, myEinwohnerZahl, beds, freeBeds, cases, myCityDataWithIncidences };
@@ -114,11 +115,11 @@ async function getDataFromServer(location) {
 }
 
 async function getCityData(county, minDate) {
-    const apiUrlData = `https://services7.arcgis.com/mOBPykOjAyBO2ZKk/arcgis/rest/services/Covid19_RKI_Sums/FeatureServer/0/query?where=Landkreis+LIKE+%27%25${encodeURIComponent(county)}%25%27+AND+Meldedatum+%3E+%27${encodeURIComponent(minDate)}%27&objectIds=&time=&resultType=none&outFields=*&returnIdsOnly=false&returnUniqueIdsOnly=false&returnCountOnly=false&returnDistinctValues=false&cacheHint=false&orderByFields=Meldedatum&groupByFieldsForStatistics=&outStatistics=&having=&resultOffset=&resultRecordCount=&sqlFormat=none&f=json&token=`;
-    console.log("apiUrlData");
-    console.log(apiUrlData);
+    const cityUrlData = `https://services7.arcgis.com/mOBPykOjAyBO2ZKk/arcgis/rest/services/Covid19_RKI_Sums/FeatureServer/0/query?where=Landkreis+LIKE+%27%25${encodeURIComponent(county)}%25%27+AND+Meldedatum+%3E+%27${encodeURIComponent(minDate)}%27&objectIds=&time=&resultType=none&outFields=*&returnIdsOnly=false&returnUniqueIdsOnly=false&returnCountOnly=false&returnDistinctValues=false&cacheHint=false&orderByFields=Meldedatum&groupByFieldsForStatistics=&outStatistics=&having=&resultOffset=&resultRecordCount=&sqlFormat=none&f=json&token=`;
+    console.log("cityUrlData");
+    console.log(cityUrlData);
 
-    const cityData = await fetchJson(apiUrlData);
+    const cityData = await fetchJson(cityUrlData);
     if (!cityData || !cityData.features || !cityData.features.length) {
         throw "getCityData: Keine Statistik gefunden";
     }
