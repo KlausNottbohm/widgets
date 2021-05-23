@@ -14,22 +14,38 @@ function viewModel() {
     self.freeBeds = ko.observable();
     self.cases = ko.observable();
     self.myCityDataWithIncidences = ko.observable();
+    self.consoleText = ko.observable("");
+    self.mLocationString = ko.observable();
 
-    InitializeData();
+    self.onLocationClick = function () {
+        InitializeData(self.mLocationString());
+    }
+    self.onCurrentLocationClick = function () {
+        InitializeData();
+    }
 
-    async function InitializeData() {
-        let location = await getLocation(conHockenheimLocation);
+    //InitializeData(conHockenheimLocation);
+    InitializeData(conHockenheimLocation);
+
+    async function InitializeData(pLocationString) {
+        let location = await getLocation(pLocationString);
         //let myCurrLocation = await getLocationCurrent();
-        //showObject(myCurrLocation, "location from getLocationCurrent");
+        self.mLocationString(location.latitude + "," + location.longitude);
+        showObject(location, "location from getLocationCurrent");
+
+        setDataFromLocation(location);
+    }
+
+    async function setDataFromLocation(pLocation) {
 
         try {
-            var { cityName, beds, freeBeds, cases, myCityDataWithIncidences } = await getDataFromServer(location);
+            var { cityName, beds, freeBeds, cases, myCityDataWithIncidences } = await getDataFromServer(pLocation);
             self.cityName(cityName);
             self.beds(beds);
             self.freeBeds(freeBeds);
             self.cases(cases);
             self.myCityDataWithIncidences(myCityDataWithIncidences);
-            showObject(cityName);
+            self.consoleText(JSON.stringify(myCityDataWithIncidences, null, 2));
 
         } catch (e) {
             alert(e);
@@ -106,6 +122,8 @@ async function getCityData(county, minDate) {
 async function getDiviData(location) {
     // Intensivbetten
     const diviApiUrl = (location) => `https://services7.arcgis.com/mOBPykOjAyBO2ZKk/arcgis/rest/services/DIVI_Intensivregister_Landkreise/FeatureServer/0/query?where=1%3D1&outFields=*&geometry=${location.longitude.toFixed(3)}%2C${location.latitude.toFixed(3)}&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelWithin&returnGeometry=false&outSR=4326&f=json`;
+    console.log("diviApiUrl(location)");
+    console.log(diviApiUrl(location));
 
     let diviLocationData = await fetchJson(diviApiUrl(location));
     if (!diviLocationData || !diviLocationData.features || !diviLocationData.features.length) {
@@ -181,7 +199,6 @@ async function getLocation(myArgs) {
         console.log('get lat/lon from args ' + location.latitude + " " + location.longitude);
         return location;
     } else {
-        Location.setAccuracyToThreeKilometers();
         try {
             let location = await getLocationCurrent();
             console.log('get current lat/lon ' + location.latitude + " " + location.longitude);
@@ -197,6 +214,7 @@ async function getLocation(myArgs) {
 
 // this is how it is done in Scriptable
 //function getLocationScriptable() {
+//    Location.setAccuracyToThreeKilometers();
 //    return Location.current();
 //}
 
