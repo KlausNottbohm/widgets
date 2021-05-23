@@ -38,6 +38,8 @@
     <Content Include="APIData\LocationData.json">
       <SubType>Code</SubType>
     </Content>
+    <Content Include="html\RKICorona\RKICoronaKO.js" />
+    <Content Include="html\RKICorona\RKICoronaKO.html" />
     <Content Include="html\telekomHistory.json" />
     <Content Include="html\telekomAnalyze.js">
       <SubType>Code</SubType>
@@ -61,7 +63,7 @@
     <Content Include="todo.txt">
       <SubType>Code</SubType>
     </Content>
-    <Content Include="tsconfig.json" />
+    <Content Include="tsconfig.jsonOld" />
     <Content Include="Typescript\src\telekom.ts" />
     <Content Include="Umfrageergebnisse.js">
       <SubType>Code</SubType>
@@ -70,6 +72,7 @@
   <ItemGroup>
     <Folder Include="html\" />
     <Folder Include="APIData\" />
+    <Folder Include="html\RKICorona\" />
     <Folder Include="TypeDefinitions\" />
     <Folder Include="Typescript\" />
     <Folder Include="Typescript\src\" />

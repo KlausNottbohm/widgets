@@ -1,0 +1,40 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <title>Corona data from RKI</title>
+    <style>
+        table, th, td {
+            border: 1px solid black;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 15px;
+        }
+
+        th {
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+    <div id="Main">
+        <!--<textarea rows="40" cols="80" data-bind="text: mJsonData"></textarea>-->
+        <div data-bind="text: 'cityName'"></div>
+        <div data-bind="text: cityName"></div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/knockout/3.5.1/knockout-latest.debug.js"
+            integrity="sha512-per7WBYe3cT9aIDMoF74rYR7wpEDPqyncWqWzBGmJBnhp8H3ZD5fRdTM16IO5ePUEuBlH9DMKF7rHvuazhvDBA==" crossorigin="anonymous" referrerpolicy="no-referrer">
+    </script>
+    <!-- jQuery, if needed
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>-->
+ 
+    <script src="RKICoronaKO.js"></script>
+
+    <!--<script>
+        let myVM = new viewModel();
+        ko.applyBindings(myVM);
+    </script>-->
+</body>
+</html>
