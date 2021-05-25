@@ -51,6 +51,8 @@
             <span data-bind="text:cases"></span>
         </div>
         <br />
+        <div id="chartContainer" style="height: 300px; width: 100%;">
+        </div>
 
         <table style="margin:10px">
             <thead>
@@ -82,17 +84,21 @@
         <textarea rows="40" cols="80" data-bind="text: mJsonString, visible: mShowJson"></textarea>
     </div>
 
+    <script type="text/javascript" src="https://canvasjs.com/assets/script/canvasjs.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/knockout/3.5.1/knockout-latest.debug.js"
             integrity="sha512-per7WBYe3cT9aIDMoF74rYR7wpEDPqyncWqWzBGmJBnhp8H3ZD5fRdTM16IO5ePUEuBlH9DMKF7rHvuazhvDBA==" crossorigin="anonymous" referrerpolicy="no-referrer">
     </script>
     <!-- jQuery, if needed
         <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>-->
- 
+
     <script src="RKICoronaKO.js"></script>
 
     <!--<script>
         let myVM = new viewModel();
         ko.applyBindings(myVM);
     </script>-->
+    <script type="text/javascript">
+
+    </script>
 </body>
 </html>

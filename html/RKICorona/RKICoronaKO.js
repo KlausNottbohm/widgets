@@ -79,11 +79,48 @@ function viewModel() {
             self.myCityDataWithIncidences(myCityDataWithIncidences);
             self.mJsonString(JSON.stringify(myCityDataWithIncidences, null, 2));
 
+            RenderChart(cityName, myCityDataWithIncidences);
         } catch (e) {
             alert(e);
         }
     }
 };
+function RenderChart(pCityName, pCityDataWithIncidences) {
+    //<tr data-bind="with:attributes">
+    //    <td data-bind="text: (new Date(Meldedatum)).toLocaleDateString('DE')"></td>
+    //    <td data-bind="text: Incidence"></td>
+    //    <td data-bind="text: AnzahlFall"></td>
+    //    <td data-bind="text: AnzahlTodesfall"></td>
+    //    <td data-bind="text: SummeFall"></td>
+    //    <td data-bind="text: SummeTodesfall"></td>
+    //    <td data-bind="text: AnzahlGenesen"></td>
+    //    <td data-bind="text: SummeGenesen"></td>
+    //</tr>
+    let i = 0;
+    let myChartData = pCityDataWithIncidences.map(function (pEle) {
+        //let myAttributes = pEle.attributes;        
+        let myDataPoint = {
+            x: ++i,
+            y: pEle.attributes.Incidence,
+            label: (new Date(pEle.attributes.Meldedatum)).toLocaleDateString('DE')
+        };
+        return myDataPoint;
+    }).slice(0, 500);
+    var chart = new CanvasJS.Chart("chartContainer",
+        {
+            title: {
+                text: `Incidences for ${pCityName}`
+            },
+            
+            data: [
+                {
+                    dataPoints: myChartData
+                }
+            ]
+        });
+
+    chart.render();
+}
 
 // #region server functions
 /**
@@ -319,7 +356,7 @@ function showObject(pObject, title) {
 * @param {number} exHours number of hours to expire (default 360 days)
 * @param {number} exMinutes number of minutes to expire (default 360 days) 
 */
-function setCookie(cname, cvalue, exDays, exHours, exMinutes){
+function setCookie(cname, cvalue, exDays, exHours, exMinutes) {
     if (exDays === undefined) {
         exDays = 360;
     }
