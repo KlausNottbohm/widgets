@@ -1,4 +1,5 @@
-
+25.5.21
+. https://canvasjs.com/docs/charts/chart-types/html5-bar-chart/
 10.5.21
 . Wi-Fi = prefs:root=WIFI (see https://ios.gadgethacks.com/how-to/always-updated-list-ios-app-url-scheme-names-paths-for-shortcuts-0184033/)
 5.5.21

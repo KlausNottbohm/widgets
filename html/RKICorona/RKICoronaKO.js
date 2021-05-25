@@ -1,4 +1,9 @@
 ﻿const conHockenheimLocation = "49.315939, 8.541975";
+const conAlfeld = "51.989063, 9.828675";
+const conHeidelberg = "49.388432, 8.671077";
+const conSpeyer = "49.315910, 8.444430";
+const conKarlsruhe = "49.232416, 8.459519";
+const myNow = conKarlsruhe;
 
 window.onload = (event) => {
     console.log('page is fully loaded');
@@ -9,20 +14,41 @@ window.onload = (event) => {
 
 function viewModel() {
     var self = this;
+
+    //const conCookieName = "LocationString";
     self.cityName = ko.observable();
     self.myEinwohnerZahl = ko.observable();
     self.beds = ko.observable();
     self.freeBeds = ko.observable();
     self.cases = ko.observable();
+    self.location = ko.observable();
     self.myCityDataWithIncidences = ko.observable();
-    self.consoleText = ko.observable("");
-    self.mLocationString = ko.observable();
 
+    //let myCookie = getCookie(conCookieName);
+    //if (!myCookie) {
+    //    myCookie = myNow;
+    //}
+    let myLocations = [conHockenheimLocation, conHeidelberg, conKarlsruhe, conAlfeld, conSpeyer];
+    let myLocationsString = myLocations.join("\n");
+    self.mLocationString = ko.observable(myLocationsString);
+    //self.mLocationString.subscribe(function (pVal) {
+    //    setCookie(conCookieName, pVal);
+    //});
+    self.mCurrentLocation = ko.observable();
+
+    self.mJsonString = ko.observable("");
     self.mShowJson = ko.observable(false);
     self.onShowJsonClick = () => { self.mShowJson(!self.mShowJson()); };
 
     self.onLocationClick = function () {
-        InitializeData(self.mLocationString());
+        let myLocations = [];
+        let myLines = self.mLocationString().split("\n");
+        for (let iLine of myLines) {
+            mySplit = iLine.split(";");
+            myLocations = myLocations.concat(mySplit);
+        }
+        let myLocString = myLocations.length > 0 ? myLocations[myLocations.length - 1] : undefined;
+        InitializeData(myLocString);
     }
     self.onCurrentLocationClick = function () {
         InitializeData();
@@ -34,7 +60,7 @@ function viewModel() {
     async function InitializeData(pLocationString) {
         let location = await getLocation(pLocationString);
         //let myCurrLocation = await getLocationCurrent();
-        self.mLocationString(location.latitude + "," + location.longitude);
+        //self.mLocationString(location.latitude + "," + location.longitude);
         showObject(location, "location from getLocationCurrent");
 
         setDataFromLocation(location);
@@ -45,12 +71,13 @@ function viewModel() {
         try {
             var { cityName, myEinwohnerZahl, beds, freeBeds, cases, myCityDataWithIncidences } = await getDataFromServer(pLocation);
             self.cityName(cityName);
+            self.location(pLocation);
             self.myEinwohnerZahl(myEinwohnerZahl.toLocaleString("DE"));
             self.beds(beds);
             self.freeBeds(freeBeds);
             self.cases(cases);
             self.myCityDataWithIncidences(myCityDataWithIncidences);
-            self.consoleText(JSON.stringify(myCityDataWithIncidences, null, 2));
+            self.mJsonString(JSON.stringify(myCityDataWithIncidences, null, 2));
 
         } catch (e) {
             alert(e);
@@ -105,7 +132,7 @@ async function getDataFromServer(location) {
                 sum += myCityDataWithIncidences[i - j].attributes.AnzahlFall;
             }
 
-            sum /= pEinwohnerZahl/100000;
+            sum /= pEinwohnerZahl / 100000;
             myCityDataWithIncidences[i].attributes.Incidence = Math.round(sum);
         }
 
@@ -281,4 +308,51 @@ function showObject(pObject, title) {
             console.log(`${pObject}`);
         }
     }
+}
+
+/**
+* set cookie
+* https://www.w3schools.com/js/js_cookies.asp
+* @param {string} cname cookie name
+* @param {string} cvalue cookie value
+* @param {number} exDays number of days to expire (default 360 days)
+* @param {number} exHours number of hours to expire (default 360 days)
+* @param {number} exMinutes number of minutes to expire (default 360 days) 
+*/
+function setCookie(cname, cvalue, exDays, exHours, exMinutes){
+    if (exDays === undefined) {
+        exDays = 360;
+    }
+    if (exHours === undefined) {
+        exHours = 0;
+    }
+    if (exMinutes === undefined) {
+        exMinutes = 0;
+    }
+    var myPlus = (exDays * 24 * 60 * 60 * 1000) + exHours * 60 * 60 * 1000 + exMinutes * 60 * 1000;
+    var d = new Date();
+    d.setTime(d.getTime() + myPlus);
+    var expires = "expires=" + d.toUTCString();
+    var myValue = cvalue === null ? null : encodeURIComponent(cvalue);
+    //if (cname === "qknordField") {
+    //    console.log(myValue);
+    //    confirm(cname + "-" + myValue);
+    //}
+    document.cookie = cname + "=" + myValue + ";" + expires + ";path=/";
+}
+
+function getCookie(cname) {
+    var name = cname + "=";
+    var decodedCookie = decodeURIComponent(document.cookie);
+    var ca = decodedCookie.split(';');
+    for (var i = 0; i < ca.length; i++) {
+        var c = ca[i];
+        while (c.charAt(0) === ' ') {
+            c = c.substring(1);
+        }
+        if (c.indexOf(name) === 0) {
+            return c.substring(name.length, c.length);
+        }
+    }
+    return "";
 }

@@ -20,7 +20,7 @@
 <body>
     <div id="Main">
         <div style="background-color:blanchedalmond; padding:15px">
-            <input type="text" data-bind="value:mLocationString" />
+            <textarea type="text" data-bind="value:mLocationString" cols="80" rows="10"></textarea>
             <button data-bind="click: onLocationClick">Get data</button>
             <br />
             <button data-bind="click: onCurrentLocationClick">Get data for current location</button>
@@ -29,9 +29,15 @@
 
         <h3 data-bind="text: cityName"></h3>
         <div>
+            <span>Location (latitude, longitude)</span>
+            <span data-bind="text:location()?.latitude"></span>
+            <span>,</span>
+            <span data-bind="text:location()?.longitude"></span>
+        </div>
+        <div>
             <span>EinwohnerZahl</span>
             <span data-bind="text:myEinwohnerZahl()"></span>
-        </div>        
+        </div>
         <div>
             <span>beds</span>
             <span data-bind="text:beds"></span>
@@ -61,7 +67,7 @@
             </thead>
             <tbody data-bind="foreach: myCityDataWithIncidences">
                 <tr data-bind="with:attributes">
-                    <td data-bind="text: (new Date(Meldedatum)).toLocaleString('DE')"></td>
+                    <td data-bind="text: (new Date(Meldedatum)).toLocaleDateString('DE')"></td>
                     <td data-bind="text: Incidence"></td>
                     <td data-bind="text: AnzahlFall"></td>
                     <td data-bind="text: AnzahlTodesfall"></td>
@@ -73,7 +79,7 @@
             </tbody>
         </table>
 
-        <textarea rows="40" cols="80" data-bind="text: consoleText, visible: mShowJson"></textarea>
+        <textarea rows="40" cols="80" data-bind="text: mJsonString, visible: mShowJson"></textarea>
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/knockout/3.5.1/knockout-latest.debug.js"
