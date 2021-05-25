@@ -1,9 +1,11 @@
-﻿const conHockenheimLocation = "49.315939, 8.541975";
-const conAlfeld = "51.989063, 9.828675";
-const conHeidelberg = "49.388432, 8.671077";
-const conSpeyer = "49.315910, 8.444430";
-const conKarlsruhe = "49.232416, 8.459519";
+﻿const conHockenheimLocation = "49.315939, 8.541975, 'Hockenheim'";
+const conAlfeld = "51.989063, 9.828675, 'Alfeld'";
+const conHeidelberg = "49.388432, 8.671077, 'Heidelberg'";
+const conSpeyer = "49.315910, 8.444430, 'Speyer'";
+const conKarlsruhe = "49.232416, 8.459519, 'Karlsruhe'";
 const myNow = conKarlsruhe;
+
+const conDaysBack = 21;
 
 window.onload = (event) => {
     console.log('page is fully loaded');
@@ -16,13 +18,7 @@ function viewModel() {
     var self = this;
 
     //const conCookieName = "LocationString";
-    self.cityName = ko.observable();
-    self.myEinwohnerZahl = ko.observable();
-    self.beds = ko.observable();
-    self.freeBeds = ko.observable();
-    self.cases = ko.observable();
-    self.location = ko.observable();
-    self.myCityDataWithIncidences = ko.observable();
+    self.mLocationData = ko.observable();
 
     //let myCookie = getCookie(conCookieName);
     //if (!myCookie) {
@@ -31,61 +27,51 @@ function viewModel() {
     let myLocations = [conHockenheimLocation, conHeidelberg, conKarlsruhe, conAlfeld, conSpeyer];
     let myLocationsString = myLocations.join("\n");
     self.mLocationString = ko.observable(myLocationsString);
-    //self.mLocationString.subscribe(function (pVal) {
-    //    setCookie(conCookieName, pVal);
-    //});
-    self.mCurrentLocation = ko.observable();
+    self.mDaysBack = ko.observable(conDaysBack);
+    self.mDaysBack.subscribe(function (pVal) {
+        InitializeData(self.mLocationString());
+    });
 
     self.mJsonString = ko.observable("");
     self.mShowJson = ko.observable(false);
     self.onShowJsonClick = () => { self.mShowJson(!self.mShowJson()); };
 
     self.onLocationClick = function () {
-        let myLocations = [];
-        let myLines = self.mLocationString().split("\n");
-        for (let iLine of myLines) {
-            mySplit = iLine.split(";");
-            myLocations = myLocations.concat(mySplit);
-        }
-        let myLocString = myLocations.length > 0 ? myLocations[myLocations.length - 1] : undefined;
-        InitializeData(myLocString);
+        InitializeData(self.mLocationString());
     }
     self.onCurrentLocationClick = function () {
         InitializeData();
     }
 
-    //InitializeData(conHockenheimLocation);
-    InitializeData(conHockenheimLocation);
+    InitializeData(self.mLocationString());
 
     async function InitializeData(pLocationString) {
-        let location = await getLocation(pLocationString);
-        //let myCurrLocation = await getLocationCurrent();
-        //self.mLocationString(location.latitude + "," + location.longitude);
-        showObject(location, "location from getLocationCurrent");
+        let locations = await getLocations(pLocationString);
 
-        setDataFromLocation(location);
+        setDataFromLocation(locations);
     }
 
-    async function setDataFromLocation(pLocation) {
+    async function setDataFromLocation(pLocations) {
 
         try {
-            var { cityName, myEinwohnerZahl, beds, freeBeds, cases, myCityDataWithIncidences } = await getDataFromServer(pLocation);
-            self.cityName(cityName);
-            self.location(pLocation);
-            self.myEinwohnerZahl(myEinwohnerZahl.toLocaleString("DE"));
-            self.beds(beds);
-            self.freeBeds(freeBeds);
-            self.cases(cases);
-            self.myCityDataWithIncidences(myCityDataWithIncidences);
-            self.mJsonString(JSON.stringify(myCityDataWithIncidences, null, 2));
+            let myLocDatas = [];
+            for (let iEle of pLocations) {
+                //var { cityName, myEinwohnerZahl, beds, freeBeds, cases, myCityDataWithIncidences } = await getDataFromServer(pLocation);
+                let myLocData = await getDataFromServer(iEle, self.mDaysBack());
+                myLocDatas.push(myLocData);
+            }
 
-            RenderChart(cityName, myCityDataWithIncidences);
+            self.mJsonString(JSON.stringify(myLocDatas, null, 2));
+            self.mLocationData(myLocDatas);
+
+            RenderChart(myLocDatas);
         } catch (e) {
             alert(e);
         }
     }
+
 };
-function RenderChart(pCityName, pCityDataWithIncidences) {
+function RenderChart(pCityDataWithIncidences) {
     //<tr data-bind="with:attributes">
     //    <td data-bind="text: (new Date(Meldedatum)).toLocaleDateString('DE')"></td>
     //    <td data-bind="text: Incidence"></td>
@@ -96,38 +82,61 @@ function RenderChart(pCityName, pCityDataWithIncidences) {
     //    <td data-bind="text: AnzahlGenesen"></td>
     //    <td data-bind="text: SummeGenesen"></td>
     //</tr>
-    let i = 0;
-    let myChartData = pCityDataWithIncidences.map(function (pEle) {
-        //let myAttributes = pEle.attributes;        
-        let myDataPoint = {
-            x: ++i,
-            y: pEle.attributes.Incidence,
-            label: (new Date(pEle.attributes.Meldedatum)).toLocaleDateString('DE')
+    let myChartData = pCityDataWithIncidences.map(function (pCity) {
+        let myCity = {
+            name: pCity.cityName,
+            type: "spline",
+            //yValueFormatString: "#0.## °C",
+            showInLegend: true,
+            dataPoints: pCity.myCityDataWithIncidences.map(function (pDay) {
+                let myDayData = { x: new Date(pDay.attributes.Meldedatum), y: pDay.attributes.Incidence };
+                return myDayData;
+            })
         };
-        return myDataPoint;
-    }).slice(0, 500);
-    var chart = new CanvasJS.Chart("chartContainer",
-        {
-            title: {
-                text: `Incidences for ${pCityName}`
-            },
-            
-            data: [
-                {
-                    dataPoints: myChartData
-                }
-            ]
-        });
+        return myCity;
+    });
+
+    var chart = new CanvasJS.Chart("chartContainer", {
+        animationEnabled: true,
+        title: {
+            text: "Daily Incidences for Different Cities"
+        },
+        axisX: {
+            valueFormatString: "DD.MMM"
+        },
+        axisY: {
+            title: "Incidence"
+        },
+        legend: {
+            cursor: "pointer",
+            fontSize: 16,
+            itemclick: toggleDataSeries
+        },
+        toolTip: {
+            shared: true
+        },
+        data: myChartData
+    });
 
     chart.render();
+    function toggleDataSeries(e) {
+        if (typeof (e.dataSeries.visible) === "undefined" || e.dataSeries.visible) {
+            e.dataSeries.visible = false;
+        }
+        else {
+            e.dataSeries.visible = true;
+        }
+        chart.render();
+    }
 }
+
 
 // #region server functions
 /**
  * get RKI data for certain location: { cityName, beds, freeBeds, cases, myCityDataWithIncidences };
  * @param {any} location
  */
-async function getDataFromServer(location) {
+async function getDataFromServer(location, pDaysBack) {
     const DAY_IN_MICROSECONDS = 24 * 60 * 60 * 1000;
 
     let locationData = await getLocationData(location);
@@ -146,12 +155,11 @@ async function getDataFromServer(location) {
     const usedBeds = diviAttrs.betten_belegt;
     const cases = diviAttrs.faelle_covid_aktuell;
 
-    const conDaysBack = 60;
-    const myDateDaysBack = new Date(new Date().getTime() - conDaysBack * DAY_IN_MICROSECONDS);
+    const myDateDaysBack = new Date(new Date().getTime() - pDaysBack * DAY_IN_MICROSECONDS);
     const myDateDaysBackString = ('0' + (myDateDaysBack.getMonth() + 1)).slice(-2) + '-' + ('0' + myDateDaysBack.getDate()).slice(-2) + '-' + myDateDaysBack.getFullYear();
 
     let cityData = await getCityData(county, myDateDaysBackString);
-    // calculate incidence in place.
+
     let myCityDataWithIncidences = calcIncidences(cityData, myEinwohnerZahl);
     return { cityName, myEinwohnerZahl, beds, freeBeds, cases, myCityDataWithIncidences };
 
@@ -263,24 +271,31 @@ function getPath() {
  * get location from string ("latitude,longitude") or from current location 
  * @param {any} myArgs
  */
-async function getLocation(myArgs) {
-    let location;
+async function getLocations(myArgs) {
     if (myArgs) {
-        let location = getLocationFromString(myArgs);
-        console.log('get lat/lon from args ' + location.latitude + " " + location.longitude);
-        return location;
+        let locations = getLocationsFromString(myArgs);
+        console.log('get lat/lon from args' + myArgs);
+        return locations;
     } else {
         try {
             let location = await getLocationCurrent();
             console.log('get current lat/lon ' + location.latitude + " " + location.longitude);
             //saveIncidenceLatLon(location);
-            return location;
+            return [location];
         } catch (e) {
+            let location = [getSavedIncidenceLatLon()];
             console.log('using saved lat/lon ' + location.latitude + " " + location.longitude);
-            location = getSavedIncidenceLatLon();
+            return [location];
         }
     }
-    return location;
+}
+
+function getLocationsFromString(pLocationString) {
+    let myLines = pLocationString.split("\n");
+    let myLocations = myLines.map(function (pLocStr) {
+        return getLocationFromString(pLocStr);
+    });
+    return myLocations;
 }
 
 // this is how it is done in Scriptable
@@ -290,10 +305,11 @@ async function getLocation(myArgs) {
 //}
 
 function getLocationFromString(pArgs) {
-    const fixedCoordinates = pArgs.split(',').map(function (str) { return parseFloat(str); });
+    const myParts = pArgs.split(',');
     let location = {
-        latitude: fixedCoordinates[0],
-        longitude: fixedCoordinates[1]
+        latitude: parseFloat(myParts[0]),
+        longitude: parseFloat(myParts[1]),
+        name: myParts[2]
     };
     return location;
 }
@@ -345,51 +361,4 @@ function showObject(pObject, title) {
             console.log(`${pObject}`);
         }
     }
-}
-
-/**
-* set cookie
-* https://www.w3schools.com/js/js_cookies.asp
-* @param {string} cname cookie name
-* @param {string} cvalue cookie value
-* @param {number} exDays number of days to expire (default 360 days)
-* @param {number} exHours number of hours to expire (default 360 days)
-* @param {number} exMinutes number of minutes to expire (default 360 days) 
-*/
-function setCookie(cname, cvalue, exDays, exHours, exMinutes) {
-    if (exDays === undefined) {
-        exDays = 360;
-    }
-    if (exHours === undefined) {
-        exHours = 0;
-    }
-    if (exMinutes === undefined) {
-        exMinutes = 0;
-    }
-    var myPlus = (exDays * 24 * 60 * 60 * 1000) + exHours * 60 * 60 * 1000 + exMinutes * 60 * 1000;
-    var d = new Date();
-    d.setTime(d.getTime() + myPlus);
-    var expires = "expires=" + d.toUTCString();
-    var myValue = cvalue === null ? null : encodeURIComponent(cvalue);
-    //if (cname === "qknordField") {
-    //    console.log(myValue);
-    //    confirm(cname + "-" + myValue);
-    //}
-    document.cookie = cname + "=" + myValue + ";" + expires + ";path=/";
-}
-
-function getCookie(cname) {
-    var name = cname + "=";
-    var decodedCookie = decodeURIComponent(document.cookie);
-    var ca = decodedCookie.split(';');
-    for (var i = 0; i < ca.length; i++) {
-        var c = ca[i];
-        while (c.charAt(0) === ' ') {
-            c = c.substring(1);
-        }
-        if (c.indexOf(name) === 0) {
-            return c.substring(name.length, c.length);
-        }
-    }
-    return "";
 }

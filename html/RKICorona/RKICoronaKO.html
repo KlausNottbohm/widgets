@@ -21,40 +21,46 @@
     <div id="Main">
         <div style="background-color:blanchedalmond; padding:15px">
             <textarea type="text" data-bind="value:mLocationString" cols="80" rows="10"></textarea>
-            <button data-bind="click: onLocationClick">Get data</button>
             <br />
+            <span>Days back: </span>
+            <input type="text" data-bind="value:mDaysBack" />
+            <br />
+            <button data-bind="click: onLocationClick">Get data</button>
             <button data-bind="click: onCurrentLocationClick">Get data for current location</button>
             <button data-bind="click:onShowJsonClick">Toggle JSON data</button>
         </div>
 
-        <h3 data-bind="text: cityName"></h3>
-        <div>
-            <span>Location (latitude, longitude)</span>
-            <span data-bind="text:location()?.latitude"></span>
-            <span>,</span>
-            <span data-bind="text:location()?.longitude"></span>
-        </div>
-        <div>
-            <span>EinwohnerZahl</span>
-            <span data-bind="text:myEinwohnerZahl()"></span>
-        </div>
-        <div>
-            <span>beds</span>
-            <span data-bind="text:beds"></span>
-        </div>
-        <div>
-            <span>freeBeds</span>
-            <span data-bind="text:freeBeds"></span>
-        </div>
-        <div>
-            <span>cases</span>
-            <span data-bind="text:cases"></span>
-        </div>
         <br />
-        <div id="chartContainer" style="height: 300px; width: 100%;">
+        <div id="chartContainer" style="height: 500px; width: 100%;">
         </div>
 
-        <table style="margin:10px">
+        <!-- data for city -->
+        <!--<div>
+            <h3 data-bind="text: cityName"></h3>
+            <div>
+                <span>Location (latitude, longitude)</span>
+                <span data-bind="text:location()?.latitude"></span>
+                <span>,</span>
+                <span data-bind="text:location()?.longitude"></span>
+            </div>
+            <div>
+                <span>EinwohnerZahl</span>
+                <span data-bind="text:myEinwohnerZahl()"></span>
+            </div>
+            <div>
+                <span>beds</span>
+                <span data-bind="text:beds"></span>
+            </div>
+            <div>
+                <span>freeBeds</span>
+                <span data-bind="text:freeBeds"></span>
+            </div>
+            <div>
+                <span>cases</span>
+                <span data-bind="text:cases"></span>
+            </div>
+        </div>-->
+        <!--<table style="margin:10px">
             <thead>
                 <tr>
                     <th>Date</th>
@@ -79,7 +85,7 @@
                     <td data-bind="text: SummeGenesen"></td>
                 </tr>
             </tbody>
-        </table>
+        </table>-->
 
         <textarea rows="40" cols="80" data-bind="text: mJsonString, visible: mShowJson"></textarea>
     </div>
