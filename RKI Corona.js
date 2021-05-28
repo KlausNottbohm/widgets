@@ -1,4 +1,4 @@
-﻿// Variables used by Scriptable.
+// Variables used by Scriptable.
 // These must be at the very top of the file. Do not edit.
 // icon-color: deep-brown; icon-glyph: id-card;
 // Variables used by Scriptable.
@@ -6,7 +6,7 @@
 // icon-color: deep-gray; icon-glyph: magic;
 // Licence: Robert Koch-Institut (RKI), dl-de/by-2-0
 //
-const conVersion = "210525";
+const conVersion = "210528";
 
 // ---------------------------
 // do not edit after this line
@@ -79,15 +79,15 @@ async function createWidget() {
             latitude: fixedCoordinates[0],
             longitude: fixedCoordinates[1]
         };
-        console.log('get fixed lat/lon ' + location.latitude + " " + location.longitude);
+        console.log('get fixed lat/lon ' + location?.latitude + " " + location?.longitude);
     } else {
         Location.setAccuracyToThreeKilometers();
         try {
             location = await Location.current();
-            console.log('get current lat/lon ' + location.latitude + " " + location.longitude);
+            console.log('get current lat/lon ' + location?.latitude + " " + location?.longitude);
             saveIncidenceLatLon(location);
         } catch (e) {
-            console.log('using saved lat/lon ' + location.latitude + " " + location.longitude);
+            console.log('using saved lat/lon ' + location?.latitude + " " + location?.longitude);
             location = getSavedIncidenceLatLon();
         }
     }
