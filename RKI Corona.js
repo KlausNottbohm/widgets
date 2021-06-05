@@ -6,7 +6,7 @@
 // icon-color: deep-gray; icon-glyph: magic;
 // Licence: Robert Koch-Institut (RKI), dl-de/by-2-0
 //
-const conVersion = "210528";
+const conVersion = "210605";
 
 // ---------------------------
 // do not edit after this line
@@ -123,6 +123,7 @@ async function createWidget() {
     const usedBeds = diviAttr.betten_belegt;
     const cases = diviAttr.faelle_covid_aktuell;
     const list = new ListWidget();
+    list.url = "https://bettingwebapi.azurewebsites.net/RKICorona/RKICoronaKO.html";
     const date = new Date();
     date.setTime(date.getTime() - 21 * DAY_IN_MICROSECONDS);
     const minDate = ('0' + (date.getMonth() + 1)).slice(-2) + '-' + ('0' + date.getDate()).slice(-2) + '-' + date.getFullYear();
