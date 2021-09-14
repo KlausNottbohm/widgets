@@ -1,3 +1,10 @@
+9.6.21
+. Wetter:
+    https://dev.meteostat.net/terms.html#limitation-of-liability
+        curl --header "x-api-key: utwg1QE0yN2eTDkqwICETrkt1C78CSpj" "https://api.meteostat.net/v2/stations/meta?id=10637"
+        API key: utwg1QE0yN2eTDkqwICETrkt1C78CSpj
+    https://www.dwd.de/EN/ourservices/opendata/opendata.html
+
 25.5.21
 . https://canvasjs.com/docs/charts/chart-types/html5-bar-chart/
 10.5.21

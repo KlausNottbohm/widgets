@@ -123,8 +123,8 @@ async function createWidget() {
     const usedBeds = diviAttr.betten_belegt;
     const cases = diviAttr.faelle_covid_aktuell;
     const list = new ListWidget();
-    // ?add=49.315939,8.541975
-    let myUrl = "https://bettingwebapi.azurewebsites.net/RKICorona/RKICoronaKO.html";
+    // ?add=49.315939,8.541975 
+    let myUrl = "https://klausapps.azurewebsites.net/RKICorona/RKICoronaKO.html";
     if (location) {
         // add current location to chart page
         myUrl = `${myUrl}?add=${location?.latitude},${location?.longitude}`;
