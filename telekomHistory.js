@@ -128,7 +128,7 @@ async function createWidget() {
         //showObject(data, "Data");
         showLink(list, "Rest data/time");
         let myRestData = 100 - data.usedPercentage;
-        let myRestTime = 100 * data.remainingSeconds / (30 * 24 * 60 * 60);
+        let myRestTime = 100 * data.remainingSeconds / (31 * 24 * 60 * 60);
         let myRestText = `${myRestData.toFixed(0)}% / ${myRestTime.toFixed(0)}%`;
         const line2 = list.addText(myRestText);
         line2.font = Font.boldSystemFont(20);
