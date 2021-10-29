@@ -1,6 +1,6 @@
 // Variables used by Scriptable.
 // These must be at the very top of the file. Do not edit.
-const conVersion = "V211030";
+const conVersion = "V211031";
 
 const apiUrl = "https://pass.telekom.de/api/service/generic/v1/status";
 const conTelekomURL = "https://pass.telekom.de";
@@ -32,6 +32,7 @@ async function createWidget() {
     list.addSpacer(10)
 
     try {
+        // ServerData
         // usedVolumeStr: 839, 31 MB
         // remainingTimeStr: 12 Tage 5 Std.
         // hasOffers: true
@@ -53,28 +54,32 @@ async function createWidget() {
         r.headers = {
             "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 13_5_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.1.1 Mobile/15E148 Safari/604.1"
         }
-
-        let data, fresh = 0;
+        /** {data: ServerData, accessTime} */
+        let myStoredData;
+        /** ServerData */
+        let data;
+        /** indicate read from server*/
+        let fresh = false;
         try {
             // Fetch data from pass.telekom.de
             data = await r.loadJSON();
-            //let myStoredData = { data: data, accessTime = new Date().getTime() };
+            myStoredData = { data: data, accessTime: new Date().getTime() };
+            showObject(myStoredData, "fm.writeString");
             // Write JSON to iCloud file
-            fm.writeString(path, JSON.stringify(data, null, 2));
-            fresh = 1;
+            fm.writeString(path, JSON.stringify(myStoredData, null, 2));
+            fresh = true;
         }
         catch (err) {
             try {
                 // if reading from pass.telekom.de not possible-> read data from iCloud file
-                //let myStoredData = JSON.parse(fm.readString(path), null);
-                //if (!myStoredData) {
-                //    const errorList = new ListWidget();
-                //    errorList.addText("Please disable WiFi for initial execution.");
-                //    return errorList;
-                //}
-                //data = myStoredData.data ? myStoredData.data : myStoredData;
-                //let myAccessTime = myStoredData.accessTime ? myStoredData.accessTime : data.usedAt;
-                data = JSON.parse(fm.readString(path), null);
+                myStoredData = JSON.parse(fm.readString(path), null);
+                showObject(fm.readString(path), "fm.readString");
+                if (!myStoredData) {
+                    const errorList = new ListWidget();
+                    errorList.addText("Please disable WiFi for initial execution.");
+                    return errorList;
+                }
+                data = myStoredData.data ? myStoredData.data : myStoredData;
                 if (!data || !data.usedPercentage) {
                     const errorList = new ListWidget();
                     errorList.addText("Please disable WiFi for initial execution.");
@@ -92,50 +97,56 @@ async function createWidget() {
         let myRestData = 100 - data.usedPercentage;
 
         // time = msec
-        let myRestSeconds = (calcEndDate(data) - new Date()) / 1000;
+        let myEndDate = calcEndDate(myStoredData);
+        if (!myEndDate) {
+            const errorList = new ListWidget();
+            errorList.addText("Please disable WiFi for initial execution (no data cached)");
+            return errorList;
+        }
+        let myRestSeconds = (myEndDate.getTime() - new Date().getTime()) / 1000;
         // pack runs 31 days
         const conTotalSeconds = 31 * 24 * 60 * 60;
         let myRestTime = 100 * myRestSeconds / conTotalSeconds;
         let myFixed = myRestTime >= 10 ? 0 : 1;
         let myRestText = `${myRestData.toFixed(0)}% / ${myRestTime.toFixed(myFixed)}%`;
-        const line2 = list.addText(myRestText);
+        const lineRestText = list.addText(myRestText);
 
         //showLink(list, "Used data");
 
         //const line2 = list.addText(data.usedPercentage + "%")
-        line2.font = Font.boldSystemFont(20);
-        line2.textColor = Color.green();
+        lineRestText.font = Font.boldSystemFont(20);
+        lineRestText.textColor = Color.green();
         if (data.usedPercentage >= 75) {
-            line2.textColor = Color.orange();
+            lineRestText.textColor = Color.orange();
         }
         else if (data.usedPercentage >= 90) {
-            line2.textColor = Color.red();
+            lineRestText.textColor = Color.red();
         }
 
         const myRemainingData = 100 - data.usedPercentage;
         // notify if less than LowDays left
         const conRemainingSecondsLow = 60 * 60 * 24 * conRemainingDaysLow;
         const conRemainingSecondsVeryLow = 60 * 60 * conRemainingHoursVeryLow;
-        if (myRemainingData <= conPercentageVeryLow || (data.remainingSeconds && data.remainingSeconds <= conRemainingSecondsVeryLow)) {
+        if (myRemainingData <= conPercentageVeryLow || (myRestSeconds <= conRemainingSecondsVeryLow)) {
             let notify1 = new Notification();
-            let myRemainingHours = (data.remainingSeconds / (60 * 60)).toFixed(0);
+            let myRemainingHours = (myRestSeconds / (60 * 60)).toFixed(0);
             let myString = "Remaining: " + myRemainingData.toString() + "% - " + myRemainingHours + " hours";
             notify1.title = "Telekom data very low!";
             notify1.body = myString;
             notify1.openURL = conTelekomURL;
             await notify1.schedule();
         }
-        else if (myRemainingData <= conPercentageLow || (data.remainingSeconds && data.remainingSeconds <= conRemainingSecondsLow)) {
+        else if (myRemainingData <= conPercentageLow || (myRestSeconds <= conRemainingSecondsLow)) {
             let notify1 = new Notification();
             notify1.title = "Remaining Telekom data";
-            if (data.remainingSeconds < 60 * 60 * 24) {
+            if (myRestSeconds < 60 * 60 * 24) {
                 // less than 1 day-> show hours
-                let myRemaininghours = (data.remainingSeconds / (60 * 60)).toFixed(0);
+                let myRemaininghours = (myRestSeconds / (60 * 60)).toFixed(0);
                 let myString = "Remaining: " + myRemainingData.toString() + "% - " + myRemaininghours + " hours";
                 notify1.body = myString;
             }
             else {
-                let myRemainingDays = (data.remainingSeconds / (60 * 60 * 24)).toFixed(0);
+                let myRemainingDays = (myRestSeconds / (60 * 60 * 24)).toFixed(0);
                 let myString = "Remaining: " + myRemainingData.toString() + "% - " + myRemainingDays + " days";
                 notify1.body = myString;
             }
@@ -143,50 +154,51 @@ async function createWidget() {
             await notify1.schedule();
         }
 
-        const line3 = list.addText(data.usedVolumeStr + " / " + data.initialVolumeStr)
-        line3.font = Font.mediumSystemFont(12)
+        const lineUsedVolume = list.addText(data.usedVolumeStr + " / " + data.initialVolumeStr)
+        lineUsedVolume.font = Font.mediumSystemFont(12)
 
         list.addSpacer(16)
 
-        let line4, line5, line6
-        if (data.remainingSeconds) {
-            let myUntilStack = list.addStack();
-            myUntilStack.spacing = 4;
-            line4 = myUntilStack.addText("Runs until:");
-            line4.font = Font.mediumSystemFont(12);
+        let lineUntilTitle, lineEndDate, lineEndHour
 
-            // calc end of current pack
-            let myEndDate = new Date(new Date(data.usedAt).getTime() + data.remainingSeconds * 1000);
-            line5 = myUntilStack.addDate(myEndDate);
-            line5.font = Font.mediumSystemFont(12);
-            // show hour
-            line6 = myUntilStack.addDate(myEndDate);
-            line6.applyTimeStyle();
-            line6.font = Font.mediumSystemFont(12);
-        }
+        let myUntilStack = list.addStack();
+        myUntilStack.spacing = 4;
+        lineUntilTitle = myUntilStack.addText("Runs until:");
+        lineUntilTitle.font = Font.mediumSystemFont(12);
+
+        // calc end of current pack
+        lineEndDate = myUntilStack.addDate(myEndDate);
+        lineEndDate.font = Font.mediumSystemFont(12);
+        // show hour
+        lineEndHour = myUntilStack.addDate(myEndDate);
+        lineEndHour.applyTimeStyle();
+        lineEndHour.font = Font.mediumSystemFont(12);
+
         list.addSpacer(4);
         let myDateColor = Color.black();
         // Gray out if local data instead of Telekom API data:
-        if (fresh === 0) {
+        if (!fresh) {
             myDateColor = conGrayout;
-            line2.textColor = conGrayout
-            line3.textColor = conGrayout
+            lineRestText.textColor = conGrayout;
+            lineUsedVolume.textColor = conGrayout;
             if (data.remainingTimeStr) {
-                line4.textColor = conGrayout
-                line5.textColor = conGrayout
+                lineUntilTitle.textColor = conGrayout
+                lineEndDate.textColor = conGrayout
+                lineEndHour.textColor = conGrayout
             }
         }
 
         // Add time of last widget refresh:
         addDateLine(new Date(), "App refresh", myDateColor);
-        let myDateFooter = addDateLine(new Date(data.usedAt), "Server refresh", myDateColor);
+        addDateLine(new Date(data.usedAt), "Server refresh", myDateColor);
 
+        // version right aligned
         let myVersiontext = list.addText(`${conVersion}`);
         myVersiontext.font = Font.italicSystemFont(10);
         myVersiontext.rightAlignText();
     }
     catch (err) {
-        list.addText("error")
+        list.addText("error: " + err);
         console.error("Err2");
         console.error(err);
         //showObject(err, "Err2");
@@ -231,9 +243,14 @@ async function createWidget() {
  * calc end date from current + remaining seconds
  * @param {any} data
  */
-function calcEndDate(data) {
+function calcEndDate(pStoredData) {
     // usedAt = msec
-    let myEndDate = data.usedAt + data.remainingSeconds * 1000;
+    if (!pStoredData.data || !pStoredData.accessTime) {
+        showObject(pStoredData, "calcEndDate")
+        return undefined;
+    }
+    let data = pStoredData.data;
+    let myEndDate = new Date(pStoredData.accessTime + data.remainingSeconds * 1000);
     return myEndDate;
 }
 
@@ -267,9 +284,14 @@ function showObject(pObject, title) {
     }
     else {
         if (typeof pObject === "object") {
-            for (var key in pObject) {
-                console.log(key + ": " + pObject[key]);
-            }
+            let myObjString = JSON.stringify(pObject, null, 2);
+            console.log(myObjString);
+            //for (var key in pObject) {
+            //    console.log(key + ": " + pObject[key]);
+            //    if (pObject[key] === "object") {
+
+            //    }
+            //}
         }
         else if (typeof pObject === "function") {
             console.log("Object is a function");
