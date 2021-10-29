@@ -1,6 +1,6 @@
 // Variables used by Scriptable.
 // These must be at the very top of the file. Do not edit.
-const conVersion = "210521";
+const conVersion = "V211029";
 
 const apiUrl = "https://pass.telekom.de/api/service/generic/v1/status";
 const conTelekomURL = "https://pass.telekom.de";
@@ -26,6 +26,7 @@ async function createWidget() {
     let fm = FileManager.local()
     let dir = fm.documentsDirectory()
     let path = fm.joinPath(dir, "scriptable-telekom.json")
+    //console.log(`fm.joinPath ${path}`);
 
     const list = new ListWidget()
     list.addSpacer(10)
@@ -134,10 +135,10 @@ async function createWidget() {
 
         let line4, line5, line6
         if (data.remainingSeconds) {
-            line4 = list.addText("Runs until:");
-            line4.font = Font.mediumSystemFont(12);
             let myUntilStack = list.addStack();
             myUntilStack.spacing = 4;
+            line4 = myUntilStack.addText("Runs until:");
+            line4.font = Font.mediumSystemFont(12);
 
             // calc end of current pack
             let myEndDate = new Date(new Date(data.usedAt).getTime() + data.remainingSeconds * 1000);
@@ -162,8 +163,11 @@ async function createWidget() {
         }
 
         // Add time of last widget refresh:
-        addDateLine(new Date(), "App refresh", myDateColor, true);
-        addDateLine(new Date(data.usedAt), "Server refresh", myDateColor);
+        addDateLine(new Date(), "App refresh", myDateColor);
+        let myDateFooter = addDateLine(new Date(data.usedAt), "Server refresh", myDateColor);
+        myDateFooter.addSpacer(50);
+        let myLine = myDateFooter.addText(`${conVersion}`);
+        myLine.font = Font.italicSystemFont(10);
     }
     catch (err) {
         list.addText("error")
@@ -173,8 +177,13 @@ async function createWidget() {
     }
 
     return list
-
-    function addDateLine(pDate, pTitle, pColor, pShowTime) {
+    /**
+     * adds date to list, date format or time format depending on distance to now. Returns added WidgetStack
+     * @param {any} pDate
+     * @param {any} pTitle
+     * @param {any} pColor
+     */
+    function addDateLine(pDate, pTitle, pColor) {
         const footer = list.addStack();
         footer.layoutHorizontally();
         let myTitle = footer.addText(pTitle);
@@ -189,6 +198,7 @@ async function createWidget() {
             // if older show day
             addDateOrTime(false);
         }
+        return footer;
 
         function addDateOrTime(pShowTime) {
             footer.addSpacer(4);
