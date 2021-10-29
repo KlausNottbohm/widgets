@@ -1,12 +1,12 @@
 // Variables used by Scriptable.
 // These must be at the very top of the file. Do not edit.
-const conVersion = "V211029";
+const conVersion = "V211029-2";
 
 const apiUrl = "https://pass.telekom.de/api/service/generic/v1/status";
 const conTelekomURL = "https://pass.telekom.de";
 
 // antiquewhite
-const conAntiqueWhite = new Color("#faebd7"); 
+const conAntiqueWhite = new Color("#faebd7");
 const conGrayout = Color.darkGray();
 const conPercentageLow = 10;
 const conRemainingDaysLow = 2;
@@ -58,6 +58,7 @@ async function createWidget() {
         try {
             // Fetch data from pass.telekom.de
             data = await r.loadJSON();
+            //let myStoredData = { data: data, accessTime = new Date().getTime() };
             // Write JSON to iCloud file
             fm.writeString(path, JSON.stringify(data, null, 2));
             fresh = 1;
@@ -65,6 +66,14 @@ async function createWidget() {
         catch (err) {
             try {
                 // if reading from pass.telekom.de not possible-> read data from iCloud file
+                //let myStoredData = JSON.parse(fm.readString(path), null);
+                //if (!myStoredData) {
+                //    const errorList = new ListWidget();
+                //    errorList.addText("Please disable WiFi for initial execution.");
+                //    return errorList;
+                //}
+                //data = myStoredData.data ? myStoredData.data : myStoredData;
+                //let myAccessTime = myStoredData.accessTime ? myStoredData.accessTime : data.usedAt;
                 data = JSON.parse(fm.readString(path), null);
                 if (!data || !data.usedPercentage) {
                     const errorList = new ListWidget();
@@ -79,10 +88,16 @@ async function createWidget() {
 
         // now data contains data from server or from local file
         //showObject(data, "Data");
-        showLink(list, "Rest data/time");
+        showLink(list, "Rest data/time", conTelekomURL);
         let myRestData = 100 - data.usedPercentage;
-        let myRestTime = 100 * data.remainingSeconds / (31 * 24 * 60 * 60);
-        let myRestText = `${myRestData.toFixed(0)}% / ${myRestTime.toFixed(0)}%`;
+
+        // time = msec
+        let myRestSeconds = (calcEndDate(data) - new Date()) / 1000;
+        // pack runs 31 days
+        const conTotalSeconds = 31 * 24 * 60 * 60;
+        let myRestTime = 100 * myRestSeconds / conTotalSeconds;
+        let myFixed = myRestTime >= 10 ? 0 : 1;
+        let myRestText = `${myRestData.toFixed(0)}% / ${myRestTime.toFixed(myFixed)}%`;
         const line2 = list.addText(myRestText);
 
         //showLink(list, "Used data");
@@ -101,7 +116,7 @@ async function createWidget() {
         // notify if less than LowDays left
         const conRemainingSecondsLow = 60 * 60 * 24 * conRemainingDaysLow;
         const conRemainingSecondsVeryLow = 60 * 60 * conRemainingHoursVeryLow;
-        if (myRemainingData <= conPercentageVeryLow || (data.remainingSeconds && data.remainingSeconds <= conRemainingSecondsVeryLow)){
+        if (myRemainingData <= conPercentageVeryLow || (data.remainingSeconds && data.remainingSeconds <= conRemainingSecondsVeryLow)) {
             let notify1 = new Notification();
             let myRemainingHours = (data.remainingSeconds / (60 * 60)).toFixed(0);
             let myString = "Remaining: " + myRemainingData.toString() + "% - " + myRemainingHours + " hours";
@@ -188,8 +203,8 @@ async function createWidget() {
         footer.layoutHorizontally();
         let myTitle = footer.addText(pTitle);
         myTitle.font = Font.mediumSystemFont(10);
-        myTitle.textColor = pColor; 
-        let myHoursSince = (new Date() - pDate) / (1000 * 60 * 60); 
+        myTitle.textColor = pColor;
+        let myHoursSince = (new Date() - pDate) / (1000 * 60 * 60);
         if (myHoursSince <= 24) {
             // if today, show time
             addDateOrTime(true);
@@ -211,15 +226,24 @@ async function createWidget() {
         }
     }
 }
+/**
+ * calc end date from current + remaining seconds
+ * @param {any} data
+ */
+function calcEndDate(data) {
+    // usedAt = msec
+    let myEndDate = data.usedAt + data.remainingSeconds * 1000;
+    return myEndDate;
+}
 
-function showLink(widget, title) {
+function showLink(widget, title, pURL) {
     widget.addSpacer(8)
     // Add button to open documentation
     let linkSymbol = SFSymbol.named("arrow.up.forward")
     let footerStack = widget.addStack()
     let linkStack = footerStack.addStack()
     // if the widget is small, link does not work!
-    linkStack.url = conTelekomURL;
+    linkStack.url = pURL;
     let linkElement = linkStack.addText(title)
     linkElement.font = Font.title2(); //Font.mediumSystemFont(13)
     linkElement.textColor = Color.blue()
