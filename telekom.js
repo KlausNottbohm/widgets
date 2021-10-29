@@ -1,6 +1,6 @@
 // Variables used by Scriptable.
 // These must be at the very top of the file. Do not edit.
-const conVersion = "V211029-2";
+const conVersion = "V211030";
 
 const apiUrl = "https://pass.telekom.de/api/service/generic/v1/status";
 const conTelekomURL = "https://pass.telekom.de";
@@ -180,9 +180,10 @@ async function createWidget() {
         // Add time of last widget refresh:
         addDateLine(new Date(), "App refresh", myDateColor);
         let myDateFooter = addDateLine(new Date(data.usedAt), "Server refresh", myDateColor);
-        myDateFooter.addSpacer(50);
-        let myLine = myDateFooter.addText(`${conVersion}`);
-        myLine.font = Font.italicSystemFont(10);
+
+        let myVersiontext = list.addText(`${conVersion}`);
+        myVersiontext.font = Font.italicSystemFont(10);
+        myVersiontext.rightAlignText();
     }
     catch (err) {
         list.addText("error")
