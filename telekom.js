@@ -1,6 +1,6 @@
 // Variables used by Scriptable.
 // These must be at the very top of the file. Do not edit.
-const conVersion = "V211031";
+const conVersion = "V211111-4";
 
 const apiUrl = "https://pass.telekom.de/api/service/generic/v1/status";
 const conTelekomURL = "https://pass.telekom.de";
@@ -23,7 +23,9 @@ Script.setWidget(widget)
 Script.complete()
 
 async function createWidget() {
-    let fm = FileManager.local()
+    // local did not reliably work on 11.11.2021
+    //let fm = FileManager.local()
+    let fm = FileManager.iCloud()
     let dir = fm.documentsDirectory()
     let path = fm.joinPath(dir, "scriptable-telekom.json")
     //console.log(`fm.joinPath ${path}`);
@@ -63,26 +65,36 @@ async function createWidget() {
         try {
             // Fetch data from pass.telekom.de
             data = await r.loadJSON();
+            //showObject(data, "r.loadJSON");
             myStoredData = { data: data, accessTime: new Date().getTime() };
-            showObject(myStoredData, "fm.writeString");
+            let myStoredStringWrite = JSON.stringify(myStoredData, null, 2);
             // Write JSON to iCloud file
-            fm.writeString(path, JSON.stringify(myStoredData, null, 2));
+            fm.writeString(path, myStoredStringWrite);
+            let myStoredStringRead = fm.readString(path);
+            if (myStoredStringRead !== myStoredStringWrite) {
+                showObject(myStoredStringRead, "fm.readString(path)");
+                showObject(myStoredStringRead, "fm.readString(path)");
+                const errorList = new ListWidget();
+                errorList.addText("Internal Error: myStoredStringRead !== myStoredStringWrite");
+                return errorList;
+            }
             fresh = true;
         }
         catch (err) {
+            showObject(err, "catch (err)");
             try {
                 // if reading from pass.telekom.de not possible-> read data from iCloud file
                 myStoredData = JSON.parse(fm.readString(path), null);
-                showObject(fm.readString(path), "fm.readString");
+                showObject(myStoredData, "fm.readString");
                 if (!myStoredData) {
                     const errorList = new ListWidget();
-                    errorList.addText("Please disable WiFi for initial execution.");
+                    errorList.addText("Please disable WiFi for initial execution (1)");
                     return errorList;
                 }
-                data = myStoredData.data ? myStoredData.data : myStoredData;
+                data = myStoredData.data; // ? myStoredData.data : myStoredData;
                 if (!data || !data.usedPercentage) {
                     const errorList = new ListWidget();
-                    errorList.addText("Please disable WiFi for initial execution.");
+                    errorList.addText("Please disable WiFi for initial execution (2)");
                     return errorList;
                 }
             } catch (errInner) {
