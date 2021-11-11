@@ -1,6 +1,6 @@
 // Variables used by Scriptable.
 // These must be at the very top of the file. Do not edit.
-const conVersion = "V211111-4";
+const conVersion = "V211111-5";
 
 const apiUrl = "https://pass.telekom.de/api/service/generic/v1/status";
 const conTelekomURL = "https://pass.telekom.de";
@@ -66,7 +66,7 @@ async function createWidget() {
             // Fetch data from pass.telekom.de
             data = await r.loadJSON();
             //showObject(data, "r.loadJSON");
-            myStoredData = { data: data, accessTime: new Date().getTime() };
+            myStoredData = { version: `Written by telekom.js version: ${conVersion}`, data: data, accessTime: new Date().getTime(), accessString: new Date().toString() };
             let myStoredStringWrite = JSON.stringify(myStoredData, null, 2);
             // Write JSON to iCloud file
             fm.writeString(path, myStoredStringWrite);
