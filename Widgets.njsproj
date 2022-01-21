@@ -47,6 +47,9 @@
     <Content Include="html\telekomAnalyze.html">
       <SubType>Code</SubType>
     </Content>
+    <Content Include="OverdueDocs.js">
+      <SubType>Code</SubType>
+    </Content>
     <Content Include="Random Scriptable API 1.js" />
     <Content Include="RKI CoronaNeighbors.js" />
     <Content Include="RKI Corona.js">
