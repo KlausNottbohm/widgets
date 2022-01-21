@@ -1,7 +1,7 @@
 
 // Variables used by Scriptable.
 // These must be at the very top of the file. Do not edit.
-const conVersion = "V220121-1";
+const conVersion = "V220121-2";
 
 const conDocArchURL = "https://docarchive.azurewebsites.net/app/document";
 
@@ -29,10 +29,15 @@ async function createWidget() {
     const list = new ListWidget();
     list.addSpacer(5);
     let myTitle = list.addText("DocArch overdue check");
-    myTitle.font = Font.boldSystemFont(20);
+    myTitle.font = Font.title1();
 
     try {
-        let myOverdueCount = await getOverdueCount();
+        let { myUser, myPassword } = getUserParameter();
+        let myUserLine = list.addText("for: " + myUser);
+        myUserLine.font = Font.subheadline();
+        list.addSpacer(15);
+
+        let myOverdueCount = await getOverdueCount(myUser, myPassword);
         console.log(`createWidget getOverdueCount: ${myOverdueCount}`);
         list.url = conDocArchURL;
 
@@ -47,12 +52,13 @@ async function createWidget() {
             notify.title = `DocArch overdue check`;
             notify.body = myOverdueText;
             notify.openURL = conDocArchURL;
+            notify.setDailyTrigger(8, 0, false);
             await notify.schedule();
         }
         else {
             myOverdueTextline.textColor = Color.green();
         }
-        list.addSpacer(4);
+        list.addSpacer(14);
         let myDateColor = Color.black();
         // Add time of last widget refresh:
         addDateLine(list, new Date(), "App refresh", myDateColor);
@@ -154,26 +160,12 @@ function showObject(pObject, title) {
     }
 }
 /** get count of overdue docs on docArchive */
-async function getOverdueCount() {
+async function getOverdueCount(pUser, pPassword) {
     try {
         //https://docarchive.azurewebsites.net/app/api/getoverduecount?Pusername=klaus@nottbohm.net&ppassword=asdlkj
         const apiUrl = (pUser, pPassword) => `https://docarchive.azurewebsites.net/app/api/getoverduecount?pUserName=${pUser}&pPassword=${pPassword}`;
 
-        let myArgs = args.widgetParameter;
-        //myArgs = "klaus@nottbohm.net,asdlkj";
-        let myUser = "klaus@nottbohm.net";
-        let myPassword = "asdlkj";
-
-        if (myArgs) {
-            const myArguments = myArgs.split(',');
-            myUser = myArguments[0];
-            myPassword = myArguments[1];
-            console.log('args: ' + myUser + " " + myPassword);
-        }
-        else {
-            console.log('From constant: ' + myUser + " " + myPassword);
-        }
-        let myURL = apiUrl(myUser, myPassword);
+        let myURL = apiUrl(pUser, pPassword);
         console.log(myURL);
         const myOverdueCountRequest = new Request(myURL);
         //myOverdueCountRequest.allowInsecureRequest = true;
@@ -193,4 +185,22 @@ async function getOverdueCount() {
         console.log("catch getOverdueCount" + e);
         throw e;
     }
+}
+
+function getUserParameter() {
+    let myArgs = args.widgetParameter;
+    //myArgs = "klaus@nottbohm.net,asdlkj";
+    let myUser = "klaus@nottbohm.net";
+    let myPassword = "asdlkj";
+
+    if (myArgs) {
+        const myArguments = myArgs.split(',');
+        myUser = myArguments[0];
+        myPassword = myArguments[1];
+        console.log('args: ' + myUser + " " + myPassword);
+    }
+    else {
+        console.log('From constant: ' + myUser + " " + myPassword);
+    }
+    return { myUser, myPassword };
 }
