@@ -1,17 +1,13 @@
 
 // Variables used by Scriptable.
 // These must be at the very top of the file. Do not edit.
-const conVersion = "V220120";
+const conVersion = "V220121-1";
 
 const conDocArchURL = "https://docarchive.azurewebsites.net/app/document";
 
 // antiquewhite
 const conAntiqueWhite = new Color("#faebd7");
-const conGrayout = Color.darkGray();
-const conPercentageLow = 10;
-const conRemainingDaysLow = 2;
-const conPercentageVeryLow = 1;
-const conRemainingHoursVeryLow = 6;
+
 let widget;
 try {
     widget = await createWidget();
@@ -24,6 +20,7 @@ widget.backgroundColor = conAntiqueWhite;
 if (!config.runsInWidget) {
     await widget.presentLarge()
 }
+await widget.presentMedium();
 
 Script.setWidget(widget)
 Script.complete()
@@ -43,7 +40,6 @@ async function createWidget() {
         const myOverdueTextline = list.addText(myOverdueText);
 
         myOverdueTextline.font = Font.boldSystemFont(14);
-        //lineRestText.textColor = Color.green();
         if (myOverdueCount > 0) {
             showLink(list, "DocArch App", conDocArchURL);
             myOverdueTextline.textColor = Color.red();
@@ -108,21 +104,6 @@ function addDateLine(pList, pDate, pTitle, pColor) {
         }
         timeLabel.textColor = pColor;
     }
-}
-
-/**
- * calc end date from current + remaining seconds
- * @param {any} data
- */
-function calcEndDate(pStoredData) {
-    // usedAt = msec
-    if (!pStoredData.data || !pStoredData.accessTime) {
-        showObject(pStoredData, "calcEndDate")
-        return undefined;
-    }
-    let data = pStoredData.data;
-    let myEndDate = new Date(pStoredData.accessTime + data.remainingSeconds * 1000);
-    return myEndDate;
 }
 
 function showLink(widget, title, pURL) {
@@ -196,10 +177,8 @@ async function getOverdueCount() {
         console.log(myURL);
         const myOverdueCountRequest = new Request(myURL);
         //myOverdueCountRequest.allowInsecureRequest = true;
-        showObject(myOverdueCountRequest, "myOverdueCountRequest");
-        //const myOverdueCount = await myOverdueCountRequest.load();
+
         const myOverdueCount = await myOverdueCountRequest.loadJSON();
-        //showObject(myOverdueCount, "myOverdueCount");
         showObject(myOverdueCount, "myOverdueCount");
         console.log("myOverdueCount " + myOverdueCount);
         console.log("myOverdueCount.Status " + myOverdueCount.Status);
