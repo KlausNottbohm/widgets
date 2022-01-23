@@ -71,6 +71,7 @@
     <Content Include="Umfrageergebnisse.js">
       <SubType>Code</SubType>
     </Content>
+    <Content Include="Water Reminder.js" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="html\" />
