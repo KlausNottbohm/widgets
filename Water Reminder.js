@@ -132,6 +132,7 @@ if (useMoment) {
 }
 
 let lang = getLanguage();
+//let my = "klaus".toLocaleUpperCase();
 
 let fm = FileManager.local();
 let file = fm.joinPath(fm.documentsDirectory(), "waterReminder.json");
