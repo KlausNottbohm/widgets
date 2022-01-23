@@ -151,7 +151,7 @@ function jsonReviver(k, v) {
 		v.type.toLowerCase() === "date" && 
 		v.value ? 
 			new Date(v.value) : 
-			k === "drunken" && v == null ?
+			k === "drunken" && v === null ?
 				0 :
 				v;
 }

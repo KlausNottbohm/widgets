@@ -46,14 +46,32 @@ async function createWidget() {
 
         myOverdueTextline.font = Font.boldSystemFont(14);
         if (myOverdueCount > 0) {
+            let myLastNotify = 0;
+            let fm = FileManager.local();
+            let file = fm.joinPath(fm.documentsDirectory(), "OverdueDocs.json");
+
+            try {
+                myLastNotify = JSON.parse(fm.readString(file));
+                log("myLastNotify: " + new Date(myLastNotify).toString());
+            } catch (e) {
+                log("FileManager error: " + e);
+            }
+            let myMSInADay = 24 * 60 * 60 * 1000;
+            let myNow = new Date().getTime();
+            if (myNow - myLastNotify > myMSInADay) {
+                log("myLastNotify more than a day: " + new Date(myLastNotify).toString());
+                // show only once a day
+                let notify = new Notification();
+                notify.title = `DocArch overdue check`;
+                notify.body = myOverdueText;
+                notify.openURL = conDocArchURL;
+                //notify.setDailyTrigger(8, 0, false);
+                await notify.schedule();
+                fm.writeString(file, JSON.stringify(myNow));
+            }
+
             showLink(list, "DocArch App", conDocArchURL);
             myOverdueTextline.textColor = Color.red();
-            let notify = new Notification();
-            notify.title = `DocArch overdue check`;
-            notify.body = myOverdueText;
-            notify.openURL = conDocArchURL;
-            notify.setDailyTrigger(8, 0, false);
-            await notify.schedule();
         }
         else {
             myOverdueTextline.textColor = Color.green();
