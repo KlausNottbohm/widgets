@@ -7,6 +7,9 @@ const conDocArchURL = "https://docarchive.azurewebsites.net/app/document";
 
 // antiquewhite
 const conAntiqueWhite = new Color("#faebd7");
+const conNameLength = 25;
+const conTableFontSize = 14;
+const conMaxRows = 2;
 
 let widget;
 try {
@@ -20,13 +23,16 @@ widget.backgroundColor = conAntiqueWhite;
 if (!config.runsInWidget) {
     await widget.presentLarge()
 }
-await widget.presentMedium();
+else {
+    await widget.presentMedium();
+}
 
 Script.setWidget(widget)
 Script.complete()
 
 async function createWidget() {
     const list = new ListWidget();
+    list.url = conDocArchURL;
     list.addSpacer(5);
     let myTitle = list.addText("DocArch overdue check");
     myTitle.font = Font.title1();
@@ -36,16 +42,27 @@ async function createWidget() {
         let myUserLine = list.addText("for: " + myUser);
         myUserLine.font = Font.subheadline();
         list.addSpacer(15);
-
-        let myOverdueCount = await getOverdueCount(myUser, myPassword);
+        let myOverdueDocs = await getOverdueDocuments(myUser, myPassword);
+        let myOverdueCount = myOverdueDocs.length; //await getOverdueCount(myUser, myPassword);
         console.log(`createWidget getOverdueCount: ${myOverdueCount}`);
-        list.url = conDocArchURL;
 
         let myOverdueText = myOverdueCount > 0 ? `${myOverdueCount} overdue documents` : "No overdue documents";
         const myOverdueTextline = list.addText(myOverdueText);
+        myOverdueTextline.font = Font.boldSystemFont(18);
 
-        myOverdueTextline.font = Font.boldSystemFont(14);
         if (myOverdueCount > 0) {
+            if (myOverdueCount > conMaxRows) {
+                for (var i = 0; i < conMaxRows; i++) {
+                    let iDoc = myOverdueDocs[i];
+                    addDocRow(iDoc);
+                }
+                addRowWithName("...more");
+            }
+            else {
+                for (let iDoc of myOverdueDocs) {
+                    addDocRow(iDoc);
+                }
+            }
             let myLastNotify = 0;
             let fm = FileManager.local();
             let file = fm.joinPath(fm.documentsDirectory(), "OverdueDocs.json");
@@ -89,11 +106,34 @@ async function createWidget() {
         showObject(err, "catch (err)");
         let myErrorHeader = list.addText("Error");
         myErrorHeader.textColor = Color.red();
-        let myErrorLine = list.addText(err);
-        myErrorLine.textColor = Color.red();
+        //let myErrorLine = list.addText(err);
+        //myErrorLine.textColor = Color.red();
     }
 
     return list
+
+    function addDocRow(iDoc) {
+        var myRow = addRowWithName(iDoc.mDocument.FriendlyName);
+        if (iDoc.mDocument.DueDate) {
+            try {
+                myRow.addSpacer(15);
+                let myDate = new Date(iDoc.mDocument.DueDate);
+                let myDateCell = myRow.addText(myDate.toLocaleDateString());
+                myDateCell.font = Font.italicSystemFont(conTableFontSize);
+                myDateCell.rightAlignText();
+            } catch (e) {
+                console.log("date error: " + iDoc.mDocument.DueDate);
+            }
+        }
+    }
+
+    function addRowWithName(pDocName) {
+        let myRow = list.addStack();
+        let myName = pDocName.length <= conNameLength ? pDocName : pDocName.substr(0, conNameLength - 3) + "...";
+        let myNameCell = myRow.addText(myName);
+        myNameCell.font = Font.boldSystemFont(conTableFontSize);
+        return myRow; 
+    }
 }
 
 /**
@@ -174,6 +214,8 @@ function showObject(pObject, title) {
         }
         else {
             console.log(`${pObject}`);
+            let myObjString = JSON.stringify(pObject, null, 2);
+            console.log(myObjString);
         }
     }
 }
@@ -202,6 +244,36 @@ async function getOverdueCount(pUser, pPassword) {
     } catch (e) {
         console.log("catch getOverdueCount" + e);
         throw e;
+    }
+}
+async function getOverdueDocuments(pUser, pPassword) {
+    try {
+        //https://docarchive.azurewebsites.net/app/api/GetOverdueDocuments?Pusername=klaus@nottbohm.net&ppassword=asdlkj
+        const apiUrl = (pUser, pPassword) => `https://docarchive.azurewebsites.net/app/api/GetOverdueDocuments?pUserName=${pUser}&pPassword=${pPassword}`;
+
+        let myURL = apiUrl(pUser, pPassword);
+        console.log(myURL);
+        const myOverdueCountRequest = new Request(myURL);
+
+        const myResponse = await myOverdueCountRequest.loadJSON();
+        showResponse(myResponse);
+
+        if (myResponse.Status !== "success") {
+            throw new Error(myResponse.Message);
+        }
+        let myDocuments = JSON.parse(myResponse.InfoObject);
+        //for (let iDoc of myDocuments) {
+        //    console.log(iDoc.mDocumentID);
+        //    console.log(iDoc.mDocument.FriendlyName);
+        //    console.log(iDoc.mDocument.DueDate);
+        //}
+        return myDocuments;
+    } catch (e) {
+        console.log("catch getOverdueCount" + e);
+        throw e;
+    }
+    function showResponse(pResponse) {
+        console.log("myOverdueCount.Status " + pResponse.Status);
     }
 }
 
