@@ -1,7 +1,7 @@
 
 // Variables used by Scriptable.
 // These must be at the very top of the file. Do not edit.
-const conVersion = "V220121-2";
+const conVersion = "V220124";
 
 const conDocArchURL = "https://docarchive.azurewebsites.net/app/document";
 
