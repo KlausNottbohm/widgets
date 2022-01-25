@@ -1,9 +1,12 @@
 
 // Variables used by Scriptable.
 // These must be at the very top of the file. Do not edit.
-const conVersion = "V220121-2";
+const conVersion = "V220125";
 
 const conDocArchURL = "https://docarchive.azurewebsites.net/app/document";
+
+const conWeatherURL = "https://klausapps.azurewebsites.net/api/ping/StartPinging";
+const conBettingPingURL = "https://bettingwebapi.azurewebsites.net/api/Ping/GetPingTimeForSystem";
 
 // antiquewhite
 const conAntiqueWhite = new Color("#faebd7");
@@ -27,6 +30,14 @@ Script.setWidget(widget)
 Script.complete()
 
 async function createWidget() {
+    // ping betting and weather
+    try {
+        await issuePings();
+    } catch (e) {
+        console.log("issuePings failed");
+        showObject(e, "issuePings failed");
+    }
+
     const list = new ListWidget();
     list.addSpacer(5);
     let myTitle = list.addText("DocArch overdue check");
@@ -39,7 +50,7 @@ async function createWidget() {
         list.addSpacer(15);
 
         let myOverdueCount = await getOverdueCount(myUser, myPassword);
-        console.log(`createWidget getOverdueCount: ${myOverdueCount}`);
+        //console.log(`createWidget getOverdueCount: ${myOverdueCount}`);
         list.url = conDocArchURL;
 
         let myOverdueText = myOverdueCount > 0 ? `${myOverdueCount} overdue documents` : "No overdue documents";
@@ -161,6 +172,7 @@ function showObject(pObject, title) {
     }
     else {
         if (typeof pObject === "object") {
+            //console.log(`object`);
             let myObjString = JSON.stringify(pObject, null, 2);
             console.log(myObjString);
             //for (var key in pObject) {
@@ -174,8 +186,40 @@ function showObject(pObject, title) {
             console.log("Object is a function");
         }
         else {
-            console.log(`${pObject}`);
+            //console.log(`else`);
+            console.log(`${JSON.stringify(pObject, null, 2)}`);
         }
+    }
+}
+
+/**ping betting and weather */
+async function issuePings() {
+    try {
+        let myResult2 = await issuePing(conBettingPingURL);
+        let myResult = await issuePing(conWeatherURL);
+        return myResult2 + myResult;
+    } catch (e) {
+        showObject(e, "issuePings");
+    }
+}
+/**
+ * launch pURL
+ * @param {any} pURL
+ */
+async function issuePing(pURL) {
+    try {
+        console.log("ping: " + pURL);
+        const myRequest = new Request(pURL);
+
+        const myResponse = await myRequest.loadString();
+        showObject(myResponse, "myResponse");
+
+        return myResponse;
+    } catch (e) {
+        //console.log("catch issuePing " + myURL);
+        showObject(e, "catch issuePing " + pURL);
+        //console.log(e);
+        throw e;
     }
 }
 
@@ -192,17 +236,16 @@ async function getOverdueCount(pUser, pPassword) {
 
         const myOverdueCount = await myOverdueCountRequest.loadJSON();
         showObject(myOverdueCount, "myOverdueCount");
-        console.log("myOverdueCount " + myOverdueCount);
-        console.log("myOverdueCount.Status " + myOverdueCount.Status);
+        //console.log("myOverdueCount.Status " + myOverdueCount.Status);
         if (myOverdueCount.Status !== "success") {
             throw myOverdueCount.Message;
         }
-        console.log("myOverdueCount.InfoObject " + myOverdueCount.InfoObject);
+        //console.log("myOverdueCount.InfoObject " + myOverdueCount.InfoObject);
         let myResult = JSON.parse(myOverdueCount.InfoObject);
         console.log("myResult " + myResult);
         return myResult;
     } catch (e) {
-        console.log("catch getOverdueCount" + e);
+        console.log("catch getOverdueCount " + e);
         throw e;
     }
 }
