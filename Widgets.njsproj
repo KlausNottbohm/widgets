@@ -47,6 +47,7 @@
     <Content Include="html\telekomAnalyze.html">
       <SubType>Code</SubType>
     </Content>
+    <Content Include="OverdueDocsLarge.js" />
     <Content Include="OverdueDocs.js">
       <SubType>Code</SubType>
     </Content>
