@@ -125,10 +125,10 @@ async function createWidget() {
     const list = new ListWidget();
     // ?add=49.315939,8.541975 
     let myUrl = "https://klausapps.azurewebsites.net/RKICorona/RKICoronaKO.html";
-    if (location) {
-        // add current location to chart page
-        myUrl = `${myUrl}?add=${location?.latitude},${location?.longitude}`;
-    }
+    //if (location) {
+    //    // add current location to chart page
+    //    myUrl = `${myUrl}?add=${location?.latitude},${location?.longitude}`;
+    //}
     list.url = myUrl;
     const date = new Date();
     date.setTime(date.getTime() - 21 * DAY_IN_MICROSECONDS);
