@@ -256,7 +256,7 @@ async function getOverdueCount(pUser, pPassword) {
 async function getOverdueDocuments(pUser, pPassword) {
     try {
         //https://docarchive.azurewebsites.net/app/api/GetOverdueDocuments?Pusername=klaus@nottbohm.net&ppassword=asdlkj
-        const apiUrl = (pUser, pPassword) => `https://docarchive.azurewebsites.net/app/api/GetOverdueDocuments?pUserName=${pUser}&pPassword=${pPassword}`;
+        const apiUrl = (pUser, pPassword) => `https://docarchive.azurewebsites.net/app/api/GetOverdueDocumentsInTempSession?pUserName=${pUser}&pPassword=${pPassword}`;
 
         let myURL = apiUrl(pUser, pPassword);
         console.log(myURL);

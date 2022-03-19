@@ -227,7 +227,7 @@ async function issuePing(pURL) {
 async function getOverdueCount(pUser, pPassword) {
     try {
         //https://docarchive.azurewebsites.net/app/api/getoverduecount?Pusername=klaus@nottbohm.net&ppassword=asdlkj
-        const apiUrl = (pUser, pPassword) => `https://docarchive.azurewebsites.net/app/api/getoverduecount?pUserName=${pUser}&pPassword=${pPassword}`;
+        const apiUrl = (pUser, pPassword) => `https://docarchive.azurewebsites.net/app/api/getoverduecountInTempSession?pUserName=${pUser}&pPassword=${pPassword}`;
 
         let myURL = apiUrl(pUser, pPassword);
         console.log(myURL);
@@ -244,11 +244,11 @@ async function getOverdueCount(pUser, pPassword) {
         let myResult = JSON.parse(myOverdueCount.InfoObject);
         console.log("myResult " + myResult);
 
-        const logOutUrl = `https://docarchive.azurewebsites.net/api/Login/Logout`;
-        myOverdueCountRequest.url = logOutUrl;
-        myOverdueCountRequest.method = "delete";
-        let myLogoutResult = await myOverdueCountRequest.loadString();
-        console.log("myLogoutResult " + myLogoutResult);
+        //const logOutUrl = `https://docarchive.azurewebsites.net/api/Login/Logout`;
+        //myOverdueCountRequest.url = logOutUrl;
+        //myOverdueCountRequest.method = "delete";
+        //let myLogoutResult = await myOverdueCountRequest.loadString();
+        //console.log("myLogoutResult " + myLogoutResult);
 
         return myResult;
     } catch (e) {
