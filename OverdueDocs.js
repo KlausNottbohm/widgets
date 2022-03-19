@@ -1,7 +1,7 @@
 
 // Variables used by Scriptable.
 // These must be at the very top of the file. Do not edit.
-const conVersion = "V220125";
+const conVersion = "V220319";
 
 const conDocArchURL = "https://docarchive.azurewebsites.net/app/document";
 
@@ -243,6 +243,13 @@ async function getOverdueCount(pUser, pPassword) {
         //console.log("myOverdueCount.InfoObject " + myOverdueCount.InfoObject);
         let myResult = JSON.parse(myOverdueCount.InfoObject);
         console.log("myResult " + myResult);
+
+        const logOutUrl = `https://docarchive.azurewebsites.net/api/Login/Logout`;
+        myOverdueCountRequest.url = logOutUrl;
+        myOverdueCountRequest.method = "delete";
+        let myLogoutResult = await myOverdueCountRequest.loadString();
+        console.log("myLogoutResult " + myLogoutResult);
+
         return myResult;
     } catch (e) {
         console.log("catch getOverdueCount " + e);
