@@ -1,7 +1,7 @@
 
 // Variables used by Scriptable.
 // These must be at the very top of the file. Do not edit.
-const conVersion = "V220319";
+const conVersion = "V220403";
 
 const conDocArchURL = "https://docarchive.azurewebsites.net/app/document";
 
@@ -38,12 +38,12 @@ async function createWidget() {
     myTitle.font = Font.title1();
 
     try {
-        let { myUser, myPassword } = getUserParameter();
+        let { myUser, myPassword, myMachine } = getUserParameter();
         let myUserLine = list.addText("for: " + myUser);
         myUserLine.font = Font.subheadline();
         list.addSpacer(15);
         let myOverdueDocs = await getOverdueDocuments(myUser, myPassword);
-        let myOverdueCount = myOverdueDocs.length; //await getOverdueCount(myUser, myPassword);
+        let myOverdueCount = await getOverdueCount(myUser, myPassword, myMachine);
         console.log(`createWidget getOverdueCount: ${myOverdueCount}`);
 
         let myOverdueText = myOverdueCount > 0 ? `${myOverdueCount} overdue documents` : "No overdue documents";
@@ -220,36 +220,35 @@ function showObject(pObject, title) {
     }
 }
 /** get count of overdue docs on docArchive */
-async function getOverdueCount(pUser, pPassword) {
+async function getOverdueCount(pUser, pPassword, pMachine) {
     try {
         //https://docarchive.azurewebsites.net/app/api/getoverduecount?Pusername=klaus@nottbohm.net&ppassword=asdlkj
-        const apiUrl = (pUser, pPassword) => `https://docarchive.azurewebsites.net/app/api/getoverduecount?pUserName=${pUser}&pPassword=${pPassword}`;
+        const apiUrl = (pUser, pPassword, pMachine) => `https://docarchive.azurewebsites.net/app/api/getoverduecountInTempSession?pUserName=${pUser}&pPassword=${pPassword}&pMachineName=${pMachine}`;
 
-        let myURL = apiUrl(pUser, pPassword);
+        let myURL = apiUrl(pUser, pPassword, pMachine);
         console.log(myURL);
         const myOverdueCountRequest = new Request(myURL);
         //myOverdueCountRequest.allowInsecureRequest = true;
 
         const myOverdueCount = await myOverdueCountRequest.loadJSON();
         showObject(myOverdueCount, "myOverdueCount");
-        console.log("myOverdueCount " + myOverdueCount);
-        console.log("myOverdueCount.Status " + myOverdueCount.Status);
+        //console.log("myOverdueCount.Status " + myOverdueCount.Status);
         if (myOverdueCount.Status !== "success") {
             throw myOverdueCount.Message;
         }
-        console.log("myOverdueCount.InfoObject " + myOverdueCount.InfoObject);
+        //console.log("myOverdueCount.InfoObject " + myOverdueCount.InfoObject);
         let myResult = JSON.parse(myOverdueCount.InfoObject);
         console.log("myResult " + myResult);
 
-        const logOutUrl = `https://docarchive.azurewebsites.net/api/Login/Logout`;
-        myOverdueCountRequest.url = logOutUrl;
-        myOverdueCountRequest.method = "delete";
-        let myLogoutResult = await myOverdueCountRequest.loadString();
-        console.log("myLogoutResult " + myLogoutResult);
+        //const logOutUrl = `https://docarchive.azurewebsites.net/api/Login/Logout`;
+        //myOverdueCountRequest.url = logOutUrl;
+        //myOverdueCountRequest.method = "delete";
+        //let myLogoutResult = await myOverdueCountRequest.loadString();
+        //console.log("myLogoutResult " + myLogoutResult);
 
         return myResult;
     } catch (e) {
-        console.log("catch getOverdueCount" + e);
+        console.log("catch getOverdueCount " + e);
         throw e;
     }
 }
@@ -286,18 +285,22 @@ async function getOverdueDocuments(pUser, pPassword) {
 
 function getUserParameter() {
     let myArgs = args.widgetParameter;
-    //myArgs = "klaus@nottbohm.net,asdlkj";
+    //myArgs = "klaus@nottbohm.net,asdlkj,iPadKlaus";
     let myUser = "klaus@nottbohm.net";
     let myPassword = "asdlkj";
-
+    let myMachine = "default";
     if (myArgs) {
         const myArguments = myArgs.split(',');
         myUser = myArguments[0];
         myPassword = myArguments[1];
-        console.log('args: ' + myUser + " " + myPassword);
+        if (myArguments[2]) {
+            myMachine = myArguments[2];
+        }
+
+        console.log('args: ' + myUser + " " + myPassword + " " + myMachine);
     }
     else {
         console.log('From constant: ' + myUser + " " + myPassword);
     }
-    return { myUser, myPassword };
+    return { myUser, myPassword, myMachine };
 }

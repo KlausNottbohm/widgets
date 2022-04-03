@@ -44,12 +44,12 @@ async function createWidget() {
     myTitle.font = Font.title1();
 
     try {
-        let { myUser, myPassword } = getUserParameter();
+        let { myUser, myPassword, myMachine } = getUserParameter();
         let myUserLine = list.addText("for: " + myUser);
         myUserLine.font = Font.subheadline();
         list.addSpacer(15);
 
-        let myOverdueCount = await getOverdueCount(myUser, myPassword);
+        let myOverdueCount = await getOverdueCount(myUser, myPassword, myMachine);
         //console.log(`createWidget getOverdueCount: ${myOverdueCount}`);
         list.url = conDocArchURL;
 
@@ -224,12 +224,12 @@ async function issuePing(pURL) {
 }
 
 /** get count of overdue docs on docArchive */
-async function getOverdueCount(pUser, pPassword) {
+async function getOverdueCount(pUser, pPassword, pMachine) {
     try {
         //https://docarchive.azurewebsites.net/app/api/getoverduecount?Pusername=klaus@nottbohm.net&ppassword=asdlkj
-        const apiUrl = (pUser, pPassword) => `https://docarchive.azurewebsites.net/app/api/getoverduecountInTempSession?pUserName=${pUser}&pPassword=${pPassword}`;
+        const apiUrl = (pUser, pPassword, pMachine) => `https://docarchive.azurewebsites.net/app/api/getoverduecountInTempSession?pUserName=${pUser}&pPassword=${pPassword}&pMachineName=${pMachine}`;
 
-        let myURL = apiUrl(pUser, pPassword);
+        let myURL = apiUrl(pUser, pPassword, pMachine);
         console.log(myURL);
         const myOverdueCountRequest = new Request(myURL);
         //myOverdueCountRequest.allowInsecureRequest = true;
@@ -259,18 +259,22 @@ async function getOverdueCount(pUser, pPassword) {
 
 function getUserParameter() {
     let myArgs = args.widgetParameter;
-    //myArgs = "klaus@nottbohm.net,asdlkj";
+    //myArgs = "klaus@nottbohm.net,asdlkj,iPadKlaus";
     let myUser = "klaus@nottbohm.net";
     let myPassword = "asdlkj";
-
+    let myMachine = "default";
     if (myArgs) {
         const myArguments = myArgs.split(',');
         myUser = myArguments[0];
         myPassword = myArguments[1];
-        console.log('args: ' + myUser + " " + myPassword);
+        if (myArguments[2]) {
+            myMachine = myArguments[2];
+        }
+
+        console.log('args: ' + myUser + " " + myPassword + " " + myMachine);
     }
     else {
         console.log('From constant: ' + myUser + " " + myPassword);
     }
-    return { myUser, myPassword };
+    return { myUser, myPassword, myMachine };
 }
