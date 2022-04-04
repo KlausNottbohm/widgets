@@ -1,7 +1,7 @@
 
 // Variables used by Scriptable.
 // These must be at the very top of the file. Do not edit.
-const conVersion = "V220403";
+const conVersion = "V220404";
 
 const conDocArchURL = "https://docarchive.azurewebsites.net/app/document";
 
@@ -285,22 +285,20 @@ async function getOverdueDocuments(pUser, pPassword) {
 
 function getUserParameter() {
     let myArgs = args.widgetParameter;
-    //myArgs = "klaus@nottbohm.net,asdlkj,iPadKlaus";
-    let myUser = "klaus@nottbohm.net";
-    let myPassword = "asdlkj";
-    let myMachine = "default";
+    //myArgs = "user,password,iPad";
     if (myArgs) {
         const myArguments = myArgs.split(',');
-        myUser = myArguments[0];
-        myPassword = myArguments[1];
+        const myUser = myArguments[0];
+        const myPassword = myArguments[1];
+        let myMachine = "default";
         if (myArguments[2]) {
             myMachine = myArguments[2];
         }
 
         console.log('args: ' + myUser + " " + myPassword + " " + myMachine);
+        return { myUser, myPassword, myMachine };
     }
     else {
-        console.log('From constant: ' + myUser + " " + myPassword);
+        throw new Error("no input parameters");
     }
-    return { myUser, myPassword, myMachine };
 }
