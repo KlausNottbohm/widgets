@@ -58,9 +58,7 @@
     </Content>
     <Content Include="package.json" />
     <Content Include="README.md" />
-    <Content Include="Tankstellenpreise.js">
-      <SubType>Code</SubType>
-    </Content>
+    <Content Include="TankstellenPreise.js" />
     <Content Include="telekom.js">
       <SubType>Code</SubType>
     </Content>
