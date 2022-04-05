@@ -1,6 +1,6 @@
 // Variables used by Scriptable.
 // These must be at the very top of the file. Do not edit.
-const conVersion = "V211111-5";
+const conVersion = "V220405telekom";
 
 const apiUrl = "https://pass.telekom.de/api/service/generic/v1/status";
 const conTelekomURL = "https://pass.telekom.de";
@@ -139,7 +139,16 @@ async function createWidget() {
         // notify if less than LowDays left
         const conRemainingSecondsLow = 60 * 60 * 24 * conRemainingDaysLow;
         const conRemainingSecondsVeryLow = 60 * 60 * conRemainingHoursVeryLow;
-        if (myRemainingData <= conPercentageVeryLow || (myRestSeconds <= conRemainingSecondsVeryLow)) {
+        if (myRemainingData <= 0 || (myRestSeconds <= 0)) {
+            let notify1 = new Notification();
+            //let myRemainingHours = (myRestSeconds / (60 * 60)).toFixed(0);
+            notify1.title = "Telekom data empty!";
+            let myString = "Stop WLAN and click here to go to Telekom App";
+            notify1.body = myString;
+            notify1.openURL = conTelekomURL;
+            await notify1.schedule();
+        }
+        else if (myRemainingData <= conPercentageVeryLow || (myRestSeconds <= conRemainingSecondsVeryLow)) {
             let notify1 = new Notification();
             let myRemainingHours = (myRestSeconds / (60 * 60)).toFixed(0);
             let myString = "Remaining: " + myRemainingData.toString() + "% - " + myRemainingHours + " hours";
@@ -150,7 +159,7 @@ async function createWidget() {
         }
         else if (myRemainingData <= conPercentageLow || (myRestSeconds <= conRemainingSecondsLow)) {
             let notify1 = new Notification();
-            notify1.title = "Remaining Telekom data";
+            notify1.title = "Remaining Telekom data low";
             if (myRestSeconds < 60 * 60 * 24) {
                 // less than 1 day-> show hours
                 let myRemaininghours = (myRestSeconds / (60 * 60)).toFixed(0);
