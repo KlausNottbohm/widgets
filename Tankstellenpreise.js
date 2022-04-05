@@ -1,7 +1,7 @@
 // Variables used by Scriptable.
 // These must be at the very top of the file. Do not edit.
 // icon-color: deep-purple; icon-glyph: magic;
-// V220404
+// V220405Tank
 // https://github.com/Necriso/ScriptableWidgets/blob/main/tankstellenpreise.js
 // Check www.scriptables.net for more widgets
 // Use www.scriptdu.de to keep the widget up-to-date
@@ -161,6 +161,12 @@ async function createWidget(data, brand) {
     let myTitle = myTitleStack.addText(`Günstigste Tankstelle im Umkreis von ${radius} km`);
     myTitle.font = Font.boldRoundedSystemFont(12)
     myTitle.textColor = Color.red()
+    //myTitleStack.url = "scriptable:///run/TankstellenPreise"
+    //myTitleStack.url = "https://www.google.com/maps/search/?api=1&query=<lat>,<lng>"
+    //let myMapURL = createGoogleMapMarkerByCoord(attr);
+    let myMapURL = createGoogleMapMarkerByAddress(attr);
+    console.log(`myMapURL ${myMapURL}`);
+    list.url = myMapURL;
 
     let firstLineStack = list.addStack()
 
@@ -225,6 +231,26 @@ async function createWidget(data, brand) {
     addAddressPart(` (${attr.dist} km)`);
 
     return list
+    /**
+     * create google map url from one tankstellen object
+     * @param {any} pTankstellenObject
+     */
+    function createGoogleMapMarkerByCoord(pTankstellenObject) {
+        // https://stackoverflow.com/questions/1801732/how-do-i-link-to-google-maps-with-a-particular-longitude-and-latitude
+        const createMapUrl = (pLat, pLong) => `https://www.google.com/maps/search/?api=1&query=${pLat},${pLong}`;
+        let myMapURL = createMapUrl(pTankstellenObject.lat, pTankstellenObject.lng);
+        return myMapURL;
+    }
+    function createGoogleMapMarkerByAddress(pTankstellenObject) {
+        // https://developers.google.com/maps/documentation/urls/get-started
+        let myQuery = `${pTankstellenObject.street} ${pTankstellenObject.houseNumber}, ${pTankstellenObject.place}`;
+        let myEncQuery = encodeURIComponent(myQuery);
+        const createMapUrl = (pQ) => `https://www.google.com/maps/search/?api=1&query=${pQ}`;
+        let myMapURL = createMapUrl(myEncQuery);
+        // does not work in scriptable
+        //let myIOSQuery = `comgooglemaps://?q=${myEncQuery}`;
+        return myMapURL;
+    }
 
     function addAddressPart(pText) {
         addTextToStack(addressStack, pText);
