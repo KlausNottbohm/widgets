@@ -13,14 +13,24 @@
 // Important: Don't set the radius to big, the tankerkoenig.de endpoint will deliver all stations in the radius which is set,
 // but only one is needed to display, so it will take a long time to fetch data.
 
-let radius, fixedLocation, latitude, longitude, myLocation, brand
+const widgetHeight = 18;
+const widgetWidth = 1720;
+
+/**default radius */
 const conRadius = 5;
+let radius = conRadius, fixedLocation, latitude, longitude, myLocation, brand = "diesel"
 let widgetInput = args.widgetParameter;
 let apiKey = "ea6a2788-eb7c-d68d-914e-b11a471d56cb";
 
+const backColor = Color.dynamic(new Color('FFFFFF'), new Color('111111'));
+const backColor2 = Color.dynamic(new Color('EEEEEE'), new Color('222222'));
+const textColor = Color.dynamic(new Color('000000'), new Color('EDEDED'));
+
+const apiURL = (location, radius, apiKey) => `https://creativecommons.tankerkoenig.de/json/list.php?lat=${location.latitude.toFixed(3)}&lng=${location.longitude.toFixed(3)}&rad=${radius}&sort=dist&type=all&apikey=${apiKey}`
+
 if (widgetInput !== null) {
+    console.log(`widgetInput ${widgetInput}`);
     [radius, fixedLocation, latitude, longitude, brand] = widgetInput.split("|");
-    console.table([radius, fixedLocation, latitude, longitude, brand]);
 
     if (fixedLocation && (!latitude || !longitude)) {
         throw new Error("If fixed location is set you must set latitude and longitude")
@@ -31,19 +41,10 @@ if (widgetInput !== null) {
     console.log(`radius ${radius}`);
 
     if (!brand) {
-        brand = false
+        brand = "diesel";
     }
     if (!fixedLocation) {
-        Location.setAccuracyToThreeKilometers();
-        let location;
-        try {
-            location = await Location.current();
-            console.log('get current lat/lon ' + location?.latitude + " " + location?.longitude);
-        } catch (e) {
-            console.log('using saved lat/lon ' + location?.latitude + " " + location?.longitude);
-            location = getSavedIncidenceLatLon();
-        }
-        myLocation = location;
+        myLocation = await getCurrentLocation();
     } else {
         myLocation = {
             latitude: parseFloat(latitude),
@@ -52,7 +53,20 @@ if (widgetInput !== null) {
     }
 }
 else {
-    radius = conRadius;
+    myLocation = await getCurrentLocation();
+}
+
+let station = await loadStation(apiKey, radius, fixedLocation, myLocation)
+let widget = await createWidget(station, brand)
+
+if (!config.runsInWidget) {
+    await widget.presentLarge()
+}
+
+Script.setWidget(widget)
+Script.complete()
+
+async function getCurrentLocation() {
     Location.setAccuracyToThreeKilometers();
     let location;
     try {
@@ -60,26 +74,10 @@ else {
         console.log('get current lat/lon ' + location?.latitude + " " + location?.longitude);
     } catch (e) {
         console.log('using saved lat/lon ' + location?.latitude + " " + location?.longitude);
-        location = getSavedIncidenceLatLon();
+        location = getDefaultLocation();
     }
-    myLocation = location;
+    return location;
 }
-
-const backColor = Color.dynamic(new Color('FFFFFF'), new Color('111111'));
-const backColor2 = Color.dynamic(new Color('EEEEEE'), new Color('222222'));
-const textColor = Color.dynamic(new Color('000000'), new Color('EDEDED'));
-
-const apiURL = (location, radius, apiKey) => `https://creativecommons.tankerkoenig.de/json/list.php?lat=${location.latitude.toFixed(3)}&lng=${location.longitude.toFixed(3)}&rad=${radius}&sort=dist&type=all&apikey=${apiKey}`
-
-let station = await loadStation(apiKey, radius, fixedLocation, myLocation)
-let widget = await createWidget(station, brand)
-
-if (!config.runsInWidget) {
-    await widget.presentMedium()
-}
-
-Script.setWidget(widget)
-Script.complete()
 
 async function loadStation(apiKey, radius, fixedLocation, myLocation) {
     let location
@@ -106,12 +104,8 @@ async function loadStation(apiKey, radius, fixedLocation, myLocation) {
     return data
 }
 
-const getSavedIncidenceLatLon = () => {
-    //let { fm, path } = getPath();
-    //let data = fm.readString(path);
-    //return JSON.parse(data);
+function getDefaultLocation() {
     const myArgs = "49.0,8.5";
-
     return getLocationFromString(myArgs);
 };
 
@@ -144,14 +138,7 @@ async function createWidget(data, brand) {
         return list
     }
 
-    const stations = data.stations;
-    let selectedStations
-
-    if (brand) {
-        selectedStations = stations.filter(stations => stations['brand'].toLowerCase() === brand.toLowerCase());
-    } else {
-        selectedStations = stations
-    }
+    let selectedStations = data.stations;
 
     const attr = selectedStations[0]
 
@@ -159,78 +146,125 @@ async function createWidget(data, brand) {
 
     let myTitleStack = list.addStack();
     let myTitle = myTitleStack.addText(`Günstigste Tankstelle im Umkreis von ${radius} km`);
-    myTitle.font = Font.boldRoundedSystemFont(12)
+    myTitle.font = Font.boldRoundedSystemFont(15)
     myTitle.textColor = Color.red()
-    //myTitleStack.url = "scriptable:///run/TankstellenPreise"
-    //myTitleStack.url = "https://www.google.com/maps/search/?api=1&query=<lat>,<lng>"
-    //let myMapURL = createGoogleMapMarkerByCoord(attr);
-    let myMapURL = createGoogleMapMarkerByAddress(attr);
-    console.log(`myMapURL ${myMapURL}`);
-    list.url = myMapURL;
+    myTitle.centerAlignText();
 
-    let firstLineStack = list.addStack()
+    drawCheapest(attr);
 
-    let stationName = firstLineStack.addText(attr.brand)
-    stationName.font = Font.boldSystemFont(15)
-    stationName.textColor = textColor
+    let myHorizontalLine = drawLine(new Point(0, 10), new Point(widgetWidth, 10), 10, Color.black())
+    list.addImage(myHorizontalLine.getImage());
 
-    firstLineStack.addSpacer()
-    let stationOpen = firstLineStack.addText(open)
-    stationOpen.font = Font.mediumSystemFont(10)
-    stationOpen.rightAlignText()
+    list.addSpacer(5);
+    let myOtherStack = list.addStack();
+    myOtherStack.backgroundColor = Color.lightGray();
+    myOtherStack.layoutVertically();
 
-    list.addSpacer(5)
+    let myTitleStackOther = myOtherStack.addStack();
+    let myTitleOther = myTitleStackOther.addText(`Andere ${brand}-Preise im Umkreis von ${radius} km`);
+    myTitleOther.font = Font.boldRoundedSystemFont(15)
+    myTitleOther.textColor = Color.red()
+    myTitleOther.centerAlignText();
 
-    let dieselStack = list.addStack()
-    let dieselLabel = dieselStack.addText("Diesel:")
-    dieselLabel.font = Font.boldSystemFont(12)
-    dieselLabel.textColor = textColor
+    let myOtherStations = selectedStations.slice(1, 4);
+    for (let iEle of myOtherStations) {
+        myOtherStack.addSpacer(3);
+        drawOther(myOtherStack, iEle);
+    }
 
-    dieselStack.addSpacer()
-    let dieselPrice = dieselStack.addText(formatValue(attr.diesel))
-    dieselPrice.font = new Font('Menlo', 12)
-    dieselPrice.textColor = textColor
+    return list;
 
-    list.addSpacer(1)
+    function drawCheapest(attr) {
+        let myMapURL = createGoogleMapMarkerByAddress(attr);
+        console.log(`myMapURL ${myMapURL}`);
+        let firstLineStack = list.addStack();
+        firstLineStack.url = myMapURL;
 
-    let e5Stack = list.addStack()
-    let e5Label = e5Stack.addText("Benzin E5:")
-    e5Label.font = Font.boldSystemFont(12)
-    e5Label.textColor = textColor
+        let myName = attr.brand ? attr.brand : attr.name;
+        let stationName = firstLineStack.addText(myName)
+        stationName.lineLimit = 2;
+        stationName.font = Font.boldSystemFont(15)
+        stationName.textColor = textColor
 
-    e5Stack.addSpacer()
-    let e5Price = e5Stack.addText(formatValue(attr.e5))
-    e5Price.font = new Font('Menlo', 12)
-    e5Price.textColor = textColor
+        firstLineStack.addSpacer()
+        let stationOpen = firstLineStack.addText(open)
+        stationOpen.font = Font.mediumSystemFont(10)
+        stationOpen.rightAlignText()
 
-    list.addSpacer(1)
+        list.addSpacer(3);
+        let addressStack = list.addStack();
+        addressStack.url = myMapURL;
 
-    let e10Stack = list.addStack()
-    let e10Label = e10Stack.addText("Benzin E10:")
-    e10Label.font = Font.boldSystemFont(12)
-    e10Label.textColor = textColor
+        addAddressPart(attr.place + ", ");
+        addAddressPart(attr.street);
+        addAddressPart(" " + attr.houseNumber);
+        addAddressPart(` (${attr.dist} km)`);
 
-    e10Stack.addSpacer()
-    let e10Price = e10Stack.addText(formatValue(attr.e10))
-    e10Price.font = new Font('Menlo', 12)
-    e10Price.textColor = textColor
+        list.addSpacer(5);
 
-    list.addSpacer(5)
-    let address = list.addText('Adresse:')
-    address.font = Font.boldSystemFont(12)
-    address.textColor = textColor
+        let dieselStack = list.addStack();
+        let dieselLabel = dieselStack.addText("Diesel:");
+        dieselLabel.font = Font.boldSystemFont(12);
+        dieselLabel.textColor = textColor;
 
-    let addressStack = list.addStack()
+        dieselStack.addSpacer();
+        let dieselPrice = dieselStack.addText(formatValue(attr.diesel));
+        dieselPrice.font = Font.italicSystemFont(12);
+        dieselPrice.textColor = textColor;
 
-    addAddressPart(attr.place + ", ");
+        list.addSpacer(1);
 
-    addAddressPart(attr.street);
+        let e5Stack = list.addStack();
+        let e5Label = e5Stack.addText("Benzin E5:");
+        e5Label.font = Font.boldSystemFont(12);
+        e5Label.textColor = textColor;
 
-    addAddressPart(" " + attr.houseNumber);
+        e5Stack.addSpacer();
+        let e5Price = e5Stack.addText(formatValue(attr.e5));
+        e5Price.font = Font.italicSystemFont(12);
+        e5Price.textColor = textColor;
 
-    addAddressPart(` (${attr.dist} km)`);
+        list.addSpacer(1);
 
-    return list
+        let e10Stack = list.addStack();
+        let e10Label = e10Stack.addText("Benzin E10:");
+        e10Label.font = Font.boldSystemFont(12);
+        e10Label.textColor = textColor;
+
+        e10Stack.addSpacer();
+        let e10Price = e10Stack.addText(formatValue(attr.e10));
+        e10Price.font = Font.italicSystemFont(12);
+        e10Price.textColor = textColor;
+        return addressStack;
+        function addAddressPart(pText) {
+            addTextToStack(addressStack, pText);
+        }
+
+    }
+
+    function drawOther(pOtherStack, pTankstelle) {
+        let myMapURL = createGoogleMapMarkerByAddress(pTankstelle);
+        console.log(`myMapURL ${myMapURL}`);
+        let firstLineStack = pOtherStack.addStack();
+        firstLineStack.url = myMapURL;
+
+        let myName = pTankstelle.brand ? pTankstelle.brand : pTankstelle.name;
+        let stationName = firstLineStack.addText(myName);
+        stationName.font = Font.boldSystemFont(12);
+        stationName.textColor = textColor;
+        firstLineStack.addSpacer(5);
+
+        addTextToStack(firstLineStack, pTankstelle.place);
+        firstLineStack.addSpacer(5);
+        addTextToStack(firstLineStack, ` (${pTankstelle.dist} km)`);
+
+        firstLineStack.addSpacer();
+        let stationOpen = firstLineStack.addText(formatValue(pTankstelle[brand]));
+        stationOpen.font = Font.italicSystemFont(12);
+        stationOpen.rightAlignText();
+
+    }
+
     /**
      * create google map url from one tankstellen object
      * @param {any} pTankstellenObject
@@ -252,13 +286,29 @@ async function createWidget(data, brand) {
         return myMapURL;
     }
 
-    function addAddressPart(pText) {
-        addTextToStack(addressStack, pText);
-    }
-
     function addTextToStack(pAddressStack, pText) {
         let houseNumber = pAddressStack.addText(pText);
         houseNumber.font = Font.lightSystemFont(12);
         houseNumber.textColor = textColor;
     }
+}
+
+function drawLine(point1, point2, width, color) {
+    let drawContext = getDrawContext();
+    const path = new Path();
+    path.move(point1);
+    path.addLine(point2);
+    drawContext.addPath(path);
+    drawContext.setStrokeColor(color);
+    drawContext.setLineWidth(width);
+    drawContext.strokePath();
+    return drawContext;
+}
+
+function getDrawContext() {
+
+    let drawContext = new DrawContext();
+    drawContext.size = new Size(widgetWidth, widgetHeight);
+    drawContext.opaque = false;
+    return drawContext;
 }
