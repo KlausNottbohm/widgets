@@ -14,7 +14,7 @@
 // radius in km|fixedLocation|latitude|longitude (0 or 1) e.g my-api-key|1|1|54.322|10.1355
 // Important: Don't set the radius to big, the tankerkoenig.de endpoint will deliver all stations in the radius which is set,
 // but only one is needed to display, so it will take a long time to fetch data.
-const conVersion = "V220407Tank";
+const conVersion = "V220407-1Tank";
 
 const widgetHeight = 18;
 const widgetWidth = 1720;
@@ -133,6 +133,15 @@ async function loadStation(apiKey, radius, fixedLocation, myLocation) {
 function getDefaultLocation() {
     const myArgs = "49.0,8.5";
     return getLocationFromString(myArgs);
+    function getLocationFromString(pArgs) {
+        const myParts = pArgs.split(',');
+        let location = {
+            latitude: parseFloat(myParts[0]),
+            longitude: parseFloat(myParts[1]),
+            name: myParts[2]
+        };
+        return location;
+    }
 };
 
 function formatValue(value) {
