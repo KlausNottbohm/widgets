@@ -114,20 +114,38 @@ async function loadStation(apiKey, radius, fixedLocation, myLocation) {
     }
     //console.log("");
     //console.log("vor sort");
-    //console.log(data);
-    data.stations = data.stations.filter(function (pVal) { return !!pVal[myFuelType]; });
+    //let myMapped = data.stations.map(function (pVal) {
+    //    return { brand: pVal.brand, price: pVal[myFuelType], dist: pVal.dist, total: calcPrice(pVal) / 50 };
+    //});
+    //console.log(myMapped);
+
+    // sort by total cost
     data.stations.sort(function (left, right) {
-        // sort by price, then radius
-        let myComp = left[myFuelType] - right[myFuelType];
-        if (myComp === 0) {
-            myComp = left.radius - right.radius;
-        }
-        return myComp;
+        return calcTotal(left) - calcTotal(right);
     });
+
+    function calcTotal(pT) {
+        // price for tank full
+        let myTankPrice = 50 * pT[myFuelType];
+        // cost to drive back and forth
+        let myDriveCost = pT.dist * 2 * 0.2;
+        let myTotal = myTankPrice + myDriveCost;
+        //console.log(`myTotal ${myTotal}`);
+        return myTotal;
+    }
+
+    //data.stations.sort(function (left, right) {
+    //    // sort by price, then radius
+    //    let myComp = left[myFuelType] - right[myFuelType];
+    //    if (myComp === 0) {
+    //        myComp = left.radius - right.radius;
+    //    }
+    //    return myComp;
+    //});
     //console.log("");
     //console.log("nach sort");
     //console.log(data);
-    return data;
+    return data
 }
 
 function getDefaultLocation() {

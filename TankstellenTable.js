@@ -1,7 +1,9 @@
 // Variables used by Scriptable.
 // These must be at the very top of the file. Do not edit.
 // icon-color: deep-purple; icon-glyph: magic;
-// V220406Tank
+
+// shows Tankstellen in a table. UITable cannot be displayed in widget, so works only in scriptable app
+//
 // https://github.com/Necriso/ScriptableWidgets/blob/main/tankstellenpreise.js
 // Check www.scriptables.net for more widgets
 // Use www.scriptdu.de to keep the widget up-to-date
@@ -12,6 +14,8 @@
 // radius in km|fixedLocation|latitude|longitude (0 or 1) e.g my-api-key|1|1|54.322|10.1355
 // Important: Don't set the radius to big, the tankerkoenig.de endpoint will deliver all stations in the radius which is set,
 // but only one is needed to display, so it will take a long time to fetch data.
+
+const conVersion = "V220406Tank";
 
 let radius, fixedLocation, latitude, longitude, myLocation, brand
 const conRadius = 5;
