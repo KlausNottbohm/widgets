@@ -14,7 +14,7 @@
 // radius in km|fixedLocation|latitude|longitude (0 or 1) e.g my-api-key|1|1|54.322|10.1355
 // Important: Don't set the radius to big, the tankerkoenig.de endpoint will deliver all stations in the radius which is set,
 // but only one is needed to display, so it will take a long time to fetch data.
-const conVersion = "V220407-1Tank";
+const conVersion = "V220409Tank";
 
 const widgetHeight = 18;
 const widgetWidth = 1720;
@@ -42,7 +42,7 @@ const apiURL = (location, radius, apiKey) => `https://creativecommons.tankerkoen
 
 if (widgetInput !== null) {
     console.log(`widgetInput ${widgetInput}`);
-    [radius, fixedLocation, latitude, longitude, brand] = widgetInput.split("|");
+    [radius, brand, fixedLocation, latitude, longitude] = widgetInput.split(",");
 
     if (fixedLocation && (!latitude || !longitude)) {
         throw new Error("If fixed location is set you must set latitude and longitude")
@@ -85,16 +85,16 @@ Script.setWidget(widget)
 Script.complete()
 
 async function getCurrentLocation() {
-    Location.setAccuracyToThreeKilometers();
-    let location;
     try {
-        location = await Location.current();
+        Location.setAccuracyToThreeKilometers();
+        let location = await Location.current();
         console.log('get current lat/lon ' + location?.latitude + " " + location?.longitude);
+        return location;
     } catch (e) {
+        let location = getDefaultLocation();
         console.log('using saved lat/lon ' + location?.latitude + " " + location?.longitude);
-        location = getDefaultLocation();
+        return location;
     }
-    return location;
 }
 
 async function loadStation(apiKey, radius, fixedLocation, myLocation) {
@@ -116,14 +116,6 @@ async function loadStation(apiKey, radius, fixedLocation, myLocation) {
     //console.log("vor sort");
     //console.log(data);
     data.stations = data.stations.filter(function (pVal) { return !!pVal[myFuelType]; });
-    data.stations.sort(function (left, right) {
-        // sort by price, then radius
-        let myComp = left[myFuelType] - right[myFuelType];
-        if (myComp === 0) {
-            myComp = left.radius - right.radius;
-        }
-        return myComp;
-    });
     //console.log("");
     //console.log("nach sort");
     //console.log(data);
@@ -131,17 +123,8 @@ async function loadStation(apiKey, radius, fixedLocation, myLocation) {
 }
 
 function getDefaultLocation() {
-    const myArgs = "49.0,8.5";
-    return getLocationFromString(myArgs);
-    function getLocationFromString(pArgs) {
-        const myParts = pArgs.split(',');
-        let location = {
-            latitude: parseFloat(myParts[0]),
-            longitude: parseFloat(myParts[1]),
-            name: myParts[2]
-        };
-        return location;
-    }
+    let location = { latitude: 49.0, longitude: 8.5 };
+    return location;
 };
 
 function formatValue(value) {
@@ -175,53 +158,93 @@ async function createWidget(data) {
 
     let selectedStations = data.stations;
 
-    const attr = selectedStations[0]
-
-    let open = attr.isOpen ? `open` : 'closed'
-
     let myTitleStack = list.addStack();
-    let myTitle = myTitleStack.addText(`Günstigste Tankstelle im Umkreis von ${radius} km`);
-    myTitle.font = Font.boldRoundedSystemFont(15)
-    myTitle.textColor = Color.red()
+    let myTitle1 = myTitleStack.addText(`Günstigste Tankstelle`);
+    myTitle1.font = Font.boldRoundedSystemFont(15)
+    myTitle1.textColor = Color.red()
+    myTitle1.centerAlignText();
+
+    myTitleStack.addSpacer();
+    let myTitle = myTitleStack.addText(`Umkreis ${radius} km`);
+    myTitle.font = Font.blackSystemFont(15);
+    myTitle.textColor = Color.black()
     myTitle.centerAlignText();
 
-    drawCheapest(attr);
+    selectedStations.sort(function (left, right) {
+        // sort by price, then radius
+        let myComp = left[myFuelType] - right[myFuelType];
+        if (myComp === 0) {
+            myComp = left.radius - right.radius;
+        }
+        return myComp;
+    });
 
-    let myHorizontalLine = drawLine(new Point(0, 10), new Point(widgetWidth, 10), 10, Color.black())
-    list.addImage(myHorizontalLine.getImage());
+    const myCheapest = selectedStations[0];
+    let open = myCheapest.isOpen ? `open` : 'closed';
 
-    list.addSpacer(5);
-    let myOtherStack = list.addStack();
-    myOtherStack.backgroundColor = conOtherColor;
-    myOtherStack.layoutVertically();
+    drawCheapest(myCheapest);
 
-    let myTitleStackOther = myOtherStack.addStack();
-    let myTitleOther = myTitleStackOther.addText(`Andere ${brand}-Preise im Umkreis von ${radius} km`);
-    myTitleOther.font = Font.boldRoundedSystemFont(15)
-    myTitleOther.textColor = Color.red()
-    myTitleOther.centerAlignText();
+    // show next 3 cheapest
+    showOtherStations(selectedStations.slice(1, 4), `Andere ${brand}-Preise`, conOtherColor);
 
-    let myOtherStations = selectedStations.slice(1, 4);
-    for (let iEle of myOtherStations) {
-        myOtherStack.addSpacer(3);
-        drawOther(myOtherStack, iEle);
-    }
+    // sort by total cost
+    selectedStations.sort(function (left, right) {
+        return calcTotal(left) - calcTotal(right);
+    });
+    // show first 3 by total cost
+    showOtherStations(selectedStations.slice(0, 3), `Nach ${brand}-Kosten incl. Anfahrt`, new Color('DFDFDF'));
 
     // add footer
     addFooter(list);
 
     return list;
 
-    function drawCheapest(attr) {
-        let myMapURL = createGoogleMapMarkerByAddress(attr);
+    function showOtherStations(pStations, pTitle, pColor) {
+        //let myColor = Color.lightGray();
+        let myHorizontalLine = drawLine(new Point(0, 10), new Point(widgetWidth, 10), 10, Color.black());
+        list.addImage(myHorizontalLine.getImage());
+
+        list.addSpacer(5);
+        let myOtherStack = list.addStack();
+        myOtherStack.backgroundColor = pColor;
+        myOtherStack.layoutVertically();
+
+        let myTitleStackOther = myOtherStack.addStack();
+        let myTitleOther = myTitleStackOther.addText(pTitle);//(`Nach total cost ${brand}-Preise im Umkreis von ${radius} km`);
+        myTitleOther.font = Font.boldRoundedSystemFont(15);
+        myTitleOther.textColor = Color.red();
+        myTitleOther.centerAlignText();
+
+        for (let iStation of pStations) {
+            myOtherStack.addSpacer(3);
+            drawOther(myOtherStack, iStation);
+        }
+    }
+
+    /**
+     * calc price + cost for driving to station
+     * @param {any} pStation
+     */
+    function calcTotal(pStation) {
+        // price for tank full
+        let myTankPrice = 50 * pStation[myFuelType];
+        // cost to drive back and forth
+        let myDriveCost = pStation.dist * 2 * 0.2;
+        let myTotal = myTankPrice + myDriveCost;
+        //console.log(`myTotal ${myTotal}`);
+        return myTotal;
+    }
+
+    function drawCheapest(pStation) {
+        let myMapURL = createGoogleMapMarkerByAddress(pStation);
         console.log(`myMapURL ${myMapURL}`);
         let firstLineStack = list.addStack();
         firstLineStack.url = myMapURL;
 
-        let myName = getName(attr);
+        let myName = getName(pStation);
         let stationName = firstLineStack.addText(myName)
         stationName.lineLimit = 2;
-        stationName.font = Font.boldSystemFont(15)
+        stationName.font = Font.boldSystemFont(12)
         stationName.textColor = textColor
 
         firstLineStack.addSpacer()
@@ -233,13 +256,13 @@ async function createWidget(data) {
         let addressStack = list.addStack();
         addressStack.url = myMapURL;
 
-        addAddressPart(attr.place + ", ");
-        addAddressPart(attr.street);
-        addAddressPart(" " + attr.houseNumber);
+        addAddressPart(pStation.place + ", ");
+        addAddressPart(pStation.street);
+        addAddressPart(" " + pStation.houseNumber);
         //addAddressPart(` (${attr.dist} km)`);
         //addLink(addressStack, ``, myMapURL, conNormalFont);
 
-        addLink(addressStack, `(${attr.dist} km)`, myMapURL, conNormalFont);
+        addLink(addressStack, `(${pStation.dist} km)`, myMapURL, conNormalFont);
 
         list.addSpacer(5);
 
@@ -249,7 +272,7 @@ async function createWidget(data) {
         dieselLabel.textColor = textColor;
 
         dieselStack.addSpacer();
-        let dieselPrice = dieselStack.addText(formatValue(attr.diesel));
+        let dieselPrice = dieselStack.addText(formatValue(pStation.diesel));
         dieselPrice.font = Font.italicSystemFont(12);
         dieselPrice.textColor = textColor;
 
@@ -261,7 +284,7 @@ async function createWidget(data) {
         e5Label.textColor = textColor;
 
         e5Stack.addSpacer();
-        let e5Price = e5Stack.addText(formatValue(attr.e5));
+        let e5Price = e5Stack.addText(formatValue(pStation.e5));
         e5Price.font = Font.italicSystemFont(12);
         e5Price.textColor = textColor;
 
@@ -273,7 +296,7 @@ async function createWidget(data) {
         e10Label.textColor = textColor;
 
         e10Stack.addSpacer();
-        let e10Price = e10Stack.addText(formatValue(attr.e10));
+        let e10Price = e10Stack.addText(formatValue(pStation.e10));
         e10Price.font = Font.italicSystemFont(12);
         e10Price.textColor = textColor;
         return addressStack;
@@ -287,52 +310,51 @@ async function createWidget(data) {
         }
     }
 
-    function drawOther(pOtherStack, pTankstelle) {
-        let myMapURL = createGoogleMapMarkerByAddress(pTankstelle);
+    function drawOther(pOtherStack, pStation) {
+        let myMapURL = createGoogleMapMarkerByAddress(pStation);
         console.log(`myMapURL ${myMapURL}`);
         let firstLineStack = pOtherStack.addStack();
         firstLineStack.url = myMapURL;
 
-        let myName = getName(pTankstelle);
+        let myName = getName(pStation);
         let stationName = firstLineStack.addText(myName);
         stationName.font = Font.boldSystemFont(12);
         stationName.textColor = textColor;
         firstLineStack.addSpacer(5);
 
-        addTextToStack(firstLineStack, pTankstelle.place);
+        addTextToStack(firstLineStack, pStation.place);
         firstLineStack.addSpacer(5);
-        //addTextToStack(firstLineStack, ` (${pTankstelle.dist} km)`);
-        addLink(firstLineStack, `(${pTankstelle.dist} km)`, myMapURL, conNormalFont);
+        addLink(firstLineStack, `(${pStation.dist} km)`, myMapURL, conNormalFont);
 
         firstLineStack.addSpacer();
-        let stationOpen = firstLineStack.addText(formatValue(pTankstelle[myFuelType]));
+        let stationOpen = firstLineStack.addText(formatValue(pStation[myFuelType]));
         stationOpen.font = Font.italicSystemFont(12);
         stationOpen.rightAlignText();
     }
 
     /**
      * shorten name to 20 chars
-     * @param {any} pTankstelle
+     * @param {any} pStation
      */
-    function getName(pTankstelle) {
-        let myName = pTankstelle.brand ? pTankstelle.brand : pTankstelle.name;
+    function getName(pStation) {
+        let myName = pStation.brand ? pStation.brand : pStation.name;
         let stationName = myName.length <= 20 ? myName : myName.slice(0, 17) + "...";
         return stationName;
     }
 
     /**
-     * create google map url from one tankstellen object
-     * @param {any} pTankstellenObject
+     * create google map url from one station object
+     * @param {any} pStation
      */
-    function createGoogleMapMarkerByCoord(pTankstellenObject) {
+    function createGoogleMapMarkerByCoord(pStation) {
         // https://stackoverflow.com/questions/1801732/how-do-i-link-to-google-maps-with-a-particular-longitude-and-latitude
         const createMapUrl = (pLat, pLong) => `https://www.google.com/maps/search/?api=1&query=${pLat},${pLong}`;
-        let myMapURL = createMapUrl(pTankstellenObject.lat, pTankstellenObject.lng);
+        let myMapURL = createMapUrl(pStation.lat, pStation.lng);
         return myMapURL;
     }
-    function createGoogleMapMarkerByAddress(pTankstellenObject) {
+    function createGoogleMapMarkerByAddress(pStation) {
         // https://developers.google.com/maps/documentation/urls/get-started
-        let myQuery = `${pTankstellenObject.street} ${pTankstellenObject.houseNumber}, ${pTankstellenObject.place}`;
+        let myQuery = `${pStation.street} ${pStation.houseNumber}, ${pStation.place}`;
         let myEncQuery = encodeURIComponent(myQuery);
         const createMapUrl = (pQ) => `https://www.google.com/maps/search/?api=1&query=${pQ}`;
         let myMapURL = createMapUrl(myEncQuery);
