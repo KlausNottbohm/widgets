@@ -1,7 +1,8 @@
-
 // Variables used by Scriptable.
 // These must be at the very top of the file. Do not edit.
-const conVersion = "V220404";
+// icon-color: deep-blue; icon-glyph: magic;
+
+const conVersion = "V220525";
 
 const conDocArchURL = "https://docarchive.azurewebsites.net/app/document";
 
@@ -35,7 +36,6 @@ async function createWidget() {
         await issuePings();
     } catch (e) {
         console.log("issuePings failed");
-        showObject(e, "issuePings failed");
     }
 
     const list = new ListWidget();
@@ -59,7 +59,7 @@ async function createWidget() {
         myOverdueTextline.font = Font.boldSystemFont(18);
         if (myOverdueCount > 0) {
             let myLastNotify = 0;
-            let fm = FileManager.local();
+             let fm = FileManager.local();
             let file = fm.joinPath(fm.documentsDirectory(), "OverdueDocs.json");
 
             try {
@@ -88,58 +88,16 @@ async function createWidget() {
         else {
             myOverdueTextline.textColor = Color.green();
         }
-        list.addSpacer(14);
-        let myDateColor = Color.black();
-        // Add time of last widget refresh:
-        addDateLine(list, new Date(), "App refresh", myDateColor);
-        // version right aligned
-        let myVersiontext = list.addText(`${conVersion}`);
-        myVersiontext.font = Font.italicSystemFont(10);
-        myVersiontext.rightAlignText();
+        // add footer
+        addFooter(list);
     }
     catch (err) {
         showObject(err, "catch (err)");
         let myErrorHeader = list.addText("Error");
         myErrorHeader.textColor = Color.red();
-        let myErrorLine = list.addText(err);
-        myErrorLine.textColor = Color.red();
     }
 
     return list
-}
-
-/**
- * adds date to list, date format or time format depending on distance to now. Returns added WidgetStack
- * @param {any} pDate
- * @param {any} pTitle
- * @param {any} pColor
- */
-function addDateLine(pList, pDate, pTitle, pColor) {
-    const footer = pList.addStack();
-    footer.layoutHorizontally();
-    let myTitle = footer.addText(pTitle);
-    myTitle.font = Font.mediumSystemFont(10);
-    myTitle.textColor = pColor;
-    let myHoursSince = (new Date() - pDate) / (1000 * 60 * 60);
-    if (myHoursSince <= 24) {
-        // if today, show time
-        addDateOrTime(true);
-    }
-    else {
-        // if older show day
-        addDateOrTime(false);
-    }
-    return footer;
-
-    function addDateOrTime(pShowTime) {
-        footer.addSpacer(4);
-        let timeLabel = footer.addDate(pDate);
-        timeLabel.font = Font.italicSystemFont(10);
-        if (pShowTime) {
-            timeLabel.applyTimeStyle();
-        }
-        timeLabel.textColor = pColor;
-    }
 }
 
 function showLink(widget, title, pURL) {
@@ -274,5 +232,50 @@ function getUserParameter() {
     }
     else {
         throw new Error("no input parameters");
+    }
+}
+
+/**
+ * add footer with last update time and version
+ * @param {any} list
+ */
+function addFooter(list) {
+    list.addSpacer(14);
+    let myDateColor = Color.black();
+    let myFooter = list.addStack();
+    // Add time of last widget refresh:
+    addDateLine(myFooter, new Date(), "App refresh", myDateColor);
+
+    // version right aligned
+    myFooter.addSpacer();
+    let myVersiontext = myFooter.addText(`${conVersion}`);
+    myVersiontext.font = Font.italicSystemFont(10);
+    myVersiontext.rightAlignText();
+
+    function addDateLine(footer, pDate, pTitle, pColor) {
+        //const footer = pList.addStack();
+        //footer.layoutHorizontally();
+        let myTitle = footer.addText(pTitle);
+        myTitle.font = Font.mediumSystemFont(10);
+        myTitle.textColor = pColor;
+        let myHoursSince = (new Date() - pDate) / (1000 * 60 * 60);
+        if (myHoursSince <= 24) {
+            // if today, show time
+            addDateOrTime(true);
+        }
+        else {
+            // if older show day
+            addDateOrTime(false);
+        }
+
+        function addDateOrTime(pShowTime) {
+            footer.addSpacer(4);
+            let timeLabel = footer.addDate(pDate);
+            timeLabel.font = Font.italicSystemFont(10);
+            if (pShowTime) {
+                timeLabel.applyTimeStyle();
+            }
+            timeLabel.textColor = pColor;
+        }
     }
 }

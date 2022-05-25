@@ -14,7 +14,7 @@
 // radius in km|fixedLocation|latitude|longitude (0 or 1) e.g my-api-key|1|1|54.322|10.1355
 // Important: Don't set the radius to big, the tankerkoenig.de endpoint will deliver all stations in the radius which is set,
 // but only one is needed to display, so it will take a long time to fetch data.
-const conVersion = "V220409Tank";
+const conVersion = "V220525Tank";
 
 const widgetHeight = 18;
 const widgetWidth = 1720;
@@ -77,10 +77,7 @@ else if (brand.toLowerCase() === "e10") {
 let station = await loadStation(apiKey, radius, fixedLocation, myLocation)
 let widget = await createWidget(station)
 
-if (!config.runsInWidget) {
-    await widget.presentLarge()
-}
-
+await widget.presentLarge()
 Script.setWidget(widget)
 Script.complete()
 

@@ -1,6 +1,7 @@
 // Variables used by Scriptable.
 // These must be at the very top of the file. Do not edit.
-const conVersion = "V220405telekom";
+// icon-color: brown; icon-glyph: magic;
+const conVersion = "V220525telekom";
 
 const apiUrl = "https://pass.telekom.de/api/service/generic/v1/status";
 const conTelekomURL = "https://pass.telekom.de";
@@ -9,7 +10,7 @@ const conTelekomURL = "https://pass.telekom.de";
 const conAntiqueWhite = new Color("#faebd7");
 const conGrayout = Color.darkGray();
 const conPercentageLow = 10;
-const conRemainingDaysLow = 2;
+const conRemainingDaysLow = 1/2;
 const conPercentageVeryLow = 1;
 const conRemainingHoursVeryLow = 6;
 
