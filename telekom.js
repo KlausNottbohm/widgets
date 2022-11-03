@@ -1,7 +1,7 @@
 // Variables used by Scriptable.
 // These must be at the very top of the file. Do not edit.
 // icon-color: brown; icon-glyph: magic;
-const conVersion = "V220525telekom";
+const conVersion = "V221026telekom";
 
 const apiUrl = "https://pass.telekom.de/api/service/generic/v1/status";
 const conTelekomURL = "https://pass.telekom.de";
@@ -121,18 +121,23 @@ async function createWidget() {
         const conTotalSeconds = 31 * 24 * 60 * 60;
         let myRestTime = 100 * myRestSeconds / conTotalSeconds;
         let myFixed = myRestTime >= 10 ? 0 : 1;
-        let myRestText = `${myRestData.toFixed(0)}% / ${myRestTime.toFixed(myFixed)}%`;
+
+        let myCompare = ">=";
+        let myAlert = "";
+        if (myRestData < myRestTime) {
+            myCompare = "<";
+            myAlert  = "!";
+        }
+        let myRestText = `${myRestData.toFixed(0)}% ${myCompare} ${myRestTime.toFixed(myFixed)}% ${myAlert}`;
         const lineRestText = list.addText(myRestText);
 
         //showLink(list, "Used data");
 
         //const line2 = list.addText(data.usedPercentage + "%")
         lineRestText.font = Font.boldSystemFont(20);
+
         lineRestText.textColor = Color.green();
-        if (data.usedPercentage >= 75) {
-            lineRestText.textColor = Color.orange();
-        }
-        else if (data.usedPercentage >= 90) {
+        if (myRestData < myRestTime) {
             lineRestText.textColor = Color.red();
         }
 
