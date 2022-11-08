@@ -71,7 +71,6 @@
       <SubType>Code</SubType>
     </Content>
     <Content Include="tsconfig.jsonOld" />
-    <Content Include="Typescript\src\telekom.ts.o" />
     <Content Include="Umfrageergebnisse.js">
       <SubType>Code</SubType>
     </Content>

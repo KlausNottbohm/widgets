@@ -10,7 +10,7 @@ const conTelekomURL = "https://pass.telekom.de";
 const conAntiqueWhite = new Color("#faebd7");
 const conGrayout = Color.darkGray();
 const conPercentageLow = 10;
-const conRemainingDaysLow = 1/2;
+const conRemainingDaysLow = 1 / 2;
 const conPercentageVeryLow = 1;
 const conRemainingHoursVeryLow = 6;
 
@@ -73,13 +73,16 @@ async function createWidget() {
             fm.writeString(path, myStoredStringWrite);
             let myStoredStringRead = fm.readString(path);
             if (myStoredStringRead !== myStoredStringWrite) {
-                showObject(myStoredStringRead, "fm.readString(path)");
-                showObject(myStoredStringRead, "fm.readString(path)");
+                showObject(myStoredStringRead, "myStoredStringRead");
+                showObject(myStoredStringWrite, "myStoredStringWrite");
                 const errorList = new ListWidget();
                 errorList.addText("Internal Error: myStoredStringRead !== myStoredStringWrite");
                 return errorList;
             }
             fresh = true;
+            // history
+            const conHistoryPath = fm.joinPath(dir, "ScriptableTelekomHistory.json");
+            storeHistory(fm, conHistoryPath, myStoredData);
         }
         catch (err) {
             showObject(err, "catch (err)");
@@ -126,7 +129,7 @@ async function createWidget() {
         let myAlert = "";
         if (myRestData < myRestTime) {
             myCompare = "<";
-            myAlert  = "!";
+            myAlert = "!";
         }
         let myRestText = `${myRestData.toFixed(0)}% ${myCompare} ${myRestTime.toFixed(myFixed)}% ${myAlert}`;
         const lineRestText = list.addText(myRestText);
@@ -206,7 +209,7 @@ async function createWidget() {
         // Gray out if local data instead of Telekom API data:
         if (!fresh) {
             myDateColor = conGrayout;
-            lineRestText.textColor = conGrayout;
+            //             lineRestText.textColor = conGrayout;
             lineUsedVolume.textColor = conGrayout;
             if (data.remainingTimeStr) {
                 lineUntilTitle.textColor = conGrayout
@@ -266,6 +269,54 @@ async function createWidget() {
         }
     }
 }
+async function storeHistory(fm, conHistoryPath, myStoredData) {
+    try {
+        console.log("storeHistory");
+        const conMinDiff = 0;
+        const conPurgeDays = 31;
+        const conMSecsInDay = 24 * 60 * 60 * 1000;
+        let myDiffDate = new Date().getTime() - conMinDiff * conMSecsInDay;
+
+        //let myHistoryDataString = [];
+        let myHistoryData = [];
+        if (fm.fileExists(conHistoryPath)) {
+            await fm.downloadFileFromiCloud(conHistoryPath);
+            let myHistoryDataString = fm.readString(conHistoryPath);
+            if (myHistoryDataString) {
+                myHistoryData = JSON.parse(myHistoryDataString);
+                console.log("fileExists: " + myHistoryDataString);
+            }
+            else {
+                console.log("fileExists: " + myHistoryDataString);
+            }
+        }
+        else {
+            console.log("file not Exists: ");
+        }
+        if (myHistoryData && myHistoryData.length > 0) {
+            // purge older entries
+            let myPurgeDate = new Date().getTime() - conPurgeDays * conMSecsInDay;
+            let myPurgeIndex = myHistoryData.findIndex(function (pVal) {
+                return pVal.accessTime < myPurgeDate;
+            });
+            let myNewLength = myPurgeIndex >= 0 ? myPurgeIndex : myHistoryData.length;
+            console.log(`Purged ${myHistoryData.length - myNewLength} items`);
+            myHistoryData.length = myNewLength;
+        }
+        if (myHistoryData.length <= 0 || myHistoryData[0].accessTime < myDiffDate) {
+            // at least 1 day between stored records
+            // add at the beginning
+            myHistoryData.unshift(myStoredData);
+            myHistoryDataString = JSON.stringify(myHistoryData);
+            console.log(`Write ${myHistoryData.length} items`);
+
+            fm.writeString(conHistoryPath, myHistoryDataString);
+        }
+    } catch (e) {
+        console.log("err storeHistory: " + e);
+    }
+}
+
 /**
  * calc end date from current + remaining seconds
  * @param {any} data
