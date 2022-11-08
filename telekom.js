@@ -272,7 +272,7 @@ async function createWidget() {
 async function storeHistory(fm, conHistoryPath, myStoredData) {
     try {
         console.log("storeHistory");
-        const conMinDiff = 0;
+        const conMinDiff = 1;
         const conPurgeDays = 31;
         const conMSecsInDay = 24 * 60 * 60 * 1000;
         let myDiffDate = new Date().getTime() - conMinDiff * conMSecsInDay;
