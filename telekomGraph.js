@@ -272,6 +272,23 @@ async function createWidget() {
     }
 }
 async function readAndStoreHistory(fm, conHistoryPath, myStoredData) {
+    // ServerData
+    // usedVolumeStr: 839, 31 MB
+    // remainingTimeStr: 12 Tage 5 Std.
+    // hasOffers: true
+    // remainingSeconds: 1055447
+    // usedAt: 1620191668000
+    // validityPeriod: 5
+    // usedPercentage: 33
+    // title:
+    // initialVolume: 2684354560
+    // initialVolumeStr: 2, 5 GB
+    // passType: 101
+    // nextUpdate: 10800
+    // subscriptions: speedon, roamLikeHome, tns, m4mBundle, migtest
+    // usedVolume: 880088349
+    // passStage: 1
+    // passName: Data Flex 2, 5 GB
     try {
         console.log("storeHistory");
         const conMinDiff = 1;
@@ -287,23 +304,34 @@ async function readAndStoreHistory(fm, conHistoryPath, myStoredData) {
             let myHistoryDataString = fm.readString(conHistoryPath);
             if (myHistoryDataString) {
                 myHistoryData = JSON.parse(myHistoryDataString);
-                console.log("fileExists: " + myHistoryDataString);
+                console.log("fileExists: ");
+                for (let iEle of myHistoryData) {
+                    console.log(`${iEle.accessString}: ${iEle.data.usedPercentage}%`);
+                }
             }
             else {
-                console.log("fileExists: " + myHistoryDataString);
+                console.log("file does not exist");
             }
         }
         else {
             console.log("file not Exists: ");
         }
-        myHistoryData.sort(function (left, right) { return left.accessTime - right.accessTime });
+        myHistoryData.sort(function (left, right) { return right.accessTime - left.accessTime });
+        console.log("After sort");
+        for (let iEle of myHistoryData) {
+            console.log(`${iEle.accessString}: ${iEle.data.usedPercentage}%`);
+        }
+        let myDataChanged = false;
         if (myHistoryData && myHistoryData.length > 0) {
             // purge older entries
             let myPurgeDate = new Date().getTime() - conPurgeDays * conMSecsInDay;
             let myPurgeIndex = myHistoryData.findIndex(function (pVal) { return pVal.accessTime < myPurgeDate; });
-            let myNewLength = myPurgeIndex >= 0 ? myPurgeIndex : myHistoryData.length;
-            console.log(`Purged ${myHistoryData.length - myNewLength} items`);
-            myHistoryData.length = myNewLength;
+            if (myPurgeIndex >= 0) {
+                myDataChanged = true;
+                //let myNewLength = myPurgeIndex >= 0 ? myPurgeIndex : myHistoryData.length;
+                console.log(`Purged ${myHistoryData.length - myPurgeIndex} items`);
+                myHistoryData.length = myPurgeIndex;
+            }
         }
         let myDeleted = 0;
         // purge entries with date diff too close
@@ -319,22 +347,29 @@ async function readAndStoreHistory(fm, conHistoryPath, myStoredData) {
                     // already deleted?
                     continue;
                 }
-                if (my1Earlier >= myCurr.accessTime - 12 * conMSecsInHour) {
+                if (my1Earlier.accessTime >= myCurr.accessTime - 12 * conMSecsInHour) {
                     // closer than 12 hours
                     delete myHistoryData[j];
                     myDeleted++;
+                    myDataChanged = true;
                 }
             }
         }
-        console.log(`Removed ${myDeleted} too close items`);
         // remove deleted entries
         myHistoryData = myHistoryData.filter(function (pVal) { return !!pVal });
-        if (fresh && (myHistoryData.length <= 0 || myHistoryData[0].accessTime < myDiffDate)) {
+        console.log(`Removed ${myDeleted} too close items`);
+        for (let iEle of myHistoryData) {
+            console.log(`${iEle.accessString}: ${iEle.data.usedPercentage}%`);
+        }
+
+        if ((myHistoryData.length <= 0 || myHistoryData[0].accessTime < myDiffDate)) {
             // at least 1 day between stored records
             // add at the beginning
             myHistoryData.unshift(myStoredData);
+            myDataChanged = true;
+        }
+        if (myDataChanged) {
             myHistoryDataString = JSON.stringify(myHistoryData);
-
             fm.writeString(conHistoryPath, myHistoryDataString);
         }
         return myHistoryData;
