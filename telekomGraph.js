@@ -80,9 +80,6 @@ async function createWidget() {
                 return errorList;
             }
             fresh = true;
-            // history
-            const conHistoryPath = fm.joinPath(dir, "ScriptableTelekomHistory.json");
-            storeHistory(fm, conHistoryPath, myStoredData);
         }
         catch (err) {
             showObject(err, "catch (err)");
@@ -106,6 +103,11 @@ async function createWidget() {
                 console.error(errInner);
             }
         }
+
+        // history
+        const conHistoryPath = fm.joinPath(dir, "ScriptableTelekomHistory.json");
+        // array of myStoredData = { version: `Written by telekom.js version: ${conVersion}`, data: data, accessTime: new Date().getTime(), accessString: new Date().toString() };
+        let myHistoryData = readAndStoreHistory(fm, conHistoryPath, myStoredData);
 
         // now data contains data from server or from local file
         //showObject(data, "Data");
@@ -269,12 +271,13 @@ async function createWidget() {
         }
     }
 }
-async function storeHistory(fm, conHistoryPath, myStoredData) {
+async function readAndStoreHistory(fm, conHistoryPath, myStoredData) {
     try {
         console.log("storeHistory");
         const conMinDiff = 1;
         const conPurgeDays = 31;
-        const conMSecsInDay = 24 * 60 * 60 * 1000;
+        const conMSecsInHour = 60 * 60 * 1000;
+        const conMSecsInDay = 24 * conMSecsInHour;
         let myDiffDate = new Date().getTime() - conMinDiff * conMSecsInDay;
 
         //let myHistoryDataString = [];
@@ -293,27 +296,51 @@ async function storeHistory(fm, conHistoryPath, myStoredData) {
         else {
             console.log("file not Exists: ");
         }
+        myHistoryData.sort(function (left, right) { return left.accessTime - right.accessTime });
         if (myHistoryData && myHistoryData.length > 0) {
             // purge older entries
             let myPurgeDate = new Date().getTime() - conPurgeDays * conMSecsInDay;
-            let myPurgeIndex = myHistoryData.findIndex(function (pVal) {
-                return pVal.accessTime < myPurgeDate;
-            });
+            let myPurgeIndex = myHistoryData.findIndex(function (pVal) { return pVal.accessTime < myPurgeDate; });
             let myNewLength = myPurgeIndex >= 0 ? myPurgeIndex : myHistoryData.length;
             console.log(`Purged ${myHistoryData.length - myNewLength} items`);
             myHistoryData.length = myNewLength;
         }
-        if (myHistoryData.length <= 0 || myHistoryData[0].accessTime < myDiffDate) {
+        let myDeleted = 0;
+        // purge entries with date diff too close
+        for (var i = 0; i < myHistoryData.length - 1; i++) {
+            let myCurr = myHistoryData[i];
+            if (!myCurr) {
+                // already deleted?
+                continue;
+            }
+            for (var j = i + 1; j < myHistoryData.length; j++) {
+                let my1Earlier = myHistoryData[j];
+                if (!my1Earlier) {
+                    // already deleted?
+                    continue;
+                }
+                if (my1Earlier >= myCurr.accessTime - 12 * conMSecsInHour) {
+                    // closer than 12 hours
+                    delete myHistoryData[j];
+                    myDeleted++;
+                }
+            }
+        }
+        console.log(`Removed ${myDeleted} too close items`);
+        // remove deleted entries
+        myHistoryData = myHistoryData.filter(function (pVal) { return !!pVal });
+        if (fresh && (myHistoryData.length <= 0 || myHistoryData[0].accessTime < myDiffDate)) {
             // at least 1 day between stored records
             // add at the beginning
             myHistoryData.unshift(myStoredData);
             myHistoryDataString = JSON.stringify(myHistoryData);
-            console.log(`Write ${myHistoryData.length} items`);
 
             fm.writeString(conHistoryPath, myHistoryDataString);
         }
+        return myHistoryData;
     } catch (e) {
         console.log("err storeHistory: " + e);
+        return [];
     }
 }
 

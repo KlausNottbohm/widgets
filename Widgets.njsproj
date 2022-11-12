@@ -61,6 +61,7 @@
     <Content Include="TankstellenPreiseTotal.js" />
     <Content Include="TankstellenTable.js" />
     <Content Include="TankstellenPreise.js" />
+    <Content Include="telekomGraph.js" />
     <Content Include="telekom.js">
       <SubType>Code</SubType>
     </Content>
