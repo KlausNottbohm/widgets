@@ -107,33 +107,43 @@ async function createWidget() {
         // history
         const conHistoryPath = fm.joinPath(dir, "ScriptableTelekomHistory.json");
         // array of myStoredData = { version: `Written by telekom.js version: ${conVersion}`, data: data, accessTime: new Date().getTime(), accessString: new Date().toString() };
+
         let myHistoryData = await readAndStoreHistory(fm, conHistoryPath, myStoredData);
         console.log("Show data: " + myHistoryData.length);
+
         if (myHistoryData.length >= 0) {
-            let myOldestEntry = myHistoryData[myHistoryData.length - 1];
-            console.log(`myOldestEntry: ${getDateStringFromValue(myOldestEntry.accessTime)}`);
-            let myNow = new Date();
-            let myCurrData = myHistoryData[0];
-            for (var i = 0; i < 31; i++) {
-                let myDate = myNow.getTime() - i * 24 * 60 * 60 * 1000;
-                let myDateString = getDateStringFromValue(myDate);
+            let myOldestEntry = myHistoryData[0];
+            let myEndDate = calcEndDate(myOldestEntry);
+            console.log(`myOldestEntry: ${getDateStringFromEntry(myOldestEntry)} - end time: ${myEndDate.toLocaleString()}`);
 
-                if (myDateString.localeCompare(getDateStringFromValue(myOldestEntry.accessTime)) < 0) {
-                    console.log(`compare: ${myDateString} < ${getDateStringFromValue(myOldestEntry.accessTime)}`);
-                    break;
+            let myNewHistory = [{ entry: myOldestEntry, dateString: getDateStringFromEntry(myOldestEntry), date: new Date(myOldestEntry.accessTime) }];
+            let myIndex = 0;
+            //let myDay = 1;
+            let myNowString = getDateStringFromDate(new Date());
+            //console.log("myNowString: " + myNowString);
+            let myNextDay = new Date(myOldestEntry.accessTime + 24 * 60 * 60 * 1000);
+            while (getDateStringFromDate(myNextDay).localeCompare(myNowString) <= 0) {
+                //console.log("myNextDay: " + getDateStringFromDate(myNextDay));
+                for (let i = myIndex; i < myHistoryData.length; i++) {
+                    let myCurr = myHistoryData[i];
+                    //console.log(`myCurr: ${getDateStringFromEntry(myCurr)} - index: ${i}`);
+                    //let myCompare = getDateStringFromEntry(myCurr).localeCompare(getDateStringFromDate(myNextDay));
+                    //console.log(`myCompare: ${myCompare}`);
+                    if (getDateStringFromEntry(myCurr).localeCompare(getDateStringFromDate(myNextDay)) <= 0) {
+                        myIndex = i;
+                        myOldestEntry = myCurr;
+                    }
+                    else {
+                        break;
+                    }
                 }
-
-                let myDataOnDateIndex = myHistoryData.findIndex(function (pVal) {
-                    let myDateHere = getDateStringFromValue(pVal.accessTime);
-                    return myDateHere === myDateString;
-                });
-                if (myDataOnDateIndex >= 0) {
-                    let myDataOnDate = myHistoryData[myDataOnDateIndex];
-                    myCurrData = myDataOnDate;
-                }
-                let myRestTimePercent = 100 * myCurrData.data.remainingSeconds / (31 * 24 * 60 * 60);
-                //console.log(`myRest = ${myCurrData.data.remainingSeconds} / ${31 * 24 * 60 * 60}`);
-                console.log(`${myDateString}: ${myRestTimePercent.toFixed()}% / ${100 - myCurrData.data.usedPercentage}%`);
+                //console.log(`push myOldestEntry: ${getDateStringFromEntry(myOldestEntry)}/${myOldestEntry.data.usedPercentage}% - myNextDay: ${getDateStringFromDate(myNextDay)}`);
+                myNewHistory.push({ entry: myOldestEntry, dateString: getDateStringFromDate(myNextDay), date: myNextDay });
+                //myDay++;
+                myNextDay = new Date(myNextDay.getTime() + 24 * 60 * 60 * 1000);
+            }
+            for (let iEle of myNewHistory) {
+                console.log(`${iEle.dateString}: ${iEle.entry.data.usedPercentage}%`);
             }
         }
         else {
@@ -303,11 +313,25 @@ async function createWidget() {
         }
     }
 }
-
-function getDateStringFromValue(pDateMSecs) {
-    return getDateString(new Date(pDateMSecs));
+/**
+ * string from server entry
+ * @param {{accessTime:number}} pEntry
+ */
+function getDateStringFromEntry(pEntry) {
+    return getDateStringFromMSecs(pEntry.accessTime);
 }
-function getDateString(pDate) {
+/**
+ * string from mSecs
+ * @param {number} pDateMSecs
+ */
+function getDateStringFromMSecs(pDateMSecs) {
+    return getDateStringFromDate(new Date(pDateMSecs));
+}
+/**
+ * string from date
+ * @param {Date} pDate
+ */
+function getDateStringFromDate(pDate) {
     try {
         let myMonthString = ("0" + (pDate.getMonth() + 1)).slice(-2);
         let myDayString = ("0" + (pDate.getDate())).slice(-2);
@@ -426,11 +450,11 @@ async function readAndStoreHistoryOld(fm, conHistoryPath, myStoredData) {
 }
 /**
  * return ascending history
- * @param {any} fm
- * @param {any} conHistoryPath
- * @param {any} myStoredData
+ * @param {FileManager} fm
+ * @param {string} conHistoryPath
+ * @param {undefined | {usedVolume:number, accessTime:number}} pStoredData: undefined or server entry
  */
-async function readAndStoreHistory(fm, conHistoryPath, myStoredData) {
+async function readAndStoreHistory(fm, conHistoryPath, pStoredData) {
     // ServerData
     // usedVolumeStr: 839, 31 MB
     // remainingTimeStr: 12 Tage 5 Std.
@@ -450,13 +474,46 @@ async function readAndStoreHistory(fm, conHistoryPath, myStoredData) {
     // passName: Data Flex 2, 5 GB
     try {
         console.log("storeHistory");
-        const conMinDiff = 1;
-        const conPurgeDays = 31;
-        const conMSecsInHour = 60 * 60 * 1000;
-        const conMSecsInDay = 24 * conMSecsInHour;
-        let myDiffDate = new Date().getTime() - conMinDiff * conMSecsInDay;
+        //const conMinDiff = 1;
+        //const conPurgeDays = 31;
+        //const conMSecsInHour = 60 * 60 * 1000;
+        //const conMSecsInDay = 24 * conMSecsInHour;
+        //let myDiffDate = new Date().getTime() - conMinDiff * conMSecsInDay;
 
         //let myHistoryDataString = [];
+        let myHistoryData = await readHistoryData();
+
+        console.log("After sort");
+        for (let iEle of myHistoryData) {
+            console.log(`${iEle.accessString}: ${iEle.data.usedPercentage}%`);
+        }
+        let myNewHistory = [];
+        for (let i = 0; i < myHistoryData.length; i++) {
+            let myCurr = myHistoryData[i];
+            pushOrReplace(myNewHistory, myCurr);
+        }
+        if (pStoredData) {
+            // add only new data
+            pushOrReplace(myNewHistory, pStoredData);
+        }
+
+        // replace with new array
+        myHistoryData = myNewHistory;
+        //console.log("After pushOrReplace");
+        //for (let iEle of myHistoryData) {
+        //    console.log(`${iEle.accessString}: ${iEle.data.usedPercentage}%`);
+        //}
+
+        myHistoryDataString = JSON.stringify(myHistoryData);
+        fm.writeString(conHistoryPath, myHistoryDataString);
+        return myHistoryData;
+    } catch (e) {
+        console.log("err storeHistory: " + e);
+        return [];
+    }
+
+    /** read from file */
+    async function readHistoryData() {
         let myHistoryData = [];
         if (fm.fileExists(conHistoryPath)) {
             await fm.downloadFileFromiCloud(conHistoryPath);
@@ -476,46 +533,37 @@ async function readAndStoreHistory(fm, conHistoryPath, myStoredData) {
             console.log("file not Exists: ");
         }
         // sort ascending
-        myHistoryData.sort(function (left, right) { return left.accessTime - right.accessTime });
-        console.log("After sort");
-        for (let iEle of myHistoryData) {
-            console.log(`${iEle.accessString}: ${iEle.data.usedPercentage}%`);
-        }
-        let myNewHistory = [];
-        for (let i = 0; i < myHistoryData.length; i++) {
-            let myCurr = myHistoryData[i];
-            pushOrReplace(myNewHistory, myCurr);
-        }
-        pushOrReplace(myNewHistory, myStoredData);
-
-        // replace with new array
-        myHistoryData = myNewHistory;
-        console.log("After pushOrReplace");
-        for (let iEle of myHistoryData) {
-            console.log(`${iEle.accessString}: ${iEle.data.usedPercentage}%`);
-        }
-
-        myHistoryDataString = JSON.stringify(myHistoryData);
-        fm.writeString(conHistoryPath, myHistoryDataString);
+        myHistoryData.sort(function (left, right) { return left.accessTime - right.accessTime; });
         return myHistoryData;
-    } catch (e) {
-        console.log("err storeHistory: " + e);
-        return [];
     }
 
-    function pushOrReplace(myNewHistory, myCurr) {
-        if (myNewHistory.length <= 0) {
-            myNewHistory.push(myCurr);
+    /**
+     * 
+     * @param {{usedVolume:number, accessTime:number}[]} pNewHistory
+     * @param {{usedVolume:number, accessTime:number}} pCurr
+     */
+    function pushOrReplace(pNewHistory, pCurr) {
+        //console.log(`pushOrReplace: ${pCurr.accessString}: ${pCurr.data.usedPercentage}%`);
+
+        if (pNewHistory.length <= 0) {
+            //console.log("pushOrReplace: push to new");
+            pNewHistory.push(pCurr);
         }
         else {
-            if (myNewHistory[myNewHistory.length - 1].usedVolume > myCurr.usedVolume) {
+            if (pNewHistory[pNewHistory.length - 1].usedVolume > pCurr.usedVolume) {
                 // new pass
-                myNewHistory = [myCurr];
+                //console.log("pushOrReplace: start new");
+                pNewHistory = [pCurr];
             }
             else {
-                if (getDateStringFromValue(myNewHistory[myNewHistory.length - 1].accessTime) === getDateStringFromValue(myCurr.accessTime)) {
+                if (getDateStringFromMSecs(pNewHistory[pNewHistory.length - 1].accessTime) === getDateStringFromMSecs(pCurr.accessTime)) {
                     // update with latest entry from day
-                    myNewHistory[myNewHistory.length - 1] = myCurr;
+                    //console.log("pushOrReplace: update");
+                    pNewHistory[pNewHistory.length - 1] = pCurr;
+                }
+                else {
+                    //console.log("pushOrReplace: push");
+                    pNewHistory.push(pCurr);
                 }
             }
         }
