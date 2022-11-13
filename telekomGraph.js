@@ -107,7 +107,39 @@ async function createWidget() {
         // history
         const conHistoryPath = fm.joinPath(dir, "ScriptableTelekomHistory.json");
         // array of myStoredData = { version: `Written by telekom.js version: ${conVersion}`, data: data, accessTime: new Date().getTime(), accessString: new Date().toString() };
-        let myHistoryData = readAndStoreHistory(fm, conHistoryPath, myStoredData);
+        let myHistoryData = await readAndStoreHistory(fm, conHistoryPath, myStoredData);
+        console.log("Show data: " + myHistoryData.length);
+        if (myHistoryData.length >= 0) {
+            let myOldestEntry = myHistoryData[myHistoryData.length - 1];
+            console.log(`myOldestEntry: ${getDateStringFromValue(myOldestEntry.accessTime)}`);
+            let myNow = new Date();
+            let myCurrData = myHistoryData[0];
+            for (var i = 0; i < 31; i++) {
+                let myDate = myNow.getTime() - i * 24 * 60 * 60 * 1000;
+                let myDateString = getDateStringFromValue(myDate);
+
+                if (myDateString.localeCompare(getDateStringFromValue(myOldestEntry.accessTime)) < 0) {
+                    console.log(`compare: ${myDateString} < ${getDateStringFromValue(myOldestEntry.accessTime)}`);
+                    break;
+                }
+
+                let myDataOnDateIndex = myHistoryData.findIndex(function (pVal) {
+                    let myDateHere = getDateStringFromValue(pVal.accessTime);
+                    return myDateHere === myDateString;
+                });
+                if (myDataOnDateIndex >= 0) {
+                    let myDataOnDate = myHistoryData[myDataOnDateIndex];
+                    myCurrData = myDataOnDate;
+                }
+                let myRestTimePercent = 100 * myCurrData.data.remainingSeconds / (31 * 24 * 60 * 60);
+                //console.log(`myRest = ${myCurrData.data.remainingSeconds} / ${31 * 24 * 60 * 60}`);
+                console.log(`${myDateString}: ${myRestTimePercent.toFixed()}% / ${100 - myCurrData.data.usedPercentage}%`);
+            }
+        }
+        else {
+            console.log("No data");
+        }
+
 
         // now data contains data from server or from local file
         //showObject(data, "Data");
@@ -271,7 +303,21 @@ async function createWidget() {
         }
     }
 }
-async function readAndStoreHistory(fm, conHistoryPath, myStoredData) {
+
+function getDateStringFromValue(pDateMSecs) {
+    return getDateString(new Date(pDateMSecs));
+}
+function getDateString(pDate) {
+    try {
+        let myMonthString = ("0" + (pDate.getMonth() + 1)).slice(-2);
+        let myDayString = ("0" + (pDate.getDate())).slice(-2);
+        return `${pDate.getFullYear()}-${myMonthString}-${myDayString}`;
+    } catch (e) {
+        return e + ": " + pDate;
+    }
+}
+
+async function readAndStoreHistoryOld(fm, conHistoryPath, myStoredData) {
     // ServerData
     // usedVolumeStr: 839, 31 MB
     // remainingTimeStr: 12 Tage 5 Std.
@@ -378,6 +424,104 @@ async function readAndStoreHistory(fm, conHistoryPath, myStoredData) {
         return [];
     }
 }
+/**
+ * return ascending history
+ * @param {any} fm
+ * @param {any} conHistoryPath
+ * @param {any} myStoredData
+ */
+async function readAndStoreHistory(fm, conHistoryPath, myStoredData) {
+    // ServerData
+    // usedVolumeStr: 839, 31 MB
+    // remainingTimeStr: 12 Tage 5 Std.
+    // hasOffers: true
+    // remainingSeconds: 1055447
+    // usedAt: 1620191668000
+    // validityPeriod: 5
+    // usedPercentage: 33
+    // title:
+    // initialVolume: 2684354560
+    // initialVolumeStr: 2, 5 GB
+    // passType: 101
+    // nextUpdate: 10800
+    // subscriptions: speedon, roamLikeHome, tns, m4mBundle, migtest
+    // usedVolume: 880088349
+    // passStage: 1
+    // passName: Data Flex 2, 5 GB
+    try {
+        console.log("storeHistory");
+        const conMinDiff = 1;
+        const conPurgeDays = 31;
+        const conMSecsInHour = 60 * 60 * 1000;
+        const conMSecsInDay = 24 * conMSecsInHour;
+        let myDiffDate = new Date().getTime() - conMinDiff * conMSecsInDay;
+
+        //let myHistoryDataString = [];
+        let myHistoryData = [];
+        if (fm.fileExists(conHistoryPath)) {
+            await fm.downloadFileFromiCloud(conHistoryPath);
+            let myHistoryDataString = fm.readString(conHistoryPath);
+            if (myHistoryDataString) {
+                myHistoryData = JSON.parse(myHistoryDataString);
+                console.log("fileExists: ");
+                for (let iEle of myHistoryData) {
+                    console.log(`${iEle.accessString}: ${iEle.data.usedPercentage}%`);
+                }
+            }
+            else {
+                console.log("file does not exist");
+            }
+        }
+        else {
+            console.log("file not Exists: ");
+        }
+        // sort ascending
+        myHistoryData.sort(function (left, right) { return left.accessTime - right.accessTime });
+        console.log("After sort");
+        for (let iEle of myHistoryData) {
+            console.log(`${iEle.accessString}: ${iEle.data.usedPercentage}%`);
+        }
+        let myNewHistory = [];
+        for (let i = 0; i < myHistoryData.length; i++) {
+            let myCurr = myHistoryData[i];
+            pushOrReplace(myNewHistory, myCurr);
+        }
+        pushOrReplace(myNewHistory, myStoredData);
+
+        // replace with new array
+        myHistoryData = myNewHistory;
+        console.log("After pushOrReplace");
+        for (let iEle of myHistoryData) {
+            console.log(`${iEle.accessString}: ${iEle.data.usedPercentage}%`);
+        }
+
+        myHistoryDataString = JSON.stringify(myHistoryData);
+        fm.writeString(conHistoryPath, myHistoryDataString);
+        return myHistoryData;
+    } catch (e) {
+        console.log("err storeHistory: " + e);
+        return [];
+    }
+
+    function pushOrReplace(myNewHistory, myCurr) {
+        if (myNewHistory.length <= 0) {
+            myNewHistory.push(myCurr);
+        }
+        else {
+            if (myNewHistory[myNewHistory.length - 1].usedVolume > myCurr.usedVolume) {
+                // new pass
+                myNewHistory = [myCurr];
+            }
+            else {
+                if (getDateStringFromValue(myNewHistory[myNewHistory.length - 1].accessTime) === getDateStringFromValue(myCurr.accessTime)) {
+                    // update with latest entry from day
+                    myNewHistory[myNewHistory.length - 1] = myCurr;
+                }
+            }
+        }
+    }
+}
+
 
 /**
  * calc end date from current + remaining seconds
