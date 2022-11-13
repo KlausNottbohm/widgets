@@ -95,20 +95,23 @@ async function createWidget() {
 
     const locationData = await new Request(apiUrl(location)).loadJSON();
     console.log(apiUrl(location));
-    showObject(locationData.features[0].attributes, "locationData");
+
 
     if (!locationData || !locationData.features || !locationData.features.length) {
+
         const errorList = new ListWidget();
         errorList.backgroundColor = new Color('#191a1d', 1);
+        errorList.color = Color.black();
         errorList.addText('Keine Ergebnisse für den aktuellen Ort gefunden.');
         return errorList;
     }
-
+    showObject(locationData.features[0].attributes, "locationData");
     const diviLocationData = await new Request(diviApiUrl(location)).loadJSON();
 
     if (!diviLocationData || !diviLocationData.features || !diviLocationData.features.length) {
         const errorList = new ListWidget();
         errorList.backgroundColor = new Color('#191a1d', 1);
+        errorList.color = Color.white();
         errorList.addText('Keine DIVI-Ergebnisse für den aktuellen Ort gefunden.');
         return errorList;
     }
@@ -132,7 +135,7 @@ async function createWidget() {
     list.url = myUrl;
     const date = new Date();
     date.setTime(date.getTime() - 21 * DAY_IN_MICROSECONDS);
-    const minDate = formatDate2String(date); //        ('0' + (date.getMonth() + 1)).slice(-2) + '-' + ('0' + date.getDate()).slice(-2) + '-' + date.getFullYear();
+    const minDate = ('0' + (date.getMonth() + 1)).slice(-2) + '-' + ('0' + date.getDate()).slice(-2) + '-' + date.getFullYear();
     const apiUrlData = `https://services7.arcgis.com/mOBPykOjAyBO2ZKk/arcgis/rest/services/Covid19_RKI_Sums/FeatureServer/0/query?where=Landkreis+LIKE+%27%25${encodeURIComponent(county)}%25%27+AND+Meldedatum+%3E+%27${encodeURIComponent(minDate)}%27&objectIds=&time=&resultType=none&outFields=*&returnIdsOnly=false&returnUniqueIdsOnly=false&returnCountOnly=false&returnDistinctValues=false&cacheHint=false&orderByFields=Meldedatum&groupByFieldsForStatistics=&outStatistics=&having=&resultOffset=&resultRecordCount=&sqlFormat=none&f=json&token=`;
     console.log("apiUrlData");
     console.log(apiUrlData);
@@ -263,6 +266,7 @@ function drawTextR(text, rect, color, font) {
 function drawLine(point1, point2, width, color) {
     const path = new Path();
     path.move(point1);
+
     path.addLine(point2);
     drawContext.addPath(path);
     drawContext.setStrokeColor(color);
@@ -294,9 +298,4 @@ function showObject(pObject, title) {
             console.log(`${pObject}`);
         }
     }
-}
-
-function formatDate2String(date) {
-    const minDate = ('0' + (date.getMonth() + 1)).slice(-2) + '-' + ('0' + date.getDate()).slice(-2) + '-' + date.getFullYear();
-    return minDate;
 }
