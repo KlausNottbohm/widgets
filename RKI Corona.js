@@ -6,8 +6,8 @@
 // icon-color: deep-gray; icon-glyph: magic;
 // Licence: Robert Koch-Institut (RKI), dl-de/by-2-0
 //
-const conVersion = "210607";
-
+// first version, did not work after upgrade of Scriptable app, now works again
+const conVersion = "Corona221114";
 // ---------------------------
 // do not edit after this line
 // ---------------------------

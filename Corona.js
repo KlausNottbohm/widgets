@@ -4,6 +4,7 @@
 // Licence: Robert Koch-Institut (RKI), dl-de/by-2-0
 
 // https://gist.github.com/kevinkub/46caebfebc7e26be63403a7f0587f664
+// version with Path curve
 const conVersion = "Corona20221114";
 const conUrl = "https://klausapps.azurewebsites.net/RKICorona/RKICoronaKO.html";
 
@@ -36,7 +37,7 @@ class IncidenceWidget {
     async run() {
         let widget = await this.createWidget()
         if (!config.runsInWidget) {
-            await widget.presentSmall()
+            await widget.presentLarge()
         }
         Script.setWidget(widget)
         Script.complete()
@@ -79,12 +80,12 @@ class IncidenceWidget {
             let incidenceValueLabel = valueStack.addText(data.incidence + data.trend)
             incidenceValueLabel.font = Font.boldSystemFont(24)
             incidenceValueLabel.textColor = data.incidence >= 100 ? new Color("9e000a") : data.incidence >= 50 ? Color.red() : data.incidence >= 35 ? Color.yellow() : Color.green();
-            incidenceStack.addText(data.areaName)
+            incidenceStack.addText(data.areaName);
 
             // Chip for displaying state data     
             valueStack.addSpacer(4)
             let stateStack = valueStack.addStack()
-            let stateText = stateStack.addText(data.incidenceBySide + "\n" + data.areaNameBySide)
+            let stateText = stateStack.addText(data.areaNameBySide + ": " + data.incidenceBySide)
             stateStack.backgroundColor = new Color('888888', .5)
             stateStack.cornerRadius = 4
             stateStack.setPadding(2, 4, 2, 4)
