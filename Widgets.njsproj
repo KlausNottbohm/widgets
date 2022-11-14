@@ -38,6 +38,7 @@
     <Content Include="APIData\LocationData.json">
       <SubType>Code</SubType>
     </Content>
+    <Content Include="Corona.js" />
     <Content Include="html\RKICorona\RKICoronaKO.js" />
     <Content Include="html\RKICorona\RKICoronaKO.html" />
     <Content Include="html\telekomHistory.json" />
