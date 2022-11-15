@@ -3,6 +3,8 @@
 // icon-color: brown; icon-glyph: magic;
 const conVersion = "V221115telekom";
 
+let conIsTest = false;
+
 const apiUrl = "https://pass.telekom.de/api/service/generic/v1/status";
 const conTelekomURL = "https://pass.telekom.de";
 
@@ -62,8 +64,15 @@ async function createWidget() {
             errorList.addText(e);
             return { widget: errorList };
         }
-
-        showObject(myStoredData, "myStoredData2");
+        if (conIsTest && myStoredData.accessTime < new Date().getTime() - 2 * DAY_IN_MILLISECONDS) {
+            // do not store fake entry
+            fresh = false;
+            let myDaysBefore = 1;
+            let myEndDate = new Date(myStoredData.usedAt + myStoredData.remainingSeconds * 1000 - myDaysBefore * DAY_IN_MILLISECONDS);
+            let myStartData = { usedPercentage: 99, remainingSeconds: myDaysBefore * DAY_IN_SECONDS, usedAt: myEndDate };
+            myStoredData = myStartData;
+            showObject(myStoredData, "conIsTest");
+        }
         await notifyIfNeeded(myStoredData);
 
         // #region get myNewHistory
@@ -75,7 +84,6 @@ async function createWidget() {
         let myHistoryData = await readAndStoreHistory(fm, conHistoryPath, fresh ? myStoredData : undefined);
         console.log("Show data: " + myHistoryData.length);
         // set true, if test for red needed
-        let myTest = false;
         if (myHistoryData.length >= 0) {
             let myFirstDataEntry = myHistoryData[0];
             let myEndDate = calcEndDate(myFirstDataEntry);
@@ -105,10 +113,10 @@ async function createWidget() {
                 }
                 //let myNextEntry = myOldestEntry;
                 //console.log(`myTest: ${getDateStringFromDate(myNextDay)} ${myNowString} ${getDateStringFromDate(myNextDay) === myNowString}`);
-                if (myTest && getDateStringFromDate(myNextDay) === myNowString) {
-                    myOldestEntry.data.usedPercentage = 99;
-                    //showObject(myNextEntry, `Test Entry`);
-                }
+                //if (conIsTest && getDateStringFromDate(myNextDay) === myNowString) {
+                //    myOldestEntry.data.usedPercentage = 99;
+                //    //showObject(myNextEntry, `Test Entry`);
+                //}
                 myNewHistory.push({ entry: myOldestEntry, dateString: getDateStringFromDate(myNextDay), date: myNextDay });
                 myNextDay = new Date(myNextDay.getTime() + 24 * 60 * 60 * 1000);
             }
@@ -161,9 +169,9 @@ async function createWidget() {
         let myDateString = `Runs until ${myEndDate.toLocaleString("DE-de")}`;
         drawContext.drawTextInRect(myDateString, myEndDateRect)
 
-        let myAppTime = `App refresh: ${niceDateString(new Date())}`; 
-        //let myServerTime = `Server refresh: ${niceDateString(new Date(myStoredData.data.usedAt))}`;
-        let myServerTime = `Server refresh: ${new Date(myStoredData.data.usedAt).toLocaleString("DE-de")}`;
+        let myAppTime = `App refresh: ${niceDateString(new Date())}`;
+        let myServerTime = `Server refresh: ${niceDateString(new Date(myStoredData.data.usedAt))}`;
+        //let myServerTime = `Server refresh: ${new Date(myStoredData.data.usedAt).toLocaleString("DE-de")}`;
         //showObject(myStoredData, "myServerTime");
         //console.log(`usedAt ${myStoredData.data.usedAt}- myServerTime${myServerTime}`);
         let myWidth = 220;
@@ -295,7 +303,7 @@ function niceDateString(myEndDate) {
     let myDiff = myNow.getTime() - myEndDate.getTime();
     if (myDiff >= 0 && myDiff < DAY_IN_MILLISECONDS) {
         // same day-> show time
-        return myEndDate.toLocaleTimeString("DE-de").slice(0,5);
+        return myEndDate.toLocaleTimeString("DE-de").slice(0, 5);
     }
     return myEndDate.toLocaleString("DE-de");
 }
