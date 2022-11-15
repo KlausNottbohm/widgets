@@ -261,7 +261,7 @@ async function createWidget() {
         requestParliaments = args.widgetParameter + '';
     }
 
-    list.url = 'scriptable:///run/Sonntagsfrage/?p=' + requestParliaments;
+    list.url = 'scriptable:///run/Umfrageergebnisse/?p=' + requestParliaments;
 
     if (typeof (requestParliaments) === 'string' && requestParliaments.indexOf(',') > 0) {
         requestParliamens = requestParliaments.replace(/[^0-9,]/g, '');
