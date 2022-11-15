@@ -13,13 +13,15 @@ const conPercentageLow = 10;
 const conRemainingDaysLow = 1 / 2;
 const conPercentageVeryLow = 1;
 const conRemainingHoursVeryLow = 6;
+const conDaysPerPackage = 31;
 
 const colorLow = new Color('#FAD643', 1); // < 5
 const colorMed = new Color('#E8B365', 1); // < 20
 const colorHigh = new Color('#DD5045', 1); // < 200
 const colorUltra = new Color('#8E0000', 1); // >= 200
 
-const DAY_IN_MICROSECONDS = 86400000;
+const DAY_IN_SECONDS = 24 * 60 * 60;//86400000;
+const DAY_IN_MICROSECONDS = DAY_IN_SECONDS * 1000;//86400000;
 const lineWeight = 2;
 const vertLineWeight = 36;
 const accentColor1 = Color.black(); //new Color('#33cc33', 1);
@@ -36,7 +38,7 @@ const bedsPaddingRight = 32;
 const bedsLineWidth = 12;
 
 let myResult = await createWidget();
-showObject(myResult, "createWidget");
+//showObject(myResult, "createWidget");
 let widget = myResult.widget;
 widget.backgroundColor = conAntiqueWhite;
 if (myResult.drawContext) {
@@ -44,7 +46,7 @@ if (myResult.drawContext) {
     widget.backgroundImage = (myResult.drawContext.getImage());
 }
 
-    await widget.presentMedium()
+await widget.presentMedium()
 
 Script.setWidget(widget)
 Script.complete()
@@ -55,11 +57,10 @@ async function createWidget() {
     let fm = FileManager.iCloud()
     let dir = fm.documentsDirectory()
     let path = fm.joinPath(dir, "scriptable-telekom.json")
-    //console.log(`fm.joinPath ${path}`);
     try {
         let fresh, myStoredData;
         try {
-            let { rfresh, rmyStoredData, rdata } = await getData(fm, path);
+            let { rfresh, rmyStoredData } = await getData(fm, path);
             fresh = rfresh; myStoredData = rmyStoredData;
         } catch (e) {
             const errorList = new ListWidget();
@@ -77,11 +78,17 @@ async function createWidget() {
         console.log("Show data: " + myHistoryData.length);
 
         if (myHistoryData.length >= 0) {
-            let myOldestEntry = myHistoryData[0];
-            let myEndDate = calcEndDate(myOldestEntry);
-            console.log(`myOldestEntry: ${getDateStringFromEntry(myOldestEntry)} - end time: ${myEndDate.toLocaleString()}`);
+            let myFirstDataEntry = myHistoryData[0];
+            let myEndDate = calcEndDate(myFirstDataEntry);
+            console.log(`myOldestEntry: ${getDateStringFromEntry(myFirstDataEntry)} - end time: ${myEndDate.toLocaleString()}`);
+            let myStartDate = new Date(myEndDate.getTime() - conDaysPerPackage * DAY_IN_MICROSECONDS);
+            console.log(`myStartDate: ${getDateStringFromDate(myStartDate)}`);
 
-            myNewHistory = [{ entry: myOldestEntry, dateString: getDateStringFromEntry(myOldestEntry), date: new Date(myOldestEntry.accessTime) }];
+            let myStartEntry = { data: { usedPercentage: 100, remainingSeconds: conDaysPerPackage * DAY_IN_SECONDS }, accessTime: myStartDate.getTime(), accessString: new Date(myStartDate.getTime()) };
+            let myOldestEntry = { entry: myStartEntry, dateString: getDateStringFromDate(myStartDate), date: myStartDate };
+            myNewHistory = [myOldestEntry];
+
+            //myNewHistory = [{ entry: myOldestEntry, dateString: getDateStringFromEntry(myOldestEntry), date: new Date(myOldestEntry.accessTime) }];
             let myIndex = 0;
             let myNowString = getDateStringFromDate(new Date());
             let myNextDay = new Date(myOldestEntry.accessTime + 24 * 60 * 60 * 1000);
@@ -218,6 +225,11 @@ async function createWidget() {
     }
 }
 
+/**
+ * read latest value from server or file
+ * @param {FileManager} fm
+ * @param {string} path
+ */
 async function getData(fm, path) {
     // ServerData
     // usedVolumeStr: 839, 31 MB
