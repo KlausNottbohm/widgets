@@ -1,7 +1,7 @@
 // Variables used by Scriptable.
 // These must be at the very top of the file. Do not edit.
 // icon-color: brown; icon-glyph: magic;
-const conVersion = "V221112telekom";
+const conVersion = "V221115telekom";
 
 const apiUrl = "https://pass.telekom.de/api/service/generic/v1/status";
 const conTelekomURL = "https://pass.telekom.de";
@@ -21,7 +21,7 @@ const colorHigh = new Color('#DD5045', 1); // < 200
 const colorUltra = new Color('#8E0000', 1); // >= 200
 
 const DAY_IN_SECONDS = 24 * 60 * 60;//86400000;
-const DAY_IN_MICROSECONDS = DAY_IN_SECONDS * 1000;//86400000;
+const DAY_IN_MILLISECONDS = DAY_IN_SECONDS * 1000;//86400000;
 const lineWeight = 2;
 const vertLineWeight = 18;
 const accentColor1 = Color.black(); //new Color('#33cc33', 1);
@@ -37,15 +37,8 @@ const bedsPaddingLeft = 32;
 const bedsPaddingRight = 32;
 const bedsLineWidth = 12;
 
-let myResult = await createWidget();
-//showObject(myResult, "createWidget");
-let widget = myResult.widget;
-widget.backgroundColor = conAntiqueWhite;
-if (myResult.drawContext) {
-    widget.setPadding(0, 0, 0, 0);
-    widget.backgroundImage = (myResult.drawContext.getImage());
-    widget.url = conTelekomURL;
-}
+let widget = await createWidget();
+widget.url = conTelekomURL;
 
 await widget.presentMedium()
 
@@ -87,17 +80,17 @@ async function createWidget() {
             let myFirstDataEntry = myHistoryData[0];
             let myEndDate = calcEndDate(myFirstDataEntry);
             console.log(`myFirstDataEntry: ${getDateStringFromEntry(myFirstDataEntry)} - end time: ${myEndDate.toLocaleString()}`);
-            let myStartDate = new Date(myEndDate.getTime() - conDaysPerPackage * DAY_IN_MICROSECONDS);
+            let myStartDate = new Date(myEndDate.getTime() - conDaysPerPackage * DAY_IN_MILLISECONDS);
             console.log(`myStartDate: ${myStartDate.toLocaleString()}`);
 
-            let myStartData = { usedPercentage: 0, remainingSeconds: conDaysPerPackage * DAY_IN_SECONDS };
+            let myStartData = { usedPercentage: 0, remainingSeconds: conDaysPerPackage * DAY_IN_SECONDS, usedAt: myStartDate.getTime() };
             let myOldestEntry = { data: myStartData, accessTime: myStartDate.getTime(), accessString: new Date(myStartDate.getTime()).toString() };
             showObject(myOldestEntry, "myOldestEntry");
 
             myNewHistory = [{ entry: myOldestEntry, dateString: getDateStringFromEntry(myOldestEntry), date: new Date(myOldestEntry.accessTime) }];
             let myIndex = 0;
             let myNowString = getDateStringFromDate(new Date());
-            let myNextDay = new Date(myOldestEntry.accessTime + DAY_IN_MICROSECONDS);
+            let myNextDay = new Date(myOldestEntry.accessTime + DAY_IN_MILLISECONDS);
 
             while (getDateStringFromDate(myNextDay).localeCompare(myNowString) <= 0) {
                 for (let i = myIndex; i < myHistoryData.length; i++) {
@@ -138,46 +131,49 @@ async function createWidget() {
         drawContext.opaque = false;
 
         const widget = new ListWidget();
+        widget.backgroundColor = conAntiqueWhite;
+
         let myTextArea = widget.addStack();
         myTextArea.topAlignContent();
         myTextArea.size = new Size(widgetWidth, 150);
-        //myTextArea.layoutVertically();
 
         showLink(myTextArea, "Goto Telekom", conTelekomURL);
-        let myRestData = 100 - myStoredData.data.usedPercentage;
 
-        let myEndDate = calcEndDate(myStoredData);
-        if (!myEndDate) {
-            const errorList = new ListWidget();
-            errorList.addText("Please disable WiFi for initial execution (no data cached)");
-            return errorList;
-        }
-        let myRestSeconds = (myEndDate.getTime() - new Date().getTime()) / 1000;
-        // pack runs 31 days
-        const conTotalSeconds = conDaysPerPackage * DAY_IN_SECONDS;
-        let myRestTime = 100 * myRestSeconds / conTotalSeconds;
-        let myFixed = myRestTime >= 10 ? 0 : 1;
+        let { myRestData, myRestTime, myEndDate } = getRestInfo(myStoredData);
 
-        let myCompare = ">=";
-        let myAlert = "-> ok";
-        if (myRestData < myRestTime) {
-            myCompare = "<";
-            myAlert = "!";
-        }
-        let myRestText = `Rest data ${myRestData.toFixed(0)}% ${myCompare} rest time: ${myRestTime.toFixed(myFixed)}% ${myAlert}`;
-
-        const bedsRight = widgetWidth - bedsPaddingRight;
-        const freeBedsWidth = 0; //(bedsRight / beds) * freeBeds;
+        //const bedsRight = widgetWidth - bedsPaddingRight;
+        //const freeBedsWidth = 0; //(bedsRight / beds) * freeBeds;
         //const covidBedsWidth = (bedsRight / beds) * cases;
         let myTextColor = Color.black();
         if (myRestData < myRestTime) {
             myTextColor = Color.red();
         }
 
-        let bedsRect = new Rect(bedsPaddingLeft, bedsGraphBaseline - 40, bedsRight - freeBedsWidth - bedsPaddingLeft - 10, 26);
+        let myRestDataRect = new Rect(bedsPaddingLeft, bedsGraphBaseline - 40, widgetWidth / 2 - 100, 26);
         drawContext.setFont(Font.mediumSystemFont(26));
         drawContext.setTextColor(myTextColor);
-        drawContext.drawTextInRect(myRestText, bedsRect)
+        drawContext.drawTextInRect(myStoredData.data.usedVolumeStr + " / " + myStoredData.data.initialVolumeStr, myRestDataRect)
+
+        //const lineUsedVolume = list.addText(myStoredData.data.usedVolumeStr + " / " + myStoredData.data.initialVolumeStr)
+        //lineUsedVolume.font = Font.mediumSystemFont(12)
+
+        let myEndDateRect = new Rect(bedsPaddingLeft + widgetWidth / 2 - 90, bedsGraphBaseline - 40, widgetWidth / 2, 26);
+        let myDateString = `Runs until ${myEndDate.toLocaleString("DE-de")}`;
+        drawContext.drawTextInRect(myDateString, myEndDateRect)
+
+        let myAppTime = `App refresh: ${niceDateString(new Date())}`; 
+        //let myServerTime = `Server refresh: ${niceDateString(new Date(myStoredData.data.usedAt))}`;
+        let myServerTime = `Server refresh: ${new Date(myStoredData.data.usedAt).toLocaleString("DE-de")}`;
+        //showObject(myStoredData, "myServerTime");
+        //console.log(`usedAt ${myStoredData.data.usedAt}- myServerTime${myServerTime}`);
+        let myWidth = 220;
+        drawContext.setFont(Font.mediumSystemFont(22));
+        let myAppInfoRect = new Rect(bedsPaddingLeft, bedsGraphBaseline - 0, widgetWidth - myWidth, 26);
+        drawContext.drawTextInRect(myServerTime, myAppInfoRect);
+
+        let myVersionInfoRect = new Rect(bedsPaddingLeft + widgetWidth - myWidth, bedsGraphBaseline - 0, myWidth, 26);
+        drawContext.setFont(Font.italicSystemFont(20));
+        drawContext.drawTextInRect(conVersion, myVersionInfoRect);
 
         let min = 0;
         let max = 100;
@@ -228,7 +224,7 @@ async function createWidget() {
             }
             const conFontSize = 18;
             //console.log(`${i} ${day} x: ${spaceBetweenDays * i + 20}- y: ${(graphLow - 40) - (graphHeight * delta)}`);
-            let myShowPercent = (i - myNewHistory.length + 1) % 3;
+            let myShowPercent = (i - myNewHistory.length + 1) % 2;
             if (myShowPercent === 0) {
                 const casesRect = new Rect(spaceBetweenDays * i + 37, (graphLow - 20) - (graphHeight * delta), 60, 23);
                 drawTextR(drawContext, myRestPercentage, casesRect, accentColor1, Font.systemFont(conFontSize));
@@ -237,7 +233,13 @@ async function createWidget() {
             drawTextR(drawContext, day, dayRect, dayColor, Font.systemFont(conFontSize));
         }
 
-        return { widget: widget, drawContext: drawContext };
+        if (drawContext) {
+            //let myDrawStack = list.addStack();
+            widget.setPadding(0, 0, 0, 0);
+            widget.backgroundImage = (drawContext.getImage());
+        }
+
+        return widget; //{ widget: widget, drawContext: drawContext };
     }
     catch (err) {
         const errorList = new ListWidget();
@@ -283,6 +285,44 @@ async function createWidget() {
             timeLabel.textColor = pColor;
         }
     }
+}
+/**
+ * 
+ * @param {Date} myEndDate
+ */
+function niceDateString(myEndDate) {
+    let myNow = new Date();
+    let myDiff = myNow.getTime() - myEndDate.getTime();
+    if (myDiff >= 0 && myDiff < DAY_IN_MILLISECONDS) {
+        // same day-> show time
+        return myEndDate.toLocaleTimeString("DE-de").slice(0,5);
+    }
+    return myEndDate.toLocaleString("DE-de");
+}
+
+function getRestInfo(myStoredData) {
+    let myRestData = 100 - myStoredData.data.usedPercentage;
+
+    let myEndDate = calcEndDate(myStoredData);
+    //if (!myEndDate) {
+    //    const errorList = new ListWidget();
+    //    errorList.addText("Please disable WiFi for initial execution (no data cached)");
+    //    return errorList;
+    //}
+    let myRestSeconds = (myEndDate.getTime() - new Date().getTime()) / 1000;
+    // pack runs 31 days
+    const conTotalSeconds = conDaysPerPackage * DAY_IN_SECONDS;
+    let myRestTime = 100 * myRestSeconds / conTotalSeconds;
+    //let myFixed = myRestTime >= 10 ? 0 : 1;
+
+    //let myCompare = ">=";
+    //let myAlert = "-> ok";
+    if (myRestData < myRestTime) {
+        myCompare = "<";
+        myAlert = "!";
+    }
+    //let myRestText = `Rest data ${myRestData.toFixed(0)}% ${myCompare} rest time: ${myRestTime.toFixed(myFixed)}% ${myAlert}`;
+    return { myRestData, myRestTime, myEndDate };
 }
 
 /**
