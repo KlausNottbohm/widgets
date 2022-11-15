@@ -76,22 +76,23 @@ async function createWidget() {
 
         let myHistoryData = await readAndStoreHistory(fm, conHistoryPath, fresh ? myStoredData : undefined);
         console.log("Show data: " + myHistoryData.length);
-
+        // set true, if test for red needed
+        let myTest = false;
         if (myHistoryData.length >= 0) {
             let myFirstDataEntry = myHistoryData[0];
             let myEndDate = calcEndDate(myFirstDataEntry);
-            console.log(`myOldestEntry: ${getDateStringFromEntry(myFirstDataEntry)} - end time: ${myEndDate.toLocaleString()}`);
+            console.log(`myFirstDataEntry: ${getDateStringFromEntry(myFirstDataEntry)} - end time: ${myEndDate.toLocaleString()}`);
             let myStartDate = new Date(myEndDate.getTime() - conDaysPerPackage * DAY_IN_MICROSECONDS);
-            console.log(`myStartDate: ${getDateStringFromDate(myStartDate)}`);
+            console.log(`myStartDate: ${myStartDate.toLocaleString()}`);
 
-            let myStartEntry = { data: { usedPercentage: 100, remainingSeconds: conDaysPerPackage * DAY_IN_SECONDS }, accessTime: myStartDate.getTime(), accessString: new Date(myStartDate.getTime()) };
-            let myOldestEntry = { entry: myStartEntry, dateString: getDateStringFromDate(myStartDate), date: myStartDate };
-            myNewHistory = [myOldestEntry];
+            let myStartData = { usedPercentage: 0, remainingSeconds: conDaysPerPackage * DAY_IN_SECONDS };
+            let myOldestEntry = { data: myStartData, accessTime: myStartDate.getTime(), accessString: new Date(myStartDate.getTime()).toString() };
+            showObject(myOldestEntry, "myOldestEntry");
 
-            //myNewHistory = [{ entry: myOldestEntry, dateString: getDateStringFromEntry(myOldestEntry), date: new Date(myOldestEntry.accessTime) }];
+            myNewHistory = [{ entry: myOldestEntry, dateString: getDateStringFromEntry(myOldestEntry), date: new Date(myOldestEntry.accessTime) }];
             let myIndex = 0;
             let myNowString = getDateStringFromDate(new Date());
-            let myNextDay = new Date(myOldestEntry.accessTime + 24 * 60 * 60 * 1000);
+            let myNextDay = new Date(myOldestEntry.accessTime + DAY_IN_MICROSECONDS);
 
             while (getDateStringFromDate(myNextDay).localeCompare(myNowString) <= 0) {
                 for (let i = myIndex; i < myHistoryData.length; i++) {
@@ -103,6 +104,12 @@ async function createWidget() {
                     else {
                         break;
                     }
+                }
+                //let myNextEntry = myOldestEntry;
+                //console.log(`myTest: ${getDateStringFromDate(myNextDay)} ${myNowString} ${getDateStringFromDate(myNextDay) === myNowString}`);
+                if (myTest && getDateStringFromDate(myNextDay) === myNowString) {
+                    myOldestEntry.data.usedPercentage = 99;
+                    //showObject(myNextEntry, `Test Entry`);
                 }
                 myNewHistory.push({ entry: myOldestEntry, dateString: getDateStringFromDate(myNextDay), date: myNextDay });
                 myNextDay = new Date(myNextDay.getTime() + 24 * 60 * 60 * 1000);
@@ -132,7 +139,6 @@ async function createWidget() {
 
         let diff = max - min;
 
-        const highestIndex = myNewHistory.length - 1;
         console.log(`myNewHistory.length: ${myNewHistory.length}`);
         for (let i = 0; i < myNewHistory.length; i++) {
             // { entry: myOldestEntry, dateString: getDateStringFromDate(myNextDay), date: myNextDay }
@@ -140,17 +146,24 @@ async function createWidget() {
             const dayOfWeek = myNewHistory[i].date.getDay();
             const myRestPercentage = 100 - myNewHistory[i].entry.data.usedPercentage;
             const delta = (myRestPercentage - min) / diff;
-            console.log(`${i} day: ${day}- myRestPercentage: ${myRestPercentage}`);
+
+            let myEndDate = calcEndDate(myNewHistory[i].entry);
+            if (!myEndDate) {
+                throw "calcEndDate undefined";
+            }
+            let myRestSeconds = (myEndDate.getTime() - new Date().getTime()) / 1000;
+            // pack runs 31 days
+            const conTotalSeconds = conDaysPerPackage * DAY_IN_SECONDS;
+            let myRestTime = 100 * myRestSeconds / conTotalSeconds;
+
+            console.log(`${i} day: ${day}- myRestPercentage: ${myRestPercentage} myRestTime: ${myRestTime.toFixed()}`);
 
             // Vertical Line
 
             let drawColor;
 
-            if (myRestPercentage < 5) {
-                drawColor = colorLow;
-            }
-            else if (myRestPercentage < 20) {
-                drawColor = colorMed;
+            if (myRestPercentage < myRestTime) {
+                drawColor = Color.red();
             }
             else {
                 drawColor = Color.green();
@@ -362,10 +375,10 @@ async function readAndStoreHistory(fm, conHistoryPath, pStoredData) {
         //console.log("storeHistory");
         let myHistoryData = await readHistoryData();
 
-        console.log("After sort");
-        for (let iEle of myHistoryData) {
-            console.log(`${iEle.accessString}: ${iEle.data.usedPercentage}%`);
-        }
+        //console.log("After sort");
+        //for (let iEle of myHistoryData) {
+        //    console.log(`${iEle.accessString}: ${iEle.data.usedPercentage}%`);
+        //}
         let myNewHistory = [];
         for (let i = 0; i < myHistoryData.length; i++) {
             let myCurr = myHistoryData[i];
