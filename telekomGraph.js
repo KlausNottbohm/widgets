@@ -23,7 +23,7 @@ const colorUltra = new Color('#8E0000', 1); // >= 200
 const DAY_IN_SECONDS = 24 * 60 * 60;//86400000;
 const DAY_IN_MICROSECONDS = DAY_IN_SECONDS * 1000;//86400000;
 const lineWeight = 2;
-const vertLineWeight = 36;
+const vertLineWeight = 18;
 const accentColor1 = Color.black(); //new Color('#33cc33', 1);
 const accentColor2 = Color.lightGray();
 
@@ -31,7 +31,7 @@ const widgetHeight = 338;
 const widgetWidth = 720;
 const graphLow = 200;
 const graphHeight = 100;
-const spaceBetweenDays = 47.5;
+const spaceBetweenDays = 22;
 const bedsGraphBaseline = 290;
 const bedsPaddingLeft = 32;
 const bedsPaddingRight = 32;
@@ -44,6 +44,7 @@ widget.backgroundColor = conAntiqueWhite;
 if (myResult.drawContext) {
     widget.setPadding(0, 0, 0, 0);
     widget.backgroundImage = (myResult.drawContext.getImage());
+    widget.url = conTelekomURL;
 }
 
 await widget.presentMedium()
@@ -60,17 +61,21 @@ async function createWidget() {
     try {
         let fresh, myStoredData;
         try {
-            let { rfresh, rmyStoredData } = await getData(fm, path);
-            fresh = rfresh; myStoredData = rmyStoredData;
+            let myResult = await getData(fm, path);
+            fresh = myResult.fresh; myStoredData = myResult.myStoredData;
+            showObject(myResult, "myResult");
         } catch (e) {
             const errorList = new ListWidget();
             errorList.addText(e);
             return { widget: errorList };
         }
-        let myNewHistory = [];
+
+        showObject(myStoredData, "myStoredData2");
+        await notifyIfNeeded(myStoredData);
 
         // #region get myNewHistory
         // history
+        let myNewHistory = [];
         const conHistoryPath = fm.joinPath(dir, "ScriptableTelekomHistory.json");
         // array of myStoredData = { version: `Written by telekom.js version: ${conVersion}`, data: data, accessTime: new Date().getTime(), accessString: new Date().toString() };
 
@@ -133,6 +138,46 @@ async function createWidget() {
         drawContext.opaque = false;
 
         const widget = new ListWidget();
+        let myTextArea = widget.addStack();
+        myTextArea.topAlignContent();
+        myTextArea.size = new Size(widgetWidth, 150);
+        //myTextArea.layoutVertically();
+
+        showLink(myTextArea, "Goto Telekom", conTelekomURL);
+        let myRestData = 100 - myStoredData.data.usedPercentage;
+
+        let myEndDate = calcEndDate(myStoredData);
+        if (!myEndDate) {
+            const errorList = new ListWidget();
+            errorList.addText("Please disable WiFi for initial execution (no data cached)");
+            return errorList;
+        }
+        let myRestSeconds = (myEndDate.getTime() - new Date().getTime()) / 1000;
+        // pack runs 31 days
+        const conTotalSeconds = conDaysPerPackage * DAY_IN_SECONDS;
+        let myRestTime = 100 * myRestSeconds / conTotalSeconds;
+        let myFixed = myRestTime >= 10 ? 0 : 1;
+
+        let myCompare = ">=";
+        let myAlert = "-> ok";
+        if (myRestData < myRestTime) {
+            myCompare = "<";
+            myAlert = "!";
+        }
+        let myRestText = `Rest data ${myRestData.toFixed(0)}% ${myCompare} rest time: ${myRestTime.toFixed(myFixed)}% ${myAlert}`;
+
+        const bedsRight = widgetWidth - bedsPaddingRight;
+        const freeBedsWidth = 0; //(bedsRight / beds) * freeBeds;
+        //const covidBedsWidth = (bedsRight / beds) * cases;
+        let myTextColor = Color.black();
+        if (myRestData < myRestTime) {
+            myTextColor = Color.red();
+        }
+
+        let bedsRect = new Rect(bedsPaddingLeft, bedsGraphBaseline - 40, bedsRight - freeBedsWidth - bedsPaddingLeft - 10, 26);
+        drawContext.setFont(Font.mediumSystemFont(26));
+        drawContext.setTextColor(myTextColor);
+        drawContext.drawTextInRect(myRestText, bedsRect)
 
         let min = 0;
         let max = 100;
@@ -181,13 +226,15 @@ async function createWidget() {
             } else {
                 dayColor = accentColor1;
             }
-
-            const casesRect = new Rect(spaceBetweenDays * i + 37, (graphLow - 40) - (graphHeight * delta), 60, 23);
+            const conFontSize = 18;
             //console.log(`${i} ${day} x: ${spaceBetweenDays * i + 20}- y: ${(graphLow - 40) - (graphHeight * delta)}`);
+            let myShowPercent = (i - myNewHistory.length + 1) % 3;
+            if (myShowPercent === 0) {
+                const casesRect = new Rect(spaceBetweenDays * i + 37, (graphLow - 20) - (graphHeight * delta), 60, 23);
+                drawTextR(drawContext, myRestPercentage, casesRect, accentColor1, Font.systemFont(conFontSize));
+            }
             const dayRect = new Rect(spaceBetweenDays * i + 44, graphLow + 15, 50, 23);
-
-            drawTextR(drawContext, myRestPercentage, casesRect, accentColor1, Font.systemFont(21));
-            drawTextR(drawContext, day, dayRect, dayColor, Font.systemFont(21));
+            drawTextR(drawContext, day, dayRect, dayColor, Font.systemFont(conFontSize));
         }
 
         return { widget: widget, drawContext: drawContext };
@@ -303,6 +350,7 @@ async function getData(fm, path) {
                 throw "Please disable WiFi for initial execution (1)";
                 //return errorList;
             }
+            //showObject(myStoredData, "getData.myStoredData catch");
             data = myStoredData.data; // ? myStoredData.data : myStoredData;
             if (!data || !data.usedPercentage) {
                 //const errorList = new ListWidget();
@@ -316,6 +364,7 @@ async function getData(fm, path) {
             throw errInner;
         }
     }
+    showObject(myStoredData, "getData.myStoredData ");
     return { fresh, myStoredData };
 }
 
@@ -458,7 +507,6 @@ async function readAndStoreHistory(fm, conHistoryPath, pStoredData) {
     }
 }
 
-
 /**
  * calc end date from current + remaining seconds
  * @param {any} data
@@ -473,22 +521,31 @@ function calcEndDate(pStoredData) {
     let myEndDate = new Date(pStoredData.accessTime + data.remainingSeconds * 1000);
     return myEndDate;
 }
-
+/**
+ * 
+ * @param {ListWidget} widget
+ * @param {string} title
+ * @param {string} pURL
+ */
 function showLink(widget, title, pURL) {
     widget.addSpacer(8)
     // Add button to open documentation
     let linkSymbol = SFSymbol.named("arrow.up.forward")
     let footerStack = widget.addStack()
     let linkStack = footerStack.addStack()
+    //linkStack.
     // if the widget is small, link does not work!
     linkStack.url = pURL;
     let linkElement = linkStack.addText(title)
     linkElement.font = Font.title2(); //Font.mediumSystemFont(13)
     linkElement.textColor = Color.blue()
+    //linkElement.rightAlignText();
     linkStack.addSpacer(3)
     let linkSymbolElement = linkStack.addImage(linkSymbol.image)
     linkSymbolElement.imageSize = new Size(11, 11)
     linkSymbolElement.tintColor = Color.blue()
+    footerStack.topAlignContent();
+    return footerStack;
 }
 
 /**
@@ -537,4 +594,53 @@ function drawLine(drawContext, point1, point2, width, color) {
     drawContext.setStrokeColor(color);
     drawContext.setLineWidth(width);
     drawContext.strokePath();
+}
+
+async function notifyIfNeeded(myStoredData) {
+    let data = myStoredData.data;
+    let myEndDate = calcEndDate(myStoredData);
+    if (!myEndDate) {
+        throw "calcEndDate undefined";
+    }
+    let myRestSeconds = (myEndDate.getTime() - new Date().getTime()) / 1000;
+
+    const myRemainingData = 100 - data.usedPercentage;
+    // notify if less than LowDays left
+    const conRemainingSecondsLow = 60 * 60 * 24 * conRemainingDaysLow;
+    const conRemainingSecondsVeryLow = 60 * 60 * conRemainingHoursVeryLow;
+    if (myRemainingData <= 0 || (myRestSeconds <= 0)) {
+        let notify1 = new Notification();
+        //let myRemainingHours = (myRestSeconds / (60 * 60)).toFixed(0);
+        notify1.title = "Telekom data empty!";
+        let myString = "Stop WLAN and click here to go to Telekom App";
+        notify1.body = myString;
+        notify1.openURL = conTelekomURL;
+        await notify1.schedule();
+    }
+    else if (myRemainingData <= conPercentageVeryLow || (myRestSeconds <= conRemainingSecondsVeryLow)) {
+        let notify1 = new Notification();
+        let myRemainingHours = (myRestSeconds / (60 * 60)).toFixed(0);
+        let myString = "Remaining: " + myRemainingData.toString() + "% - " + myRemainingHours + " hours";
+        notify1.title = "Telekom data very low!";
+        notify1.body = myString;
+        notify1.openURL = conTelekomURL;
+        await notify1.schedule();
+    }
+    else if (myRemainingData <= conPercentageLow || (myRestSeconds <= conRemainingSecondsLow)) {
+        let notify1 = new Notification();
+        notify1.title = "Remaining Telekom data low";
+        if (myRestSeconds < 60 * 60 * 24) {
+            // less than 1 day-> show hours
+            let myRemaininghours = (myRestSeconds / (60 * 60)).toFixed(0);
+            let myString = "Remaining: " + myRemainingData.toString() + "% - " + myRemaininghours + " hours";
+            notify1.body = myString;
+        }
+        else {
+            let myRemainingDays = (myRestSeconds / (60 * 60 * 24)).toFixed(0);
+            let myString = "Remaining: " + myRemainingData.toString() + "% - " + myRemainingDays + " days";
+            notify1.body = myString;
+        }
+        notify1.openURL = conTelekomURL;
+        await notify1.schedule();
+    }
 }
