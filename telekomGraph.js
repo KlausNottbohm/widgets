@@ -14,8 +14,36 @@ const conRemainingDaysLow = 1 / 2;
 const conPercentageVeryLow = 1;
 const conRemainingHoursVeryLow = 6;
 
-let widget = await createWidget();
-widget.backgroundColor = conAntiqueWhite;
+const colorLow = new Color('#FAD643', 1); // < 5
+const colorMed = new Color('#E8B365', 1); // < 20
+const colorHigh = new Color('#DD5045', 1); // < 200
+const colorUltra = new Color('#8E0000', 1); // >= 200
+
+const DAY_IN_MICROSECONDS = 86400000;
+const lineWeight = 2;
+const vertLineWeight = 36;
+const accentColor1 = new Color('#33cc33', 1);
+const accentColor2 = Color.lightGray();
+
+const widgetHeight = 338;
+const widgetWidth = 720;
+const graphLow = 200;
+const graphHeight = 100;
+const spaceBetweenDays = 47.5;
+const bedsGraphBaseline = 290;
+const bedsPaddingLeft = 32;
+const bedsPaddingRight = 32;
+const bedsLineWidth = 12;
+
+let myResult = await createWidget();
+showObject(myResult, "createWidget");
+let widget = myResult.widget;
+if (myResult.drawContext) {
+    widget.setPadding(0, 0, 0, 0);
+    widget.backgroundImage = (myResult.drawContext.getImage());
+}
+
+//widget.backgroundColor = conAntiqueWhite;
 if (!config.runsInWidget) {
     await widget.presentLarge()
 }
@@ -30,80 +58,19 @@ async function createWidget() {
     let dir = fm.documentsDirectory()
     let path = fm.joinPath(dir, "scriptable-telekom.json")
     //console.log(`fm.joinPath ${path}`);
-
-    const list = new ListWidget()
-    list.addSpacer(10)
-
     try {
-        // ServerData
-        // usedVolumeStr: 839, 31 MB
-        // remainingTimeStr: 12 Tage 5 Std.
-        // hasOffers: true
-        // remainingSeconds: 1055447
-        // usedAt: 1620191668000
-        // validityPeriod: 5
-        // usedPercentage: 33
-        // title:
-        // initialVolume: 2684354560
-        // initialVolumeStr: 2, 5 GB
-        // passType: 101
-        // nextUpdate: 10800
-        // subscriptions: speedon, roamLikeHome, tns, m4mBundle, migtest
-        // usedVolume: 880088349
-        // passStage: 1
-        // passName: Data Flex 2, 5 GB
-        let r = new Request(apiUrl)
-        // API only answers for mobile Safari
-        r.headers = {
-            "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 13_5_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.1.1 Mobile/15E148 Safari/604.1"
-        }
-        /** {data: ServerData, accessTime} */
-        let myStoredData;
-        /** ServerData */
-        let data;
-        /** indicate read from server*/
-        let fresh = false;
+        let fresh, myStoredData;
         try {
-            // Fetch data from pass.telekom.de
-            data = await r.loadJSON();
-            //showObject(data, "r.loadJSON");
-            myStoredData = { version: `Written by telekom.js version: ${conVersion}`, data: data, accessTime: new Date().getTime(), accessString: new Date().toString() };
-            let myStoredStringWrite = JSON.stringify(myStoredData, null, 2);
-            // Write JSON to iCloud file
-            fm.writeString(path, myStoredStringWrite);
-            let myStoredStringRead = fm.readString(path);
-            if (myStoredStringRead !== myStoredStringWrite) {
-                showObject(myStoredStringRead, "myStoredStringRead");
-                showObject(myStoredStringWrite, "myStoredStringWrite");
-                const errorList = new ListWidget();
-                errorList.addText("Internal Error: myStoredStringRead !== myStoredStringWrite");
-                return errorList;
-            }
-            fresh = true;
+            let { rfresh, rmyStoredData, rdata } = await getData(fm, path);
+            fresh = rfresh; myStoredData = rmyStoredData;
+        } catch (e) {
+            const errorList = new ListWidget();
+            errorList.addText(e);
+            return { widget: errorList };
         }
-        catch (err) {
-            showObject(err, "catch (err)");
-            try {
-                // if reading from pass.telekom.de not possible-> read data from iCloud file
-                myStoredData = JSON.parse(fm.readString(path), null);
-                showObject(myStoredData, "fm.readString");
-                if (!myStoredData) {
-                    const errorList = new ListWidget();
-                    errorList.addText("Please disable WiFi for initial execution (1)");
-                    return errorList;
-                }
-                data = myStoredData.data; // ? myStoredData.data : myStoredData;
-                if (!data || !data.usedPercentage) {
-                    const errorList = new ListWidget();
-                    errorList.addText("Please disable WiFi for initial execution (2)");
-                    return errorList;
-                }
-            } catch (errInner) {
-                console.error("errInner");
-                console.error(errInner);
-            }
-        }
+        let myNewHistory = [];
 
+        // #region get myNewHistory
         // history
         const conHistoryPath = fm.joinPath(dir, "ScriptableTelekomHistory.json");
         // array of myStoredData = { version: `Written by telekom.js version: ${conVersion}`, data: data, accessTime: new Date().getTime(), accessString: new Date().toString() };
@@ -116,7 +83,7 @@ async function createWidget() {
             let myEndDate = calcEndDate(myOldestEntry);
             console.log(`myOldestEntry: ${getDateStringFromEntry(myOldestEntry)} - end time: ${myEndDate.toLocaleString()}`);
 
-            let myNewHistory = [{ entry: myOldestEntry, dateString: getDateStringFromEntry(myOldestEntry), date: new Date(myOldestEntry.accessTime) }];
+            myNewHistory = [{ entry: myOldestEntry, dateString: getDateStringFromEntry(myOldestEntry), date: new Date(myOldestEntry.accessTime) }];
             let myIndex = 0;
             let myNowString = getDateStringFromDate(new Date());
             let myNextDay = new Date(myOldestEntry.accessTime + 24 * 60 * 60 * 1000);
@@ -135,148 +102,89 @@ async function createWidget() {
                 myNewHistory.push({ entry: myOldestEntry, dateString: getDateStringFromDate(myNextDay), date: myNextDay });
                 myNextDay = new Date(myNextDay.getTime() + 24 * 60 * 60 * 1000);
             }
+            // pack runs 31 days
+            const conTotalSeconds = 31 * 24 * 60 * 60;
+
             for (let iEle of myNewHistory) {
                 let myRestSeconds = (myEndDate.getTime() - iEle.date.getTime()) / 1000;
-                // pack runs 31 days
-                const conTotalSeconds = 31 * 24 * 60 * 60;
                 let myRestTime = 100 * myRestSeconds / conTotalSeconds;
-
                 console.log(`${iEle.dateString}: data: ${100 - iEle.entry.data.usedPercentage}% time: ${myRestTime.toFixed()}%`);
             }
         }
         else {
             console.log("No data");
         }
+        // #endregion
 
+        let drawContext = new DrawContext();
+        drawContext.size = new Size(widgetWidth, widgetHeight);
+        drawContext.opaque = false;
 
-        // now data contains data from server or from local file
-        //showObject(data, "Data");
-        showLink(list, "Rest data/time", conTelekomURL);
-        let myRestData = 100 - data.usedPercentage;
+        const widget = new ListWidget();
 
-        // time = msec
-        let myEndDate = calcEndDate(myStoredData);
-        if (!myEndDate) {
-            const errorList = new ListWidget();
-            errorList.addText("Please disable WiFi for initial execution (no data cached)");
-            return errorList;
-        }
-        let myRestSeconds = (myEndDate.getTime() - new Date().getTime()) / 1000;
-        // pack runs 31 days
-        const conTotalSeconds = 31 * 24 * 60 * 60;
-        let myRestTime = 100 * myRestSeconds / conTotalSeconds;
-        let myFixed = myRestTime >= 10 ? 0 : 1;
+        let min = 0;
+        let max = 100;
 
-        let myCompare = ">=";
-        let myAlert = "";
-        if (myRestData < myRestTime) {
-            myCompare = "<";
-            myAlert = "!";
-        }
-        let myRestText = `${myRestData.toFixed(0)}% ${myCompare} ${myRestTime.toFixed(myFixed)}% ${myAlert}`;
-        const lineRestText = list.addText(myRestText);
+        let diff = max - min;
 
-        //showLink(list, "Used data");
+        const highestIndex = myNewHistory.length - 1;
+        console.log(`myNewHistory.length: ${myNewHistory.length}`);
+        for (let i = 0; i < myNewHistory.length; i++) {
+            // { entry: myOldestEntry, dateString: getDateStringFromDate(myNextDay), date: myNextDay }
+            const day = myNewHistory[i].date.getDate();
+            const dayOfWeek = myNewHistory[i].date.getDay();
+            const myRestPercentage = 100 - myNewHistory[i].entry.data.usedPercentage;
+            const delta = (myRestPercentage - min) / diff;
+            console.log(`${i} day: ${day}- myRestPercentage: ${myRestPercentage}`);
 
-        //const line2 = list.addText(data.usedPercentage + "%")
-        lineRestText.font = Font.boldSystemFont(20);
+            // Vertical Line
 
-        lineRestText.textColor = Color.green();
-        if (myRestData < myRestTime) {
-            lineRestText.textColor = Color.red();
-        }
+            let drawColor;
 
-        const myRemainingData = 100 - data.usedPercentage;
-        // notify if less than LowDays left
-        const conRemainingSecondsLow = 60 * 60 * 24 * conRemainingDaysLow;
-        const conRemainingSecondsVeryLow = 60 * 60 * conRemainingHoursVeryLow;
-        if (myRemainingData <= 0 || (myRestSeconds <= 0)) {
-            let notify1 = new Notification();
-            //let myRemainingHours = (myRestSeconds / (60 * 60)).toFixed(0);
-            notify1.title = "Telekom data empty!";
-            let myString = "Stop WLAN and click here to go to Telekom App";
-            notify1.body = myString;
-            notify1.openURL = conTelekomURL;
-            await notify1.schedule();
-        }
-        else if (myRemainingData <= conPercentageVeryLow || (myRestSeconds <= conRemainingSecondsVeryLow)) {
-            let notify1 = new Notification();
-            let myRemainingHours = (myRestSeconds / (60 * 60)).toFixed(0);
-            let myString = "Remaining: " + myRemainingData.toString() + "% - " + myRemainingHours + " hours";
-            notify1.title = "Telekom data very low!";
-            notify1.body = myString;
-            notify1.openURL = conTelekomURL;
-            await notify1.schedule();
-        }
-        else if (myRemainingData <= conPercentageLow || (myRestSeconds <= conRemainingSecondsLow)) {
-            let notify1 = new Notification();
-            notify1.title = "Remaining Telekom data low";
-            if (myRestSeconds < 60 * 60 * 24) {
-                // less than 1 day-> show hours
-                let myRemaininghours = (myRestSeconds / (60 * 60)).toFixed(0);
-                let myString = "Remaining: " + myRemainingData.toString() + "% - " + myRemaininghours + " hours";
-                notify1.body = myString;
+            if (myRestPercentage < 5) {
+                drawColor = colorLow;
+            }
+            else if (myRestPercentage < 20) {
+                drawColor = colorMed;
             }
             else {
-                let myRemainingDays = (myRestSeconds / (60 * 60 * 24)).toFixed(0);
-                let myString = "Remaining: " + myRemainingData.toString() + "% - " + myRemainingDays + " days";
-                notify1.body = myString;
+                drawColor = Color.green();
             }
-            notify1.openURL = conTelekomURL;
-            await notify1.schedule();
+
+            const point1 = new Point(spaceBetweenDays * i + 200, graphLow - (graphHeight * delta));
+            const point2 = new Point(spaceBetweenDays * i + 200, graphLow + 10);
+            drawLine(drawContext, point1, point2, vertLineWeight, drawColor);
+            console.log(`${i} x: ${point1.x}- y: ${point1.y}`);
+
+            let dayColor;
+
+            if (dayOfWeek === 0 || dayOfWeek === 6) {
+                dayColor = accentColor2;
+            } else {
+                dayColor = Color.white();
+            }
+
+            const casesRect = new Rect(spaceBetweenDays * i + 220, (graphLow - 40) - (graphHeight * delta), 60, 23);
+            console.log(`${i} x: ${spaceBetweenDays * i + 220}- y: ${(graphLow - 40) - (graphHeight * delta)}`);
+            const dayRect = new Rect(spaceBetweenDays * i + 227, graphLow + 15, 50, 23);
+
+            drawTextR(drawContext, myRestPercentage, casesRect, dayColor, Font.systemFont(21));
+            drawTextR(drawContext, day, dayRect, dayColor, Font.systemFont(21));
         }
 
-        const lineUsedVolume = list.addText(data.usedVolumeStr + " / " + data.initialVolumeStr)
-        lineUsedVolume.font = Font.mediumSystemFont(12)
-
-        list.addSpacer(16)
-
-        let lineUntilTitle, lineEndDate, lineEndHour
-
-        let myUntilStack = list.addStack();
-        myUntilStack.spacing = 4;
-        lineUntilTitle = myUntilStack.addText("Runs until:");
-        lineUntilTitle.font = Font.mediumSystemFont(12);
-
-        // calc end of current pack
-        lineEndDate = myUntilStack.addDate(myEndDate);
-        lineEndDate.font = Font.mediumSystemFont(12);
-        // show hour
-        lineEndHour = myUntilStack.addDate(myEndDate);
-        lineEndHour.applyTimeStyle();
-        lineEndHour.font = Font.mediumSystemFont(12);
-
-        list.addSpacer(4);
-        let myDateColor = Color.black();
-        // Gray out if local data instead of Telekom API data:
-        if (!fresh) {
-            myDateColor = conGrayout;
-            //             lineRestText.textColor = conGrayout;
-            lineUsedVolume.textColor = conGrayout;
-            if (data.remainingTimeStr) {
-                lineUntilTitle.textColor = conGrayout
-                lineEndDate.textColor = conGrayout
-                lineEndHour.textColor = conGrayout
-            }
-        }
-
-        // Add time of last widget refresh:
-        addDateLine(new Date(), "App refresh", myDateColor);
-        addDateLine(new Date(data.usedAt), "Server refresh", myDateColor);
-
-        // version right aligned
-        let myVersiontext = list.addText(`${conVersion}`);
-        myVersiontext.font = Font.italicSystemFont(10);
-        myVersiontext.rightAlignText();
+        return { widget: widget, drawContext: drawContext };
     }
     catch (err) {
-        list.addText("error: " + err);
+        const errorList = new ListWidget();
+        errorList.addText("error: " + err);
+        //throw "Please disable WiFi for initial execution (1)";
+        //return errorList;
+        //list.addText("error: " + err);
         console.error("Err2");
         console.error(err);
         //showObject(err, "Err2");
+        return { widget: errorList };
     }
-
-    return list
     /**
      * adds date to list, date format or time format depending on distance to now. Returns added WidgetStack
      * @param {any} pDate
@@ -311,6 +219,83 @@ async function createWidget() {
         }
     }
 }
+
+async function getData(fm, path) {
+    // ServerData
+    // usedVolumeStr: 839, 31 MB
+    // remainingTimeStr: 12 Tage 5 Std.
+    // hasOffers: true
+    // remainingSeconds: 1055447
+    // usedAt: 1620191668000
+    // validityPeriod: 5
+    // usedPercentage: 33
+    // title:
+    // initialVolume: 2684354560
+    // initialVolumeStr: 2, 5 GB
+    // passType: 101
+    // nextUpdate: 10800
+    // subscriptions: speedon, roamLikeHome, tns, m4mBundle, migtest
+    // usedVolume: 880088349
+    // passStage: 1
+    // passName: Data Flex 2, 5 GB
+    let r = new Request(apiUrl);
+    // API only answers for mobile Safari
+    r.headers = {
+        "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 13_5_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.1.1 Mobile/15E148 Safari/604.1"
+    };
+    /** {data: ServerData, accessTime} */
+    let myStoredData;
+    /** ServerData */
+    let data;
+    /** indicate read from server*/
+    let fresh = false;
+    try {
+        // Fetch data from pass.telekom.de
+        data = await r.loadJSON();
+        //showObject(data, "r.loadJSON");
+        myStoredData = { version: `Written by telekom.js version: ${conVersion}`, data: data, accessTime: new Date().getTime(), accessString: new Date().toString() };
+        let myStoredStringWrite = JSON.stringify(myStoredData, null, 2);
+        // Write JSON to iCloud file
+        fm.writeString(path, myStoredStringWrite);
+        let myStoredStringRead = fm.readString(path);
+        if (myStoredStringRead !== myStoredStringWrite) {
+            showObject(myStoredStringRead, "myStoredStringRead");
+            showObject(myStoredStringWrite, "myStoredStringWrite");
+            //const errorList = new ListWidget();
+            //errorList.addText("Internal Error: myStoredStringRead !== myStoredStringWrite");
+            throw "Internal Error: myStoredStringRead !== myStoredStringWrite";
+            //return errorList;
+        }
+        fresh = true;
+    }
+    catch (err) {
+        showObject(err, "catch (err)");
+        try {
+            // if reading from pass.telekom.de not possible-> read data from iCloud file
+            myStoredData = JSON.parse(fm.readString(path), null);
+            showObject(myStoredData, "fm.readString");
+            if (!myStoredData) {
+                //const errorList = new ListWidget();
+                //errorList.addText("Please disable WiFi for initial execution (1)");
+                throw "Please disable WiFi for initial execution (1)";
+                //return errorList;
+            }
+            data = myStoredData.data; // ? myStoredData.data : myStoredData;
+            if (!data || !data.usedPercentage) {
+                //const errorList = new ListWidget();
+                //errorList.addText("Please disable WiFi for initial execution (2)");
+                throw "Please disable WiFi for initial execution (2)";
+                //return errorList;
+            }
+        } catch (errInner) {
+            console.error("errInner");
+            console.error(errInner);
+            throw errInner;
+        }
+    }
+    return { fresh, myStoredData };
+}
+
 /**
  * string from server entry
  * @param {{accessTime:number}} pEntry
@@ -365,7 +350,7 @@ async function readAndStoreHistory(fm, conHistoryPath, pStoredData) {
     // passName: Data Flex 2, 5 GB
     try {
         //console.log("storeHistory");
-       let myHistoryData = await readHistoryData();
+        let myHistoryData = await readHistoryData();
 
         console.log("After sort");
         for (let iEle of myHistoryData) {
@@ -512,4 +497,21 @@ function showObject(pObject, title) {
             console.log(`${pObject}`);
         }
     }
+}
+
+function drawTextR(drawContext, text, rect, color, font) {
+    drawContext.setFont(font);
+    drawContext.setTextColor(color);
+    drawContext.drawTextInRect(new String(text).toString(), rect);
+}
+
+function drawLine(drawContext, point1, point2, width, color) {
+    const path = new Path();
+    path.move(point1);
+
+    path.addLine(point2);
+    drawContext.addPath(path);
+    drawContext.setStrokeColor(color);
+    drawContext.setLineWidth(width);
+    drawContext.strokePath();
 }
