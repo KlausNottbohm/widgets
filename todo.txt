@@ -1,3 +1,8 @@
+15.11.22 Telekom
+. erzeuge ersten Eintrag mit 100%
+. test run mit fake daten 
+. generalisiere Anzahl Einträge (von 14 auf 31)
+
 9.6.21
 . Wetter:
     https://dev.meteostat.net/terms.html#limitation-of-liability

@@ -22,7 +22,7 @@ const colorUltra = new Color('#8E0000', 1); // >= 200
 const DAY_IN_MICROSECONDS = 86400000;
 const lineWeight = 2;
 const vertLineWeight = 36;
-const accentColor1 = new Color('#33cc33', 1);
+const accentColor1 = Color.black(); //new Color('#33cc33', 1);
 const accentColor2 = Color.lightGray();
 
 const widgetHeight = 338;
@@ -38,15 +38,13 @@ const bedsLineWidth = 12;
 let myResult = await createWidget();
 showObject(myResult, "createWidget");
 let widget = myResult.widget;
+widget.backgroundColor = conAntiqueWhite;
 if (myResult.drawContext) {
     widget.setPadding(0, 0, 0, 0);
     widget.backgroundImage = (myResult.drawContext.getImage());
 }
 
-//widget.backgroundColor = conAntiqueWhite;
-if (!config.runsInWidget) {
-    await widget.presentLarge()
-}
+    await widget.presentMedium()
 
 Script.setWidget(widget)
 Script.complete()
@@ -151,24 +149,24 @@ async function createWidget() {
                 drawColor = Color.green();
             }
 
-            const point1 = new Point(spaceBetweenDays * i + 200, graphLow - (graphHeight * delta));
-            const point2 = new Point(spaceBetweenDays * i + 200, graphLow + 10);
+            const point1 = new Point(spaceBetweenDays * i + 50, graphLow - (graphHeight * delta));
+            const point2 = new Point(spaceBetweenDays * i + 50, graphLow + 10);
             drawLine(drawContext, point1, point2, vertLineWeight, drawColor);
-            console.log(`${i} x: ${point1.x}- y: ${point1.y}`);
+            //console.log(`${i} x: ${point1.x}- y: ${point1.y}`);
 
             let dayColor;
 
             if (dayOfWeek === 0 || dayOfWeek === 6) {
                 dayColor = accentColor2;
             } else {
-                dayColor = Color.white();
+                dayColor = accentColor1;
             }
 
-            const casesRect = new Rect(spaceBetweenDays * i + 220, (graphLow - 40) - (graphHeight * delta), 60, 23);
-            console.log(`${i} x: ${spaceBetweenDays * i + 220}- y: ${(graphLow - 40) - (graphHeight * delta)}`);
-            const dayRect = new Rect(spaceBetweenDays * i + 227, graphLow + 15, 50, 23);
+            const casesRect = new Rect(spaceBetweenDays * i + 37, (graphLow - 40) - (graphHeight * delta), 60, 23);
+            //console.log(`${i} ${day} x: ${spaceBetweenDays * i + 20}- y: ${(graphLow - 40) - (graphHeight * delta)}`);
+            const dayRect = new Rect(spaceBetweenDays * i + 44, graphLow + 15, 50, 23);
 
-            drawTextR(drawContext, myRestPercentage, casesRect, dayColor, Font.systemFont(21));
+            drawTextR(drawContext, myRestPercentage, casesRect, accentColor1, Font.systemFont(21));
             drawTextR(drawContext, day, dayRect, dayColor, Font.systemFont(21));
         }
 
