@@ -1,7 +1,7 @@
-15.11.22 Telekom
-. erzeuge ersten Eintrag mit 100%
+16.11.22 Telekom
 . test run mit fake daten 
-. generalisiere Anzahl Einträge (von 14 auf 31)
+    . today für test faken
+    . anderes File
 
 9.6.21
 . Wetter:

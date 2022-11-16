@@ -145,7 +145,12 @@ async function createWidget() {
         myTextArea.topAlignContent();
         myTextArea.size = new Size(widgetWidth, 150);
 
-        showLink(myTextArea, "Goto Telekom", conTelekomURL);
+        if (fresh) {
+            showLink(myTextArea, "Goto Telekom", conTelekomURL);
+        }
+        else {
+            showTitle(myTextArea, "Telekom Data");
+        }
 
         let { myRestData, myRestTime, myEndDate } = getRestInfo(myStoredData);
 
@@ -232,12 +237,12 @@ async function createWidget() {
             }
             const conFontSize = 18;
             //console.log(`${i} ${day} x: ${spaceBetweenDays * i + 20}- y: ${(graphLow - 40) - (graphHeight * delta)}`);
-            let myShowPercent = (i - myNewHistory.length + 1) % 2;
+            let myShowPercent = (i - myNewHistory.length + 1) % 3;
             if (myShowPercent === 0) {
-                const casesRect = new Rect(spaceBetweenDays * i + 37, (graphLow - 20) - (graphHeight * delta), 60, 23);
-                drawTextR(drawContext, myRestPercentage, casesRect, accentColor1, Font.systemFont(conFontSize));
+                const casesRect = new Rect(spaceBetweenDays * i + 38, (graphLow - 20) - (graphHeight * delta), 60, 23);
+                drawTextR(drawContext, myRestPercentage + "%", casesRect, accentColor1, Font.systemFont(conFontSize));
             }
-            const dayRect = new Rect(spaceBetweenDays * i + 44, graphLow + 15, 50, 23);
+            const dayRect = new Rect(spaceBetweenDays * i + 40, graphLow + 15, 50, 23);
             drawTextR(drawContext, day, dayRect, dayColor, Font.systemFont(conFontSize));
         }
 
@@ -570,7 +575,7 @@ function calcEndDate(pStoredData) {
     return myEndDate;
 }
 /**
- * 
+ * add link in blue
  * @param {ListWidget} widget
  * @param {string} title
  * @param {string} pURL
@@ -592,6 +597,23 @@ function showLink(widget, title, pURL) {
     let linkSymbolElement = linkStack.addImage(linkSymbol.image)
     linkSymbolElement.imageSize = new Size(11, 11)
     linkSymbolElement.tintColor = Color.blue()
+    footerStack.topAlignContent();
+    return footerStack;
+}
+
+/**
+ * add title in black
+ * @param {any} widget
+ * @param {any} title
+ */
+function showTitle(widget, title) {
+    widget.addSpacer(8)
+    let footerStack = widget.addStack()
+    let linkStack = footerStack.addStack()
+    let linkElement = linkStack.addText(title)
+    linkElement.font = Font.title2(); //Font.mediumSystemFont(13)
+    linkElement.textColor = Color.black()
+    linkStack.addSpacer(3)
     footerStack.topAlignContent();
     return footerStack;
 }
