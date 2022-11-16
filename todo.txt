@@ -2,6 +2,7 @@
 . test run mit fake daten 
     . today für test faken
     . anderes File
+. refactoring: konsequente Namen für item, data, entry
 
 9.6.21
 . Wetter:
