@@ -5,29 +5,43 @@ const conVersion = "V221115telekom";
 
 let conIsTest = false;
 
-const apiUrl = "https://pass.telekom.de/api/service/generic/v1/status";
+const conAPIUrl = "https://pass.telekom.de/api/service/generic/v1/status";
 const conTelekomURL = "https://pass.telekom.de";
 
-// antiquewhite
+// antiquewhite : #faebd7
 const conAntiqueWhite = new Color("#faebd7");
-const conGrayout = Color.darkGray();
+// telekom magenta 0xE20074
+const conMagenta = new Color("#E20074");
+const conWidgetBackgroundColor = conMagenta; //conAntiqueWhite
+
+// choose a color fitting to conWidgetBackgroundColor (alternatives for conAntiqueWhite after comment signs//)
+/**color for normal font */
+const conAccentColor1 = Color.white(); //conAntiqueWhite Color.black()
+/**weekend color */
+const conAccentColor2 = Color.lightGray();
+// middle blue : #6190E6
+/**color for link */
+const conLinkColor = new Color("#6190E6"); // conAntiqueWhite Color.blue()
+// light red : #FF7F7F
+/**color for low data value */
+const conAlertColor = new Color("#FF7F7F"); // conAntiqueWhite Color.red()
+
+//const conGrayout = Color.darkGray();
 const conPercentageLow = 10;
 const conRemainingDaysLow = 1 / 2;
 const conPercentageVeryLow = 1;
 const conRemainingHoursVeryLow = 6;
 const conDaysPerPackage = 31;
 
-const colorLow = new Color('#FAD643', 1); // < 5
-const colorMed = new Color('#E8B365', 1); // < 20
-const colorHigh = new Color('#DD5045', 1); // < 200
-const colorUltra = new Color('#8E0000', 1); // >= 200
+//const colorLow = new Color('#FAD643', 1); // < 5
+//const colorMed = new Color('#E8B365', 1); // < 20
+//const colorHigh = new Color('#DD5045', 1); // < 200
+//const colorUltra = new Color('#8E0000', 1); // >= 200
 
 const DAY_IN_SECONDS = 24 * 60 * 60;//86400000;
 const DAY_IN_MILLISECONDS = DAY_IN_SECONDS * 1000;//86400000;
-const lineWeight = 2;
+//const lineWeight = 2;
 const vertLineWeight = 18;
-const accentColor1 = Color.black(); //new Color('#33cc33', 1);
-const accentColor2 = Color.lightGray();
 
 const widgetHeight = 338;
 const widgetWidth = 720;
@@ -36,8 +50,8 @@ const graphHeight = 100;
 const spaceBetweenDays = 22;
 const bedsGraphBaseline = 290;
 const bedsPaddingLeft = 32;
-const bedsPaddingRight = 32;
-const bedsLineWidth = 12;
+//const bedsPaddingRight = 32;
+//const bedsLineWidth = 12;
 
 let widget = await createWidget();
 widget.url = conTelekomURL;
@@ -113,10 +127,10 @@ async function createWidget() {
                 }
                 //let myNextEntry = myOldestEntry;
                 //console.log(`myTest: ${getDateStringFromDate(myNextDay)} ${myNowString} ${getDateStringFromDate(myNextDay) === myNowString}`);
-                //if (conIsTest && getDateStringFromDate(myNextDay) === myNowString) {
-                //    myOldestEntry.data.usedPercentage = 99;
-                //    //showObject(myNextEntry, `Test Entry`);
-                //}
+                if (conIsTest && getDateStringFromDate(myNextDay) === myNowString) {
+                    myOldestEntry.data.usedPercentage = 99;
+                    //showObject(myNextEntry, `Test Entry`);
+                }
                 myNewHistory.push({ entry: myOldestEntry, dateString: getDateStringFromDate(myNextDay), date: myNextDay });
                 myNextDay = new Date(myNextDay.getTime() + 24 * 60 * 60 * 1000);
             }
@@ -139,7 +153,7 @@ async function createWidget() {
         drawContext.opaque = false;
 
         const widget = new ListWidget();
-        widget.backgroundColor = conAntiqueWhite;
+        widget.backgroundColor = conWidgetBackgroundColor;
 
         let myTextArea = widget.addStack();
         myTextArea.topAlignContent();
@@ -157,10 +171,10 @@ async function createWidget() {
         //const bedsRight = widgetWidth - bedsPaddingRight;
         //const freeBedsWidth = 0; //(bedsRight / beds) * freeBeds;
         //const covidBedsWidth = (bedsRight / beds) * cases;
-        let myTextColor = Color.black();
-        if (myRestData < myRestTime) {
-            myTextColor = Color.red();
-        }
+        let myTextColor = conAccentColor1;
+        //if (myRestData < myRestTime) {
+        //    myTextColor = Color.red();
+        //}
 
         let myRestDataRect = new Rect(bedsPaddingLeft, bedsGraphBaseline - 40, widgetWidth / 2 - 100, 26);
         drawContext.setFont(Font.mediumSystemFont(26));
@@ -217,7 +231,7 @@ async function createWidget() {
             let drawColor;
 
             if (myRestPercentage < myRestTime) {
-                drawColor = Color.red();
+                drawColor = conAlertColor;
             }
             else {
                 drawColor = Color.green();
@@ -231,16 +245,16 @@ async function createWidget() {
             let dayColor;
 
             if (dayOfWeek === 0 || dayOfWeek === 6) {
-                dayColor = accentColor2;
+                dayColor = conAccentColor2;
             } else {
-                dayColor = accentColor1;
+                dayColor = conAccentColor1;
             }
             const conFontSize = 18;
             //console.log(`${i} ${day} x: ${spaceBetweenDays * i + 20}- y: ${(graphLow - 40) - (graphHeight * delta)}`);
             let myShowPercent = (i - myNewHistory.length + 1) % 3;
             if (myShowPercent === 0) {
-                const casesRect = new Rect(spaceBetweenDays * i + 38, (graphLow - 20) - (graphHeight * delta), 60, 23);
-                drawTextR(drawContext, myRestPercentage + "%", casesRect, accentColor1, Font.systemFont(conFontSize));
+                const myRestPercentRect = new Rect(spaceBetweenDays * i + 38, (graphLow - 20) - (graphHeight * delta), 60, 23);
+                drawTextR(drawContext, myRestPercentage + "%", myRestPercentRect, conAccentColor1, Font.systemFont(conFontSize));
             }
             const dayRect = new Rect(spaceBetweenDays * i + 40, graphLow + 15, 50, 23);
             drawTextR(drawContext, day, dayRect, dayColor, Font.systemFont(conFontSize));
@@ -264,39 +278,6 @@ async function createWidget() {
         console.error(err);
         //showObject(err, "Err2");
         return { widget: errorList };
-    }
-    /**
-     * adds date to list, date format or time format depending on distance to now. Returns added WidgetStack
-     * @param {any} pDate
-     * @param {any} pTitle
-     * @param {any} pColor
-     */
-    function addDateLine(pDate, pTitle, pColor) {
-        const footer = list.addStack();
-        footer.layoutHorizontally();
-        let myTitle = footer.addText(pTitle);
-        myTitle.font = Font.mediumSystemFont(10);
-        myTitle.textColor = pColor;
-        let myHoursSince = (new Date() - pDate) / (1000 * 60 * 60);
-        if (myHoursSince <= 24) {
-            // if today, show time
-            addDateOrTime(true);
-        }
-        else {
-            // if older show day
-            addDateOrTime(false);
-        }
-        return footer;
-
-        function addDateOrTime(pShowTime) {
-            footer.addSpacer(4);
-            let timeLabel = footer.addDate(pDate);
-            timeLabel.font = Font.italicSystemFont(10);
-            if (pShowTime) {
-                timeLabel.applyTimeStyle();
-            }
-            timeLabel.textColor = pColor;
-        }
     }
 }
 /**
@@ -361,7 +342,7 @@ async function getData(fm, path) {
     // usedVolume: 880088349
     // passStage: 1
     // passName: Data Flex 2, 5 GB
-    let r = new Request(apiUrl);
+    let r = new Request(conAPIUrl);
     // API only answers for mobile Safari
     r.headers = {
         "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 13_5_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.1.1 Mobile/15E148 Safari/604.1"
@@ -591,12 +572,12 @@ function showLink(widget, title, pURL) {
     linkStack.url = pURL;
     let linkElement = linkStack.addText(title)
     linkElement.font = Font.title2(); //Font.mediumSystemFont(13)
-    linkElement.textColor = Color.blue()
+    linkElement.textColor = conLinkColor;
     //linkElement.rightAlignText();
     linkStack.addSpacer(3)
     let linkSymbolElement = linkStack.addImage(linkSymbol.image)
     linkSymbolElement.imageSize = new Size(11, 11)
-    linkSymbolElement.tintColor = Color.blue()
+    linkSymbolElement.tintColor = conLinkColor;
     footerStack.topAlignContent();
     return footerStack;
 }
@@ -612,7 +593,7 @@ function showTitle(widget, title) {
     let linkStack = footerStack.addStack()
     let linkElement = linkStack.addText(title)
     linkElement.font = Font.title2(); //Font.mediumSystemFont(13)
-    linkElement.textColor = Color.black()
+    linkElement.textColor = conAccentColor1;
     linkStack.addSpacer(3)
     footerStack.topAlignContent();
     return footerStack;
