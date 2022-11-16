@@ -32,6 +32,7 @@
     <DebugSymbols>true</DebugSymbols>
   </PropertyGroup>
   <ItemGroup>
+    <Content Include=".eslintrc" />
     <Content Include="APIData\CityData.json">
       <SubType>Code</SubType>
     </Content>
@@ -72,7 +73,8 @@
     <Content Include="todo.txt">
       <SubType>Code</SubType>
     </Content>
-    <Content Include="tsconfig.jsonOld" />
+    <Content Include="tsconfig.json" />
+    <Content Include="Typescript\src\telekomGraph.ts" />
     <Content Include="Umfrageergebnisse.js">
       <SubType>Code</SubType>
     </Content>

@@ -3,12 +3,12 @@
   "compilerOptions": {
     "outDir": "./TypeScript/built",
     "allowJs": true,
-    "target": "es6",
-    "sourceMap": true,
+    "target": "ES2017",
+    //"sourceMap": true,
     "strictNullChecks": true,
     //"strictPropertyInitialization": true,
     //"noImplicitAny": true,
-    "lib": [ "es6", "dom", "scripthost", "es2016.array.include" ]
+    "lib": [ "2017", "dom", "scripthost", "es2016.array.include" ]
   },
   "include": [
     "./TypeScript/src/**/*"
