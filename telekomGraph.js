@@ -1,4 +1,3 @@
-/// <reference path="TypeDefinitions/scriptable.d.ts" />
 // Variables used by Scriptable.
 // These must be at the very top of the file. Do not edit.
 // icon-color: brown; icon-glyph: magic;
@@ -8,7 +7,7 @@ run();
 async function run() {
 
     // #region constant definitions
-    const conVersion = "V221117graph";
+    const conVersion = "V221118graph";
 
     /** possible values: 
      * undefined or "": real data
@@ -31,9 +30,12 @@ async function run() {
     const conAccentColor1 = Color.white(); //conAntiqueWhite Color.black()
     /**weekend color */
     const conAccentColor2 = Color.lightGray();
+    // light blue: #ADD8E6
+    const conLightBlue = new Color("#ADD8E6");
     // middle blue : #6190E6
+    const conMiddleBlue = new Color("#6190E6");
     /**color for link */
-    const conLinkColor = new Color("#6190E6"); // conAntiqueWhite Color.blue()
+    const conLinkColor = conMiddleBlue; // conAntiqueWhite Color.blue()
     // light red : #FF7F7F
     /**color for low data value */
     const conAlertColor = new Color("#FF7F7F"); // conAntiqueWhite Color.red()
@@ -92,7 +94,7 @@ async function run() {
         myDrawContext.size = new Size(widgetWidth, widgetHeight);
         myDrawContext.opaque = false;
 
-        showHeader(widget, fresh);
+        showHeader(widget, fresh, myStoredData);
 
         showStoredData(myStoredData, myDrawContext);
 
@@ -119,19 +121,10 @@ async function run() {
         console.log(`myHistoryDatas.length: ${myHistoryDatas.length}`);
         for (let i = 0; i < myHistoryDatas.length; i++) {
             // { entry: myOldestEntry, dateString: getDateStringFromDate(myNextDay), date: myNextDay }
-            const day = myHistoryDatas[i].date.getDate();
-            const dayOfWeek = myHistoryDatas[i].date.getDay();
-            const myRestPercentage = 100 - myHistoryDatas[i].entry.data.usedPercentage;
-            const delta = (myRestPercentage - min) / diff;
-
-            let myEndDate = calcEndDate(myHistoryDatas[i].entry);
-            if (!myEndDate) {
-                throw "calcEndDate undefined";
-            }
-            let myRestSeconds = (myEndDate.getTime() - myHistoryDatas[i].date.getTime()) / 1000;
-            // pack runs 31 days
-            const conTotalSeconds = conDaysPerPackage * DAY_IN_SECONDS;
-            let myRestTime = 100 * myRestSeconds / conTotalSeconds;
+            let iHistoryData = myHistoryDatas[i];
+            const day = iHistoryData.date.getDate();
+            const dayOfWeek = iHistoryData.date.getDay();
+            var { myRestPercentage, myRestTime } = calcRest(iHistoryData.entry, iHistoryData.date);
 
             console.log(`${i} day: ${day}- myRestPercentage: ${myRestPercentage} myRestTime: ${myRestTime.toFixed()}`);
 
@@ -147,6 +140,7 @@ async function run() {
                 console.log("drawColor = Color.green()");
             }
 
+            const delta = (myRestPercentage - min) / diff;
             const point1 = new Point(spaceBetweenDays * i + 20, graphLow - (graphHeight * delta));
             const point2 = new Point(spaceBetweenDays * i + 20, graphLow + 10);
             drawLine(drawContext, point1, point2, vertLineWeight, drawColor);
@@ -210,16 +204,24 @@ async function run() {
      * @param {any} widget
      * @param {any} fresh
      */
-    function showHeader(widget, fresh) {
+    function showHeader(widget, fresh, pStoredData) {
         let myTextArea = widget.addStack();
         myTextArea.topAlignContent();
         myTextArea.size = new Size(widgetWidth, 150);
 
-        if (fresh) {
-            showLink(myTextArea, "Goto Telekom", conTelekomURL);
+        let myRest = calcRest(pStoredData, new Date(pStoredData.accessTime));
+        if (myRest.myRestTime <= 0 || myRest.myRestPercentage < myRest.myRestTime) {
+            // alert!
+            showLink(myTextArea, "Package empty! Goto Telekom", conTelekomURL, conLightBlue);
+            widget.backgroundColor = Color.red();
         }
         else {
-            showTitle(myTextArea, "Telekom Data");
+            if (fresh) {
+                showLink(myTextArea, "Goto Telekom", conTelekomURL);
+            }
+            else {
+                showTitle(myTextArea, "Telekom Data");
+            }
         }
     }
 
@@ -230,7 +232,8 @@ async function run() {
    * @param {string} title
    * @param {string} pURL
    */
-    function showLink(widget, title, pURL) {
+    function showLink(widget, title, pURL, pColor) {
+        let myLinkColor = pColor ? pColor : conLinkColor;
         widget.addSpacer(8)
         // Add button to open documentation
         let linkSymbol = SFSymbol.named("arrow.up.forward")
@@ -241,12 +244,12 @@ async function run() {
         linkStack.url = pURL;
         let linkElement = linkStack.addText(title)
         linkElement.font = Font.title2(); //Font.mediumSystemFont(13)
-        linkElement.textColor = conLinkColor;
+        linkElement.textColor = myLinkColor;
         //linkElement.rightAlignText();
         linkStack.addSpacer(3)
         let linkSymbolElement = linkStack.addImage(linkSymbol.image)
         linkSymbolElement.imageSize = new Size(11, 11)
-        linkSymbolElement.tintColor = conLinkColor;
+        linkSymbolElement.tintColor = myLinkColor;
         footerStack.topAlignContent();
         return footerStack;
     }
@@ -343,6 +346,26 @@ async function run() {
             return e + ": " + pDate;
         }
     }
+
+    /**
+     * 
+     * @param {any} pStoredData StoredData
+     * @param {Date} pDate 
+     */
+    function calcRest(pStoredData, pDate) {
+        const myRestPercentage = 100 - pStoredData.data.usedPercentage;
+
+        let myEndDate = calcEndDate(pStoredData);
+        if (!myEndDate) {
+            throw "calcEndDate undefined";
+        }
+        let myRestSeconds = (myEndDate.getTime() - pDate.getTime()) / 1000;
+        // pack runs 31 days
+        const conTotalSeconds = conDaysPerPackage * DAY_IN_SECONDS;
+        let myRestTime = 100 * myRestSeconds / conTotalSeconds;
+        return { myRestPercentage, myRestTime };
+    }
+
     /**
      * calc end date from current + remaining seconds
      * @param {any} pStoredData StoredData
