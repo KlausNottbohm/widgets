@@ -305,7 +305,7 @@ async function run() {
 
     /**
      * string from server entry
-     * @param {{accessTime:number}} pEntry
+     * @param {any} pEntry HistoryData
      */
     function getDateStringFromEntry(pEntry) {
         return getDateStringFromMSecs(pEntry.accessTime);
@@ -346,9 +346,9 @@ async function run() {
     }
 
     /**
- * show members of pObject
- * @param {any} pObject
- */
+     * show members of pObject
+     * @param {any} pObject
+     */
     function showObject(pObject, title) {
         let myTitle = title ? title : "No title";
         console.log(`showObject ${myTitle}: ${new Date().toLocaleString()}`);
@@ -407,7 +407,8 @@ async function run() {
         try {
             // Fetch data from pass.telekom.de
             let myServerdata = await r.loadJSON();
-            let myStoredData = { version: `Written by telekom.js version: ${conVersion}`, data: myServerdata, accessTime: new Date().getTime(), accessString: new Date().toString() };
+            let myStoredData = createStoredData(myServerdata, new Date());
+
             let myStoredStringWrite = JSON.stringify(myStoredData, null, 2);
             // Write JSON to iCloud file
             fm.writeString(path, myStoredStringWrite);
@@ -551,11 +552,18 @@ async function run() {
             let myStartDate = new Date(myEndDate.getTime() - conDaysPerPackage * DAY_IN_MILLISECONDS);
             console.log(`myStartDate: ${myStartDate.toLocaleString()}`);
 
-            let myStartServerData = { usedPercentage: 0, remainingSeconds: conDaysPerPackage * DAY_IN_SECONDS, usedAt: myStartDate.getTime() };
-            let myOldestStoredData = { data: myStartServerData, accessTime: myStartDate.getTime(), accessString: new Date(myStartDate.getTime()).toString() };
+            let myRemainingSeconds = conDaysPerPackage * DAY_IN_SECONDS;
+            let myUsed = 0;
+
+            let myStartServerData = createServerData(myUsed, myRemainingSeconds, myStartDate, "0");
+
+            let myOldestStoredData = createStoredData(myStartServerData, myStartDate);
+            // { data: myStartServerData, accessTime: myStartDate.getTime(), accessString: new Date(myStartDate.getTime()).toString() };
             showObject(myOldestStoredData, "myOldestStoredData");
 
-            myHistoryDatas = [{ entry: myOldestStoredData, dateString: getDateStringFromEntry(myOldestStoredData), date: new Date(myOldestStoredData.accessTime) }];
+            let myHistoryData = createHistoryData(myOldestStoredData);
+            myHistoryDatas = [myHistoryData];
+
             let myIndex = 0;
             let myNowString = getDateStringFromDate(new Date());
             let myNextDay = new Date(myOldestStoredData.accessTime + DAY_IN_MILLISECONDS);
@@ -647,5 +655,37 @@ async function run() {
             await notify1.schedule();
         }
     }
+
+    // #region create structures
+
+    /**
+    //* 
+    //* @param {any} pStoredData StoredData
+    //*/
+    function createHistoryData(pStoredData) {
+        return { entry: pStoredData, dateString: getDateStringFromEntry(pStoredData), date: new Date(pStoredData.accessTime) };
+    }
+
+    /**
+     * 
+     * @param {any} pServerdata ServerData
+     * @param {Date} pAccessTime
+     */
+    function createStoredData(pServerdata, pAccessTime) {
+        return { version: `Written by telekom.js version: ${conVersion}`, data: pServerdata, accessTime: pAccessTime.getTime(), accessString: pAccessTime.toString() };
+    }
+
+    /**
+     * 
+     * @param {number} pUsedPercentage
+     * @param {number} pRemainingSeconds
+     * @param {Date} pUsedAt
+     * @param {string} pUsedVolumeStr
+     */
+    function createServerData(pUsedPercentage, pRemainingSeconds, pUsedAt, pUsedVolumeStr) {
+        return { usedPercentage: pUsedPercentage, remainingSeconds: pRemainingSeconds, usedAt: pUsedAt.getTime(), usedVolumeStr: pUsedVolumeStr };
+    }
+    // #endregion
+
     // #endregion
 }
