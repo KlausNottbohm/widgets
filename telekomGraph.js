@@ -69,87 +69,39 @@ async function run() {
         // local did not reliably work on 11.11.2021
         //let fm = FileManager.local()
         let fm = FileManager.iCloud()
-        let dir = fm.documentsDirectory()
-        let path = fm.joinPath(dir, "scriptable-telekom.json")
+
         try {
-            let fresh, myStoredData;
-            try {
-                let myResult = await getData(fm, path);
-                fresh = myResult.fresh; myStoredData = myResult.myStoredData;
-                showObject(myResult, "myResult");
-            } catch (e) {
+            //let fresh, myStoredData;
+            let { fresh, myStoredData, wifiProblem } = await getStoredData(fm);
+            if (wifiProblem) {
+                // for wifi problem show error text (all other exceptions not caught)
                 const errorList = new ListWidget();
-                errorList.addText(e);
-                return { widget: errorList };
+                errorList.addText(wifiProblem);
+                return errorList;
             }
-            if (conIsTest && myStoredData.accessTime < new Date().getTime() - 2 * DAY_IN_MILLISECONDS) {
-                // do not store fake entry
-                fresh = false;
-                let myDaysBefore = 1;
-                let myEndDate = new Date(myStoredData.usedAt + myStoredData.remainingSeconds * 1000 - myDaysBefore * DAY_IN_MILLISECONDS);
-                let myStartData = { usedPercentage: 99, remainingSeconds: myDaysBefore * DAY_IN_SECONDS, usedAt: myEndDate };
-                myStoredData = myStartData;
-                showObject(myStoredData, "conIsTest");
-            }
+            //showObject(myResult, "myResult");
+            //if (conIsTest && myStoredData.accessTime < new Date().getTime() - 2 * DAY_IN_MILLISECONDS) {
+            //    // do not store fake entry
+            //    fresh = false;
+            //    let myDaysBefore = 1;
+            //    let myEndDate = new Date(myStoredData.usedAt + myStoredData.remainingSeconds * 1000 - myDaysBefore * DAY_IN_MILLISECONDS);
+            //    let myStartData = { usedPercentage: 99, remainingSeconds: myDaysBefore * DAY_IN_SECONDS, usedAt: myEndDate };
+            //    myStoredData = myStartData;
+            //    showObject(myStoredData, "conIsTest");
+            //}
             await notifyIfNeeded(myStoredData);
 
             // #region get myNewHistory
             // history
-            let myNewHistory = [];
-            const conHistoryPath = fm.joinPath(dir, "ScriptableTelekomHistory.json");
+            //let myHistoryDatas = [];
+            //const conHistoryPath = fm.joinPath(dir, "ScriptableTelekomHistory.json");
             // array of myStoredData = { version: `Written by telekom.js version: ${conVersion}`, data: data, accessTime: new Date().getTime(), accessString: new Date().toString() };
 
-            let myHistoryData = await readAndStoreHistory(fm, conHistoryPath, fresh ? myStoredData : undefined);
-            console.log("Show data: " + myHistoryData.length);
-            // set true, if test for red needed
-            if (myHistoryData.length >= 0) {
-                let myFirstDataEntry = myHistoryData[0];
-                let myEndDate = calcEndDate(myFirstDataEntry);
-                console.log(`myFirstDataEntry: ${getDateStringFromEntry(myFirstDataEntry)} - end time: ${myEndDate.toLocaleString()}`);
-                let myStartDate = new Date(myEndDate.getTime() - conDaysPerPackage * DAY_IN_MILLISECONDS);
-                console.log(`myStartDate: ${myStartDate.toLocaleString()}`);
+            let myStoredDatas = await readAndUpdateStoredDatas(fm, fresh ? myStoredData : undefined);
 
-                let myStartData = { usedPercentage: 0, remainingSeconds: conDaysPerPackage * DAY_IN_SECONDS, usedAt: myStartDate.getTime() };
-                let myOldestEntry = { data: myStartData, accessTime: myStartDate.getTime(), accessString: new Date(myStartDate.getTime()).toString() };
-                showObject(myOldestEntry, "myOldestEntry");
+            console.log("Show data: " + myStoredDatas.length);
+            let myHistoryDatas = getHistoryData(myStoredDatas);
 
-                myNewHistory = [{ entry: myOldestEntry, dateString: getDateStringFromEntry(myOldestEntry), date: new Date(myOldestEntry.accessTime) }];
-                let myIndex = 0;
-                let myNowString = getDateStringFromDate(new Date());
-                let myNextDay = new Date(myOldestEntry.accessTime + DAY_IN_MILLISECONDS);
-
-                while (getDateStringFromDate(myNextDay).localeCompare(myNowString) <= 0) {
-                    for (let i = myIndex; i < myHistoryData.length; i++) {
-                        let myCurr = myHistoryData[i];
-                        if (getDateStringFromEntry(myCurr).localeCompare(getDateStringFromDate(myNextDay)) <= 0) {
-                            myIndex = i;
-                            myOldestEntry = myCurr;
-                        }
-                        else {
-                            break;
-                        }
-                    }
-                    //let myNextEntry = myOldestEntry;
-                    //console.log(`myTest: ${getDateStringFromDate(myNextDay)} ${myNowString} ${getDateStringFromDate(myNextDay) === myNowString}`);
-                    if (conIsTest && getDateStringFromDate(myNextDay) === myNowString) {
-                        myOldestEntry.data.usedPercentage = 99;
-                        //showObject(myNextEntry, `Test Entry`);
-                    }
-                    myNewHistory.push({ entry: myOldestEntry, dateString: getDateStringFromDate(myNextDay), date: myNextDay });
-                    myNextDay = new Date(myNextDay.getTime() + 24 * 60 * 60 * 1000);
-                }
-                // pack runs 31 days
-                const conTotalSeconds = 31 * 24 * 60 * 60;
-
-                for (let iEle of myNewHistory) {
-                    let myRestSeconds = (myEndDate.getTime() - iEle.date.getTime()) / 1000;
-                    let myRestTime = 100 * myRestSeconds / conTotalSeconds;
-                    console.log(`${iEle.dateString}: data: ${100 - iEle.entry.data.usedPercentage}% time: ${myRestTime.toFixed()}%`);
-                }
-            }
-            else {
-                console.log("No data");
-            }
             // #endregion
 
             let drawContext = new DrawContext();
@@ -211,15 +163,15 @@ async function run() {
 
             let diff = max - min;
 
-            console.log(`myNewHistory.length: ${myNewHistory.length}`);
-            for (let i = 0; i < myNewHistory.length; i++) {
+            console.log(`myNewHistory.length: ${myHistoryDatas.length}`);
+            for (let i = 0; i < myHistoryDatas.length; i++) {
                 // { entry: myOldestEntry, dateString: getDateStringFromDate(myNextDay), date: myNextDay }
-                const day = myNewHistory[i].date.getDate();
-                const dayOfWeek = myNewHistory[i].date.getDay();
-                const myRestPercentage = 100 - myNewHistory[i].entry.data.usedPercentage;
+                const day = myHistoryDatas[i].date.getDate();
+                const dayOfWeek = myHistoryDatas[i].date.getDay();
+                const myRestPercentage = 100 - myHistoryDatas[i].entry.data.usedPercentage;
                 const delta = (myRestPercentage - min) / diff;
 
-                let myEndDate = calcEndDate(myNewHistory[i].entry);
+                let myEndDate = calcEndDate(myHistoryDatas[i].entry);
                 if (!myEndDate) {
                     throw "calcEndDate undefined";
                 }
@@ -255,7 +207,7 @@ async function run() {
                 }
                 const conFontSize = 18;
                 //console.log(`${i} ${day} x: ${spaceBetweenDays * i + 20}- y: ${(graphLow - 40) - (graphHeight * delta)}`);
-                let myShowPercent = (i - myNewHistory.length + 1) % 3;
+                let myShowPercent = (i - myHistoryDatas.length + 1) % 3;
                 if (myShowPercent === 0) {
                     const myRestPercentRect = new Rect(spaceBetweenDays * i + 38, (graphLow - 20) - (graphHeight * delta), 60, 23);
                     drawTextR(drawContext, myRestPercentage + "%", myRestPercentRect, conAccentColor1, Font.systemFont(conFontSize));
@@ -328,7 +280,7 @@ async function run() {
      * @param {FileManager} fm
      * @param {string} path
      */
-    async function getData(fm, path) {
+    async function getStoredData(fm) {
         // ServerData
         // usedVolumeStr: 839, 31 MB
         // remainingTimeStr: 12 Tage 5 Std.
@@ -346,22 +298,25 @@ async function run() {
         // usedVolume: 880088349
         // passStage: 1
         // passName: Data Flex 2, 5 GB
+        let dir = fm.documentsDirectory();
+        let path = fm.joinPath(dir, "scriptable-telekom.json");
+
         let r = new Request(conAPIUrl);
         // API only answers for mobile Safari
         r.headers = {
             "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 13_5_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.1.1 Mobile/15E148 Safari/604.1"
         };
         /** {data: ServerData, accessTime} */
-        let myStoredData;
-        /** ServerData */
-        let data;
-        /** indicate read from server*/
-        let fresh = false;
+        //let myStoredData;
+        ///** ServerData */
+        //let myServerdata;
+        ///** indicate read from server*/
+        //let fresh = false;
         try {
             // Fetch data from pass.telekom.de
-            data = await r.loadJSON();
+            let myServerdata = await r.loadJSON();
             //showObject(data, "r.loadJSON");
-            myStoredData = { version: `Written by telekom.js version: ${conVersion}`, data: data, accessTime: new Date().getTime(), accessString: new Date().toString() };
+            let myStoredData = { version: `Written by telekom.js version: ${conVersion}`, data: myServerdata, accessTime: new Date().getTime(), accessString: new Date().toString() };
             let myStoredStringWrite = JSON.stringify(myStoredData, null, 2);
             // Write JSON to iCloud file
             fm.writeString(path, myStoredStringWrite);
@@ -374,36 +329,24 @@ async function run() {
                 throw "Internal Error: myStoredStringRead !== myStoredStringWrite";
                 //return errorList;
             }
-            fresh = true;
+            //fresh = true;
+            //showObject(myStoredData, "getData.myStoredData ");
+            return { fresh: true, myStoredData };
         }
         catch (err) {
             showObject(err, "catch (err)");
-            try {
-                // if reading from pass.telekom.de not possible-> read data from iCloud file
-                myStoredData = JSON.parse(fm.readString(path), null);
-                showObject(myStoredData, "fm.readString");
-                if (!myStoredData) {
-                    //const errorList = new ListWidget();
-                    //errorList.addText("Please disable WiFi for initial execution (1)");
-                    throw "Please disable WiFi for initial execution (1)";
-                    //return errorList;
-                }
-                //showObject(myStoredData, "getData.myStoredData catch");
-                data = myStoredData.data; // ? myStoredData.data : myStoredData;
-                if (!data || !data.usedPercentage) {
-                    //const errorList = new ListWidget();
-                    //errorList.addText("Please disable WiFi for initial execution (2)");
-                    throw "Please disable WiFi for initial execution (2)";
-                    //return errorList;
-                }
-            } catch (errInner) {
-                console.error("errInner");
-                console.error(errInner);
-                throw errInner;
+            // if reading from pass.telekom.de not possible-> read data from iCloud file
+            let myStoredData = JSON.parse(fm.readString(path), null);
+            showObject(myStoredData, "fm.readString");
+            if (!myStoredData) {
+                return { wifiProblem: "Please disable WiFi for initial execution (1)" }
             }
+            myServerdata = myStoredData.data; // ? myStoredData.data : myStoredData;
+            if (!myServerdata || !myServerdata.usedPercentage) {
+                return { wifiProblem: "Please disable WiFi for initial execution (1)" }
+            }
+            return { fresh: false, myStoredData };
         }
-        showObject(myStoredData, "getData.myStoredData ");
-        return { fresh, myStoredData };
     }
 
     /**
@@ -440,7 +383,7 @@ async function run() {
      * @param {string} conHistoryPath
      * @param {undefined | {usedVolume:number, accessTime:number}} pStoredData: undefined or server entry
      */
-    async function readAndStoreHistory(fm, conHistoryPath, pStoredData) {
+    async function readAndUpdateStoredDatas(fm, pStoredData) {
         // ServerData
         // usedVolumeStr: 839, 31 MB
         // remainingTimeStr: 12 Tage 5 Std.
@@ -458,50 +401,41 @@ async function run() {
         // usedVolume: 880088349
         // passStage: 1
         // passName: Data Flex 2, 5 GB
-        try {
-            //console.log("storeHistory");
-            let myHistoryData = await readHistoryData();
+        let dir = fm.documentsDirectory()
+        const conHistoryPath = fm.joinPath(dir, "ScriptableTelekomHistory.json");
 
-            //console.log("After sort");
-            //for (let iEle of myHistoryData) {
-            //    console.log(`${iEle.accessString}: ${iEle.data.usedPercentage}%`);
-            //}
-            let myNewHistory = [];
-            for (let i = 0; i < myHistoryData.length; i++) {
-                let myCurr = myHistoryData[i];
-                pushOrReplace(myNewHistory, myCurr);
-            }
-            if (pStoredData) {
-                // add only new data
-                console.log(`push new data: ${pStoredData.accessString}: ${pStoredData.data.usedPercentage}%`);
-                pushOrReplace(myNewHistory, pStoredData);
-            }
+        //console.log("storeHistory");
+        let myStoredDatas = await readStoredDatas();
 
-            // replace with new array
-            myHistoryData = myNewHistory;
-            //console.log("After pushOrReplace");
-            //for (let iEle of myHistoryData) {
-            //    console.log(`${iEle.accessString}: ${iEle.data.usedPercentage}%`);
-            //}
-
-            myHistoryDataString = JSON.stringify(myHistoryData);
-            fm.writeString(conHistoryPath, myHistoryDataString);
-            return myHistoryData;
-        } catch (e) {
-            console.log("err storeHistory: " + e);
-            return [];
+        /**purged copy of myStoredDatas */
+        let myNewStoredDatas = [];
+        for (let i = 0; i < myStoredDatas.length; i++) {
+            let myCurr = myStoredDatas[i];
+            pushOrReplace(myNewStoredDatas, myCurr);
+        }
+        if (pStoredData) {
+            // add only new data
+            console.log(`push new data: ${pStoredData.accessString}: ${pStoredData.data.usedPercentage}%`);
+            pushOrReplace(myNewStoredDatas, pStoredData);
         }
 
+        // replace with new array
+        myStoredDatas = myNewStoredDatas;
+
+        myHistoryDataString = JSON.stringify(myStoredDatas);
+        fm.writeString(conHistoryPath, myHistoryDataString);
+        return myStoredDatas;
+
         /** read from file */
-        async function readHistoryData() {
-            let myHistoryData = [];
+        async function readStoredDatas() {
+            let myStoredDatas = [];
             if (fm.fileExists(conHistoryPath)) {
                 await fm.downloadFileFromiCloud(conHistoryPath);
                 let myHistoryDataString = fm.readString(conHistoryPath);
                 if (myHistoryDataString) {
-                    myHistoryData = JSON.parse(myHistoryDataString);
+                    myStoredDatas = JSON.parse(myHistoryDataString);
                     console.log("fileExists: ");
-                    for (let iEle of myHistoryData) {
+                    for (let iEle of myStoredDatas) {
                         console.log(`${iEle.accessString}: ${iEle.data.usedPercentage}%`);
                     }
                 }
@@ -513,8 +447,8 @@ async function run() {
                 console.log("file not Exists: ");
             }
             // sort ascending
-            myHistoryData.sort(function (left, right) { return left.accessTime - right.accessTime; });
-            return myHistoryData;
+            myStoredDatas.sort(function (left, right) { return left.accessTime - right.accessTime; });
+            return myStoredDatas;
         }
 
         /**
@@ -544,7 +478,6 @@ async function run() {
             }
         }
     }
-
     /**
      * calc end date from current + remaining seconds
      * @param {any} data
@@ -698,5 +631,69 @@ async function run() {
             notify1.openURL = conTelekomURL;
             await notify1.schedule();
         }
+    }
+
+    /**
+     * 
+     * @param {StoredData[]} pStoredDatas
+     */
+    function getHistoryData(pStoredDatas) {
+        // #region get myNewHistory
+        // history
+        let myHistoryDatas = [];
+
+        console.log("Show data: " + pStoredDatas.length);
+        // set true, if test for red needed
+        if (pStoredDatas.length >= 0) {
+            let myFirstDataEntry = pStoredDatas[0];
+            let myEndDate = calcEndDate(myFirstDataEntry);
+            console.log(`myFirstDataEntry: ${getDateStringFromEntry(myFirstDataEntry)} - end time: ${myEndDate.toLocaleString()}`);
+            let myStartDate = new Date(myEndDate.getTime() - conDaysPerPackage * DAY_IN_MILLISECONDS);
+            console.log(`myStartDate: ${myStartDate.toLocaleString()}`);
+
+            let myStartData = { usedPercentage: 0, remainingSeconds: conDaysPerPackage * DAY_IN_SECONDS, usedAt: myStartDate.getTime() };
+            let myOldestEntry = { data: myStartData, accessTime: myStartDate.getTime(), accessString: new Date(myStartDate.getTime()).toString() };
+            showObject(myOldestEntry, "myOldestEntry");
+
+            myHistoryDatas = [{ entry: myOldestEntry, dateString: getDateStringFromEntry(myOldestEntry), date: new Date(myOldestEntry.accessTime) }];
+            let myIndex = 0;
+            let myNowString = getDateStringFromDate(new Date());
+            let myNextDay = new Date(myOldestEntry.accessTime + DAY_IN_MILLISECONDS);
+
+            while (getDateStringFromDate(myNextDay).localeCompare(myNowString) <= 0) {
+                for (let i = myIndex; i < pStoredDatas.length; i++) {
+                    let myCurr = pStoredDatas[i];
+                    if (getDateStringFromEntry(myCurr).localeCompare(getDateStringFromDate(myNextDay)) <= 0) {
+                        myIndex = i;
+                        myOldestEntry = myCurr;
+                    }
+                    else {
+                        break;
+                    }
+                }
+                //let myNextEntry = myOldestEntry;
+                //console.log(`myTest: ${getDateStringFromDate(myNextDay)} ${myNowString} ${getDateStringFromDate(myNextDay) === myNowString}`);
+                if (conIsTest && getDateStringFromDate(myNextDay) === myNowString) {
+                    myOldestEntry.data.usedPercentage = 99;
+                    //showObject(myNextEntry, `Test Entry`);
+                }
+                myHistoryDatas.push({ entry: myOldestEntry, dateString: getDateStringFromDate(myNextDay), date: myNextDay });
+                myNextDay = new Date(myNextDay.getTime() + 24 * 60 * 60 * 1000);
+            }
+            // pack runs 31 days
+            const conTotalSeconds = 31 * 24 * 60 * 60;
+
+            for (let iEle of myHistoryDatas) {
+                let myRestSeconds = (myEndDate.getTime() - iEle.date.getTime()) / 1000;
+                let myRestTime = 100 * myRestSeconds / conTotalSeconds;
+                console.log(`${iEle.dateString}: data: ${100 - iEle.entry.data.usedPercentage}% time: ${myRestTime.toFixed()}%`);
+            }
+        }
+        else {
+            console.log("No data");
+        }
+        return myHistoryDatas;
+        // #endregion
+
     }
 }
