@@ -210,7 +210,7 @@ async function run() {
         myTextArea.size = new Size(widgetWidth, 150);
 
         let myRest = calcRest(pStoredData, new Date(pStoredData.accessTime));
-        if (myRest.myRestTime <= 0 || myRest.myRestPercentage < myRest.myRestTime) {
+        if (myRest.myRestTime <= 0 || myRest.myRestPercentage <= 0) {
             // alert!
             showLink(myTextArea, "Package empty! Goto Telekom", conTelekomURL, conLightBlue);
             widget.backgroundColor = Color.red();
