@@ -1,3 +1,4 @@
+/// <reference path="TypeDefinitions/scriptable.d.ts" />
 // Variables used by Scriptable.
 // These must be at the very top of the file. Do not edit.
 // icon-color: brown; icon-glyph: magic;
@@ -244,7 +245,6 @@ async function run() {
     /**
      * read latest value from server or file
      * @param {FileManager} fm
-     * @param {string} path
      */
     async function getStoredData(fm) {
         // ServerData
