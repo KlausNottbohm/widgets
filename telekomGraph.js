@@ -10,7 +10,12 @@ async function run() {
     // #region constant definitions
     const conVersion = "V221115telekom";
 
-    let conIsTest = false;
+    /** possible values: 
+     * undefined or "": real data
+     * "low": show data until last day with low data in between
+     * "empty": volume empty before end time
+     * */
+    const conIsTest = ""; //"empty";
 
     const conAPIUrl = "https://pass.telekom.de/api/service/generic/v1/status";
     const conTelekomURL = "https://pass.telekom.de";
@@ -39,7 +44,8 @@ async function run() {
     const conRemainingHoursVeryLow = 6;
     const conDaysPerPackage = 31;
 
-    const DAY_IN_SECONDS = 24 * 60 * 60;
+    const HOUR_IN_SECONDS = 60 * 60;
+    const DAY_IN_SECONDS = 24 * HOUR_IN_SECONDS;
     const DAY_IN_MILLISECONDS = DAY_IN_SECONDS * 1000;
     const vertLineWeight = 18;
 
@@ -50,7 +56,7 @@ async function run() {
     const spaceBetweenDays = 22;
     const bedsGraphBaseline = 290;
     const conBottomTextPaddingLeft = 32;
-// #endregion
+    // #endregion
 
     let widget = await createWidget();
 
@@ -126,7 +132,7 @@ async function run() {
             if (!myEndDate) {
                 throw "calcEndDate undefined";
             }
-            let myRestSeconds = (myEndDate.getTime() - new Date().getTime()) / 1000;
+            let myRestSeconds = (myEndDate.getTime() - myHistoryDatas[i].date.getTime()) / 1000;
             // pack runs 31 days
             const conTotalSeconds = conDaysPerPackage * DAY_IN_SECONDS;
             let myRestTime = 100 * myRestSeconds / conTotalSeconds;
@@ -138,13 +144,15 @@ async function run() {
 
             if (myRestPercentage < myRestTime) {
                 drawColor = conAlertColor;
+                console.log("drawColor = conAlertColor");
             }
             else {
                 drawColor = Color.green();
+                console.log("drawColor = Color.green()");
             }
 
-            const point1 = new Point(spaceBetweenDays * i + 50, graphLow - (graphHeight * delta));
-            const point2 = new Point(spaceBetweenDays * i + 50, graphLow + 10);
+            const point1 = new Point(spaceBetweenDays * i + 20, graphLow - (graphHeight * delta));
+            const point2 = new Point(spaceBetweenDays * i + 20, graphLow + 10);
             drawLine(drawContext, point1, point2, vertLineWeight, drawColor);
             let dayColor;
 
@@ -156,10 +164,15 @@ async function run() {
             const conFontSize = 18;
             let myShowPercent = (i - myHistoryDatas.length + 1) % 3;
             if (myShowPercent === 0) {
-                const myRestPercentRect = new Rect(spaceBetweenDays * i + 38, (graphLow - 20) - (graphHeight * delta), 60, 23);
-                drawTextR(drawContext, myRestPercentage + "%", myRestPercentRect, conAccentColor1, Font.systemFont(conFontSize));
+                const myRestPercentRect = new Rect(spaceBetweenDays * i + 8, (graphLow - 20) - (graphHeight * delta), 60, 23);
+                if (myRestPercentage <= 0) {
+                    drawTextR(drawContext, "0!", myRestPercentRect, conAccentColor1, Font.systemFont(conFontSize));
+                }
+                else {
+                    drawTextR(drawContext, myRestPercentage + "%", myRestPercentRect, conAccentColor1, Font.systemFont(conFontSize));
+                }
             }
-            const dayRect = new Rect(spaceBetweenDays * i + 40, graphLow + 15, 50, 23);
+            const dayRect = new Rect(spaceBetweenDays * i + 10, graphLow + 15, 50, 23);
             drawTextR(drawContext, day, dayRect, dayColor, Font.systemFont(conFontSize));
         }
     }
@@ -381,23 +394,11 @@ async function run() {
    * @param {FileManager} fm
    */
     async function getStoredData(fm) {
-        // ServerData
-        // usedVolumeStr: 839, 31 MB
-        // remainingTimeStr: 12 Tage 5 Std.
-        // hasOffers: true
-        // remainingSeconds: 1055447
-        // usedAt: 1620191668000
-        // validityPeriod: 5
-        // usedPercentage: 33
-        // title:
-        // initialVolume: 2684354560
-        // initialVolumeStr: 2, 5 GB
-        // passType: 101
-        // nextUpdate: 10800
-        // subscriptions: speedon, roamLikeHome, tns, m4mBundle, migtest
-        // usedVolume: 880088349
-        // passStage: 1
-        // passName: Data Flex 2, 5 GB
+        if (conIsTest) {
+            let myStoredData = createTestStoredDatas().storedData;
+            return { fresh: true, myStoredData };
+        }
+
         let dir = fm.documentsDirectory();
         let path = fm.joinPath(dir, "scriptable-telekom.json");
 
@@ -446,23 +447,15 @@ async function run() {
      * @param {undefined | {usedVolume:number, accessTime:number}} pStoredData: undefined or server entry
      */
     async function readAndUpdateStoredDatas(fm, pStoredData) {
-        // ServerData
-        // usedVolumeStr: 839, 31 MB
-        // remainingTimeStr: 12 Tage 5 Std.
-        // hasOffers: true
-        // remainingSeconds: 1055447
-        // usedAt: 1620191668000
-        // validityPeriod: 5
-        // usedPercentage: 33
-        // title:
-        // initialVolume: 2684354560
-        // initialVolumeStr: 2, 5 GB
-        // passType: 101
-        // nextUpdate: 10800
-        // subscriptions: speedon, roamLikeHome, tns, m4mBundle, migtest
-        // usedVolume: 880088349
-        // passStage: 1
-        // passName: Data Flex 2, 5 GB
+        if (conIsTest) {
+            let myStoredDatas = createTestStoredDatas().storedDatas;
+            myStoredDatas.push(pStoredData);
+            // sort ascending
+            myStoredDatas.sort(function (left, right) { return left.accessTime - right.accessTime; });
+
+            return myStoredDatas;
+        }
+
         let dir = fm.documentsDirectory()
         const conHistoryPath = fm.joinPath(dir, "ScriptableTelekomHistory.json");
 
@@ -558,7 +551,7 @@ async function run() {
             let myRemainingSeconds = conDaysPerPackage * DAY_IN_SECONDS;
             let myUsed = 0;
 
-            let myStartServerData = createServerData(myUsed, myRemainingSeconds, myStartDate, "0");
+            let myStartServerData = createServerData(myUsed, myRemainingSeconds, myStartDate);
 
             let myOldestStoredData = createStoredData(myStartServerData, myStartDate);
             // { data: myStartServerData, accessTime: myStartDate.getTime(), accessString: new Date(myStartDate.getTime()).toString() };
@@ -582,10 +575,8 @@ async function run() {
                         break;
                     }
                 }
-                if (conIsTest && getDateStringFromDate(myNextDay) === myNowString) {
-                    // to show some red
-                    myOldestStoredData.data.usedPercentage = 99;
-                }
+
+                let myHistoryData = createHistoryData(myOldestStoredData);
                 myHistoryDatas.push({ entry: myOldestStoredData, dateString: getDateStringFromDate(myNextDay), date: myNextDay });
                 myNextDay = new Date(myNextDay.getTime() + 24 * 60 * 60 * 1000);
             }
@@ -685,9 +676,123 @@ async function run() {
      * @param {Date} pUsedAt
      * @param {string} pUsedVolumeStr
      */
-    function createServerData(pUsedPercentage, pRemainingSeconds, pUsedAt, pUsedVolumeStr) {
-        return { usedPercentage: pUsedPercentage, remainingSeconds: pRemainingSeconds, usedAt: pUsedAt.getTime(), usedVolumeStr: pUsedVolumeStr };
+    function createServerData(pUsedPercentage, pRemainingSeconds, pUsedAt) {
+        // ServerData
+        // usedVolumeStr: 839, 31 MB
+        // remainingTimeStr: 12 Tage 5 Std.
+        // hasOffers: true
+        // remainingSeconds: 1055447
+        // usedAt: 1620191668000
+        // validityPeriod: 5
+        // usedPercentage: 33
+        // title:
+        // initialVolume: 2684354560
+        // initialVolumeStr: 2, 5 GB
+        // passType: 101
+        // nextUpdate: 10800
+        // subscriptions: speedon, roamLikeHome, tns, m4mBundle, migtest
+        // usedVolume: 880088349
+        // passStage: 1
+        // passName: Data Flex 2, 5 GB
+        let myInitial = 6000;
+        let myUsedVolume = pUsedPercentage * myInitial / 100;
+        return { usedPercentage: pUsedPercentage, remainingSeconds: pRemainingSeconds, usedAt: pUsedAt.getTime(), usedVolumeStr: `${myUsedVolume} MB`, initialVolumeStr: `${myInitial} MB` };
     }
+
+
+    // #region test data
+    function createTestStoredDatas() {
+        console.log("createTestStoredDatas: " + conIsTest);
+        try {
+            switch (conIsTest) {
+                case "low":
+                    {
+                        console.log("case low: " + conIsTest);
+                        // one hour before expiration
+                        let myNowTime = new Date().getTime();
+                        let myStartDate = new Date(myNowTime - conDaysPerPackage * DAY_IN_MILLISECONDS + HOUR_IN_SECONDS * 1000);
+                        let myEndDate = new Date(myStartDate.getTime() + conDaysPerPackage * DAY_IN_MILLISECONDS);
+                        let myStoredDatas = [];
+                        console.log("case low 1: " + conIsTest);
+
+                        let myNowDate = new Date();
+                        let myUsedPercentage = 80;
+                        let myStoredData = createTestStoredData(myEndDate, myNowDate, myUsedPercentage);
+                        let iEle = myStoredData;
+
+                        console.log(`myStoredData {usedPercentage} {remainingSeconds} {accessString}: ${iEle.data.usedPercentage} ${iEle.data.remainingSeconds} ${iEle.accessString}`)
+
+                        myNowDate = new Date(myStartDate.getTime() + 5 * DAY_IN_MILLISECONDS);
+                        myUsedPercentage = 50;
+                        let myStoredData1 = createTestStoredData(myEndDate, myNowDate, myUsedPercentage);
+                        myStoredDatas.push(myStoredData1);
+                        console.log("case low 2: " + conIsTest);
+
+                        myNowDate = new Date(myStartDate.getTime() + 10 * DAY_IN_MILLISECONDS);
+                        myUsedPercentage = 75;
+                        let myStoredData2 = createTestStoredData(myEndDate, myNowDate, myUsedPercentage);
+                        myStoredDatas.push(myStoredData2);
+
+                        // {myStartDate} {myEndDate} {myStoredDatas.length}
+                        console.log(`{myStartDate} {myEndDate} {myStoredDatas.length}: ${myStartDate} ${myEndDate} ${myStoredDatas.length}`)
+                        for (let iEle of myStoredDatas) {
+                            console.log(`{usedPercentage} {remainingSeconds} {accessString}: ${iEle.data.usedPercentage} ${iEle.data.remainingSeconds} ${iEle.accessString}`)
+                        }
+
+                        return { storedDatas: myStoredDatas, storedData: myStoredData };
+                    }
+                case "empty":
+                    {
+                        console.log("case empty: " + conIsTest);
+                        // one hour before expiration
+                        let myNowTime = new Date().getTime();
+                        let myStartDate = new Date(myNowTime - (conDaysPerPackage - 10) * DAY_IN_MILLISECONDS);
+                        let myEndDate = new Date(myStartDate.getTime() + conDaysPerPackage * DAY_IN_MILLISECONDS);
+                        let myStoredDatas = [];
+                        //console.log("case empty 1: " + conIsTest);
+
+                        let myNowDate = new Date();
+                        let myUsedPercentage = 100;
+                        let myStoredData = createTestStoredData(myEndDate, myNowDate, myUsedPercentage);
+
+                        let iEle = myStoredData;
+                        console.log(`myStoredData {usedPercentage} {remainingSeconds} {accessString}: ${iEle.data.usedPercentage} ${iEle.data.remainingSeconds} ${iEle.accessString}`)
+
+                        myNowDate = new Date(myStartDate.getTime() + 10 * DAY_IN_MILLISECONDS);
+                        myUsedPercentage = 50;
+                        let myStoredData1 = createTestStoredData(myEndDate, myNowDate, myUsedPercentage);
+                        myStoredDatas.push(myStoredData1);
+                        console.log("case low 2: " + conIsTest);
+
+                        myNowDate = new Date(myStartDate.getTime() + 15 * DAY_IN_MILLISECONDS);
+                        myUsedPercentage = 100;
+                        let myStoredData2 = createTestStoredData(myEndDate, myNowDate, myUsedPercentage);
+                        myStoredDatas.push(myStoredData2);
+
+                        // {myStartDate} {myEndDate} {myStoredDatas.length}
+                        console.log(`{myStartDate} {myEndDate} {myStoredDatas.length}: ${myStartDate} ${myEndDate} ${myStoredDatas.length}`)
+                        for (let iEle of myStoredDatas) {
+                            console.log(`{usedPercentage} {remainingSeconds} {accessString}: ${iEle.data.usedPercentage} ${iEle.data.remainingSeconds} ${iEle.accessString}`)
+                        }
+
+                        return { storedDatas: myStoredDatas, storedData: myStoredData };
+                    }
+                default:
+                    break;
+            }
+        } catch (e) {
+            console.log("err in test: " + e);
+        }
+
+    }
+
+    function createTestStoredData(pEndDate, pUsedAtDate, pUsedPercentage) {
+        let myRemainingSeconds = (pEndDate.getTime() - pUsedAtDate.getTime()) / 1000;
+        let myServerData = createServerData(pUsedPercentage, myRemainingSeconds, pUsedAtDate);
+        let myStoredData = createStoredData(myServerData, pUsedAtDate);
+        return myStoredData;
+    }
+    // #endregion
     // #endregion
 
     // #endregion
