@@ -98,14 +98,10 @@ async function run() {
 
         showHistoryDatas(myHistoryDatas, myDrawContext);
 
-        if (myDrawContext) {
-            //let myDrawStack = list.addStack();
-            widget.setPadding(0, 0, 0, 0);
-            widget.backgroundImage = (myDrawContext.getImage());
-        }
+        widget.setPadding(0, 0, 0, 0);
+        widget.backgroundImage = (myDrawContext.getImage());
 
-        return widget; //{ widget: widget, drawContext: drawContext };
-
+        return widget;
     }
 
     // #region UI functions
@@ -342,7 +338,8 @@ async function run() {
             let myMonthString = ("0" + (pDate.getMonth() + 1)).slice(-2);
             let myDayString = ("0" + (pDate.getDate())).slice(-2);
             return `${pDate.getFullYear()}-${myMonthString}-${myDayString}`;
-        } catch (e) {
+        }
+        catch (e) {
             return e + ": " + pDate;
         }
     }
@@ -780,10 +777,11 @@ async function run() {
                 default:
                     break;
             }
-        } catch (e) {
-            console.log("err in test: " + e);
         }
-
+        catch (e) {
+            console.log("err in test: " + e);
+            throw e;
+        }
     }
 
     function createTestStoredData(pEndDate, pUsedAtDate, pUsedPercentage) {
