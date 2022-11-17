@@ -8,7 +8,7 @@ run();
 async function run() {
 
     // #region constant definitions
-    const conVersion = "V221115telekom";
+    const conVersion = "V221117graph";
 
     /** possible values: 
      * undefined or "": real data
