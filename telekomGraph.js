@@ -6,6 +6,8 @@ run();
 
 /**wrapped all in function to remedy const access to other js files by eslint */
 async function run() {
+
+    // #region constant definitions
     const conVersion = "V221115telekom";
 
     let conIsTest = false;
@@ -48,6 +50,7 @@ async function run() {
     const spaceBetweenDays = 22;
     const bedsGraphBaseline = 290;
     const conBottomTextPaddingLeft = 32;
+// #endregion
 
     let widget = await createWidget();
 
@@ -332,7 +335,7 @@ async function run() {
     }
     /**
      * calc end date from current + remaining seconds
-     * @param {any} data
+     * @param {any} pStoredData StoredData
      */
     function calcEndDate(pStoredData) {
         // usedAt = msec
@@ -340,8 +343,8 @@ async function run() {
             showObject(pStoredData, "calcEndDate")
             return undefined;
         }
-        let data = pStoredData.data;
-        let myEndDate = new Date(pStoredData.accessTime + data.remainingSeconds * 1000);
+        let myServerData = pStoredData.data;
+        let myEndDate = new Date(pStoredData.accessTime + myServerData.remainingSeconds * 1000);
         return myEndDate;
     }
 
@@ -605,17 +608,17 @@ async function run() {
 
     /**
      * notify on low data or time
-     * @param {any} myStoredData
+     * @param {any} pStoredData StoredData
      */
-    async function notifyIfNeeded(myStoredData) {
-        let data = myStoredData.data;
-        let myEndDate = calcEndDate(myStoredData);
+    async function notifyIfNeeded(pStoredData) {
+        let myServerData = pStoredData.data;
+        let myEndDate = calcEndDate(pStoredData);
         if (!myEndDate) {
             throw "calcEndDate undefined";
         }
         let myRestSeconds = (myEndDate.getTime() - new Date().getTime()) / 1000;
 
-        const myRemainingData = 100 - data.usedPercentage;
+        const myRemainingData = 100 - myServerData.usedPercentage;
         // notify if less than LowDays left
         const conRemainingSecondsLow = 60 * 60 * 24 * conRemainingDaysLow;
         const conRemainingSecondsVeryLow = 60 * 60 * conRemainingHoursVeryLow;
