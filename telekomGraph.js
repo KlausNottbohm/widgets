@@ -31,20 +31,14 @@ async function run() {
     /**color for low data value */
     const conAlertColor = new Color("#FF7F7F"); // conAntiqueWhite Color.red()
 
-    //const conGrayout = Color.darkGray();
     const conPercentageLow = 10;
     const conRemainingDaysLow = 1 / 2;
     const conPercentageVeryLow = 1;
     const conRemainingHoursVeryLow = 6;
     const conDaysPerPackage = 31;
 
-    //const colorLow = new Color('#FAD643', 1); // < 5
-    //const colorMed = new Color('#E8B365', 1); // < 20
-    //const colorHigh = new Color('#DD5045', 1); // < 200
-    //const colorUltra = new Color('#8E0000', 1); // >= 200
-
-    const DAY_IN_SECONDS = 24 * 60 * 60;//86400000;
-    const DAY_IN_MILLISECONDS = DAY_IN_SECONDS * 1000;//86400000;
+    const DAY_IN_SECONDS = 24 * 60 * 60;
+    const DAY_IN_MILLISECONDS = DAY_IN_SECONDS * 1000;
     const vertLineWeight = 18;
 
     const widgetHeight = 338;
@@ -105,11 +99,12 @@ async function run() {
 
     }
 
+    // #region UI functions
     /**
-     * show progress in columns
-     * @param {any} myHistoryDatas
-     * @param {any} drawContext
-     */
+   * show progress in columns
+   * @param {any} myHistoryDatas
+   * @param {any} drawContext
+   */
     function showHistoryDatas(myHistoryDatas, drawContext) {
         let min = 0;
         let max = 100;
@@ -216,10 +211,76 @@ async function run() {
         }
     }
 
+    // #region UI helpers
     /**
-     * show time or date
-     * @param {Date} myEndDate
+   * add link in blue
+   * @param {ListWidget} widget
+   * @param {string} title
+   * @param {string} pURL
+   */
+    function showLink(widget, title, pURL) {
+        widget.addSpacer(8)
+        // Add button to open documentation
+        let linkSymbol = SFSymbol.named("arrow.up.forward")
+        let footerStack = widget.addStack()
+        let linkStack = footerStack.addStack()
+        //linkStack.
+        // if the widget is small, link does not work!
+        linkStack.url = pURL;
+        let linkElement = linkStack.addText(title)
+        linkElement.font = Font.title2(); //Font.mediumSystemFont(13)
+        linkElement.textColor = conLinkColor;
+        //linkElement.rightAlignText();
+        linkStack.addSpacer(3)
+        let linkSymbolElement = linkStack.addImage(linkSymbol.image)
+        linkSymbolElement.imageSize = new Size(11, 11)
+        linkSymbolElement.tintColor = conLinkColor;
+        footerStack.topAlignContent();
+        return footerStack;
+    }
+
+    /**
+     * add title in black
+     * @param {any} widget
+     * @param {any} title
      */
+    function showTitle(widget, title) {
+        widget.addSpacer(8)
+        let footerStack = widget.addStack()
+        let linkStack = footerStack.addStack()
+        let linkElement = linkStack.addText(title)
+        linkElement.font = Font.title2(); //Font.mediumSystemFont(13)
+        linkElement.textColor = conAccentColor1;
+        linkStack.addSpacer(3)
+        footerStack.topAlignContent();
+        return footerStack;
+    }
+
+    function drawTextR(drawContext, text, rect, color, font) {
+        drawContext.setFont(font);
+        drawContext.setTextColor(color);
+        drawContext.drawTextInRect(new String(text).toString(), rect);
+    }
+
+    function drawLine(drawContext, point1, point2, width, color) {
+        const path = new Path();
+        path.move(point1);
+
+        path.addLine(point2);
+        drawContext.addPath(path);
+        drawContext.setStrokeColor(color);
+        drawContext.setLineWidth(width);
+        drawContext.strokePath();
+    }
+    // #endregion
+
+    // #endregion
+
+    // #region helper functions
+    /**
+   * show time or date
+   * @param {Date} myEndDate
+   */
     function niceDateString(myEndDate) {
         let myNow = new Date();
         let myDiff = myNow.getTime() - myEndDate.getTime();
@@ -243,9 +304,79 @@ async function run() {
     }
 
     /**
-     * read latest value from server or file
-     * @param {FileManager} fm
+     * string from server entry
+     * @param {{accessTime:number}} pEntry
      */
+    function getDateStringFromEntry(pEntry) {
+        return getDateStringFromMSecs(pEntry.accessTime);
+    }
+    /**
+     * string from mSecs
+     * @param {number} pDateMSecs
+     */
+    function getDateStringFromMSecs(pDateMSecs) {
+        return getDateStringFromDate(new Date(pDateMSecs));
+    }
+    /**
+     * string from date
+     * @param {Date} pDate
+     */
+    function getDateStringFromDate(pDate) {
+        try {
+            let myMonthString = ("0" + (pDate.getMonth() + 1)).slice(-2);
+            let myDayString = ("0" + (pDate.getDate())).slice(-2);
+            return `${pDate.getFullYear()}-${myMonthString}-${myDayString}`;
+        } catch (e) {
+            return e + ": " + pDate;
+        }
+    }
+    /**
+     * calc end date from current + remaining seconds
+     * @param {any} data
+     */
+    function calcEndDate(pStoredData) {
+        // usedAt = msec
+        if (!pStoredData.data || !pStoredData.accessTime) {
+            showObject(pStoredData, "calcEndDate")
+            return undefined;
+        }
+        let data = pStoredData.data;
+        let myEndDate = new Date(pStoredData.accessTime + data.remainingSeconds * 1000);
+        return myEndDate;
+    }
+
+    /**
+ * show members of pObject
+ * @param {any} pObject
+ */
+    function showObject(pObject, title) {
+        let myTitle = title ? title : "No title";
+        console.log(`showObject ${myTitle}: ${new Date().toLocaleString()}`);
+        console.log(`type- ${typeof (pObject)}`);
+        if (pObject === null) {
+            console.log("object is null");
+        }
+        else {
+            if (typeof pObject === "object") {
+                let myObjString = JSON.stringify(pObject, null, 2);
+                console.log(myObjString);
+            }
+            else if (typeof pObject === "function") {
+                console.log("Object is a function");
+            }
+            else {
+                console.log(`${pObject}`);
+            }
+        }
+    }
+
+    // #endregion
+
+    // #region data functions
+    /**
+   * read latest value from server or file
+   * @param {FileManager} fm
+   */
     async function getStoredData(fm) {
         // ServerData
         // usedVolumeStr: 839, 31 MB
@@ -301,34 +432,6 @@ async function run() {
                 return { wifiProblem: "Please disable WiFi for initial execution (1)" }
             }
             return { fresh: false, myStoredData };
-        }
-    }
-
-    /**
-     * string from server entry
-     * @param {{accessTime:number}} pEntry
-     */
-    function getDateStringFromEntry(pEntry) {
-        return getDateStringFromMSecs(pEntry.accessTime);
-    }
-    /**
-     * string from mSecs
-     * @param {number} pDateMSecs
-     */
-    function getDateStringFromMSecs(pDateMSecs) {
-        return getDateStringFromDate(new Date(pDateMSecs));
-    }
-    /**
-     * string from date
-     * @param {Date} pDate
-     */
-    function getDateStringFromDate(pDate) {
-        try {
-            let myMonthString = ("0" + (pDate.getMonth() + 1)).slice(-2);
-            let myDayString = ("0" + (pDate.getDate())).slice(-2);
-            return `${pDate.getFullYear()}-${myMonthString}-${myDayString}`;
-        } catch (e) {
-            return e + ": " + pDate;
         }
     }
 
@@ -429,154 +532,6 @@ async function run() {
             }
         }
     }
-    /**
-     * calc end date from current + remaining seconds
-     * @param {any} data
-     */
-    function calcEndDate(pStoredData) {
-        // usedAt = msec
-        if (!pStoredData.data || !pStoredData.accessTime) {
-            showObject(pStoredData, "calcEndDate")
-            return undefined;
-        }
-        let data = pStoredData.data;
-        let myEndDate = new Date(pStoredData.accessTime + data.remainingSeconds * 1000);
-        return myEndDate;
-    }
-    /**
-     * add link in blue
-     * @param {ListWidget} widget
-     * @param {string} title
-     * @param {string} pURL
-     */
-    function showLink(widget, title, pURL) {
-        widget.addSpacer(8)
-        // Add button to open documentation
-        let linkSymbol = SFSymbol.named("arrow.up.forward")
-        let footerStack = widget.addStack()
-        let linkStack = footerStack.addStack()
-        //linkStack.
-        // if the widget is small, link does not work!
-        linkStack.url = pURL;
-        let linkElement = linkStack.addText(title)
-        linkElement.font = Font.title2(); //Font.mediumSystemFont(13)
-        linkElement.textColor = conLinkColor;
-        //linkElement.rightAlignText();
-        linkStack.addSpacer(3)
-        let linkSymbolElement = linkStack.addImage(linkSymbol.image)
-        linkSymbolElement.imageSize = new Size(11, 11)
-        linkSymbolElement.tintColor = conLinkColor;
-        footerStack.topAlignContent();
-        return footerStack;
-    }
-
-    /**
-     * add title in black
-     * @param {any} widget
-     * @param {any} title
-     */
-    function showTitle(widget, title) {
-        widget.addSpacer(8)
-        let footerStack = widget.addStack()
-        let linkStack = footerStack.addStack()
-        let linkElement = linkStack.addText(title)
-        linkElement.font = Font.title2(); //Font.mediumSystemFont(13)
-        linkElement.textColor = conAccentColor1;
-        linkStack.addSpacer(3)
-        footerStack.topAlignContent();
-        return footerStack;
-    }
-
-    /**
-     * show members of pObject
-     * @param {any} pObject
-     */
-    function showObject(pObject, title) {
-        let myTitle = title ? title : "No title";
-        console.log(`showObject ${myTitle}: ${new Date().toLocaleString()}`);
-        console.log(`type- ${typeof (pObject)}`);
-        if (pObject === null) {
-            console.log("object is null");
-        }
-        else {
-            if (typeof pObject === "object") {
-                let myObjString = JSON.stringify(pObject, null, 2);
-                console.log(myObjString);
-            }
-            else if (typeof pObject === "function") {
-                console.log("Object is a function");
-            }
-            else {
-                console.log(`${pObject}`);
-            }
-        }
-    }
-
-    function drawTextR(drawContext, text, rect, color, font) {
-        drawContext.setFont(font);
-        drawContext.setTextColor(color);
-        drawContext.drawTextInRect(new String(text).toString(), rect);
-    }
-
-    function drawLine(drawContext, point1, point2, width, color) {
-        const path = new Path();
-        path.move(point1);
-
-        path.addLine(point2);
-        drawContext.addPath(path);
-        drawContext.setStrokeColor(color);
-        drawContext.setLineWidth(width);
-        drawContext.strokePath();
-    }
-
-    async function notifyIfNeeded(myStoredData) {
-        let data = myStoredData.data;
-        let myEndDate = calcEndDate(myStoredData);
-        if (!myEndDate) {
-            throw "calcEndDate undefined";
-        }
-        let myRestSeconds = (myEndDate.getTime() - new Date().getTime()) / 1000;
-
-        const myRemainingData = 100 - data.usedPercentage;
-        // notify if less than LowDays left
-        const conRemainingSecondsLow = 60 * 60 * 24 * conRemainingDaysLow;
-        const conRemainingSecondsVeryLow = 60 * 60 * conRemainingHoursVeryLow;
-        if (myRemainingData <= 0 || (myRestSeconds <= 0)) {
-            let notify1 = new Notification();
-            //let myRemainingHours = (myRestSeconds / (60 * 60)).toFixed(0);
-            notify1.title = "Telekom data empty!";
-            let myString = "Stop WLAN and click here to go to Telekom App";
-            notify1.body = myString;
-            notify1.openURL = conTelekomURL;
-            await notify1.schedule();
-        }
-        else if (myRemainingData <= conPercentageVeryLow || (myRestSeconds <= conRemainingSecondsVeryLow)) {
-            let notify1 = new Notification();
-            let myRemainingHours = (myRestSeconds / (60 * 60)).toFixed(0);
-            let myString = "Remaining: " + myRemainingData.toString() + "% - " + myRemainingHours + " hours";
-            notify1.title = "Telekom data very low!";
-            notify1.body = myString;
-            notify1.openURL = conTelekomURL;
-            await notify1.schedule();
-        }
-        else if (myRemainingData <= conPercentageLow || (myRestSeconds <= conRemainingSecondsLow)) {
-            let notify1 = new Notification();
-            notify1.title = "Remaining Telekom data low";
-            if (myRestSeconds < 60 * 60 * 24) {
-                // less than 1 day-> show hours
-                let myRemaininghours = (myRestSeconds / (60 * 60)).toFixed(0);
-                let myString = "Remaining: " + myRemainingData.toString() + "% - " + myRemaininghours + " hours";
-                notify1.body = myString;
-            }
-            else {
-                let myRemainingDays = (myRestSeconds / (60 * 60 * 24)).toFixed(0);
-                let myString = "Remaining: " + myRemainingData.toString() + "% - " + myRemainingDays + " days";
-                notify1.body = myString;
-            }
-            notify1.openURL = conTelekomURL;
-            await notify1.schedule();
-        }
-    }
 
     /**
      * 
@@ -639,4 +594,58 @@ async function run() {
         // #endregion
 
     }
+
+    /**
+     * notify on low data or time
+     * @param {any} myStoredData
+     */
+    async function notifyIfNeeded(myStoredData) {
+        let data = myStoredData.data;
+        let myEndDate = calcEndDate(myStoredData);
+        if (!myEndDate) {
+            throw "calcEndDate undefined";
+        }
+        let myRestSeconds = (myEndDate.getTime() - new Date().getTime()) / 1000;
+
+        const myRemainingData = 100 - data.usedPercentage;
+        // notify if less than LowDays left
+        const conRemainingSecondsLow = 60 * 60 * 24 * conRemainingDaysLow;
+        const conRemainingSecondsVeryLow = 60 * 60 * conRemainingHoursVeryLow;
+        if (myRemainingData <= 0 || (myRestSeconds <= 0)) {
+            let notify1 = new Notification();
+            //let myRemainingHours = (myRestSeconds / (60 * 60)).toFixed(0);
+            notify1.title = "Telekom data empty!";
+            let myString = "Stop WLAN and click here to go to Telekom App";
+            notify1.body = myString;
+            notify1.openURL = conTelekomURL;
+            await notify1.schedule();
+        }
+        else if (myRemainingData <= conPercentageVeryLow || (myRestSeconds <= conRemainingSecondsVeryLow)) {
+            let notify1 = new Notification();
+            let myRemainingHours = (myRestSeconds / (60 * 60)).toFixed(0);
+            let myString = "Remaining: " + myRemainingData.toString() + "% - " + myRemainingHours + " hours";
+            notify1.title = "Telekom data very low!";
+            notify1.body = myString;
+            notify1.openURL = conTelekomURL;
+            await notify1.schedule();
+        }
+        else if (myRemainingData <= conPercentageLow || (myRestSeconds <= conRemainingSecondsLow)) {
+            let notify1 = new Notification();
+            notify1.title = "Remaining Telekom data low";
+            if (myRestSeconds < 60 * 60 * 24) {
+                // less than 1 day-> show hours
+                let myRemaininghours = (myRestSeconds / (60 * 60)).toFixed(0);
+                let myString = "Remaining: " + myRemainingData.toString() + "% - " + myRemaininghours + " hours";
+                notify1.body = myString;
+            }
+            else {
+                let myRemainingDays = (myRestSeconds / (60 * 60 * 24)).toFixed(0);
+                let myString = "Remaining: " + myRemainingData.toString() + "% - " + myRemainingDays + " days";
+                notify1.body = myString;
+            }
+            notify1.openURL = conTelekomURL;
+            await notify1.schedule();
+        }
+    }
+    // #endregion
 }
