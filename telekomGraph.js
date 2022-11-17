@@ -58,7 +58,7 @@ async function run() {
     //const bedsLineWidth = 12;
 
     let widget = await createWidget();
-    widget.url = conTelekomURL;
+    //widget.url = conTelekomURL;
 
     await widget.presentMedium()
 
@@ -70,172 +70,166 @@ async function run() {
         //let fm = FileManager.local()
         let fm = FileManager.iCloud()
 
-        try {
-            //let fresh, myStoredData;
-            let { fresh, myStoredData, wifiProblem } = await getStoredData(fm);
-            if (wifiProblem) {
-                // for wifi problem show error text (all other exceptions not caught)
-                const errorList = new ListWidget();
-                errorList.addText(wifiProblem);
-                return errorList;
+        //try         {
+        //let fresh, myStoredData;
+        let { fresh, myStoredData, wifiProblem } = await getStoredData(fm);
+        if (wifiProblem) {
+            // for wifi problem show error text (all other exceptions not caught)
+            const errorList = new ListWidget();
+            errorList.addText(wifiProblem);
+            return errorList;
+        }
+        //showObject(myResult, "myResult");
+        //if (conIsTest && myStoredData.accessTime < new Date().getTime() - 2 * DAY_IN_MILLISECONDS) {
+        //    // do not store fake entry
+        //    fresh = false;
+        //    let myDaysBefore = 1;
+        //    let myEndDate = new Date(myStoredData.usedAt + myStoredData.remainingSeconds * 1000 - myDaysBefore * DAY_IN_MILLISECONDS);
+        //    let myStartData = { usedPercentage: 99, remainingSeconds: myDaysBefore * DAY_IN_SECONDS, usedAt: myEndDate };
+        //    myStoredData = myStartData;
+        //    showObject(myStoredData, "conIsTest");
+        //}
+        await notifyIfNeeded(myStoredData);
+
+        // #region get myNewHistory
+        let myStoredDatas = await readAndUpdateStoredDatas(fm, fresh ? myStoredData : undefined);
+
+        console.log("Show data: " + myStoredDatas.length);
+        let myHistoryDatas = getHistoryData(myStoredDatas);
+
+        // #endregion
+
+
+        const widget = new ListWidget();
+        widget.backgroundColor = conWidgetBackgroundColor;
+        widget.url = conTelekomURL;
+
+        let drawContext = new DrawContext();
+        drawContext.size = new Size(widgetWidth, widgetHeight);
+        drawContext.opaque = false;
+
+        showHeader(widget, fresh);
+
+        showStoredData(myStoredData, drawContext);
+
+        showHistoryDatas(myHistoryDatas, drawContext);
+
+        if (drawContext) {
+            //let myDrawStack = list.addStack();
+            widget.setPadding(0, 0, 0, 0);
+            widget.backgroundImage = (drawContext.getImage());
+        }
+
+        return widget; //{ widget: widget, drawContext: drawContext };
+
+    }
+    function showHistoryDatas(myHistoryDatas, drawContext) {
+        let min = 0;
+        let max = 100;
+
+        let diff = max - min;
+
+        console.log(`myNewHistory.length: ${myHistoryDatas.length}`);
+        for (let i = 0; i < myHistoryDatas.length; i++) {
+            // { entry: myOldestEntry, dateString: getDateStringFromDate(myNextDay), date: myNextDay }
+            const day = myHistoryDatas[i].date.getDate();
+            const dayOfWeek = myHistoryDatas[i].date.getDay();
+            const myRestPercentage = 100 - myHistoryDatas[i].entry.data.usedPercentage;
+            const delta = (myRestPercentage - min) / diff;
+
+            let myEndDate = calcEndDate(myHistoryDatas[i].entry);
+            if (!myEndDate) {
+                throw "calcEndDate undefined";
             }
-            //showObject(myResult, "myResult");
-            //if (conIsTest && myStoredData.accessTime < new Date().getTime() - 2 * DAY_IN_MILLISECONDS) {
-            //    // do not store fake entry
-            //    fresh = false;
-            //    let myDaysBefore = 1;
-            //    let myEndDate = new Date(myStoredData.usedAt + myStoredData.remainingSeconds * 1000 - myDaysBefore * DAY_IN_MILLISECONDS);
-            //    let myStartData = { usedPercentage: 99, remainingSeconds: myDaysBefore * DAY_IN_SECONDS, usedAt: myEndDate };
-            //    myStoredData = myStartData;
-            //    showObject(myStoredData, "conIsTest");
-            //}
-            await notifyIfNeeded(myStoredData);
+            let myRestSeconds = (myEndDate.getTime() - new Date().getTime()) / 1000;
+            // pack runs 31 days
+            const conTotalSeconds = conDaysPerPackage * DAY_IN_SECONDS;
+            let myRestTime = 100 * myRestSeconds / conTotalSeconds;
 
-            // #region get myNewHistory
-            // history
-            //let myHistoryDatas = [];
-            //const conHistoryPath = fm.joinPath(dir, "ScriptableTelekomHistory.json");
-            // array of myStoredData = { version: `Written by telekom.js version: ${conVersion}`, data: data, accessTime: new Date().getTime(), accessString: new Date().toString() };
+            console.log(`${i} day: ${day}- myRestPercentage: ${myRestPercentage} myRestTime: ${myRestTime.toFixed()}`);
 
-            let myStoredDatas = await readAndUpdateStoredDatas(fm, fresh ? myStoredData : undefined);
+            // Vertical Line
+            let drawColor;
 
-            console.log("Show data: " + myStoredDatas.length);
-            let myHistoryDatas = getHistoryData(myStoredDatas);
-
-            // #endregion
-
-            let drawContext = new DrawContext();
-            drawContext.size = new Size(widgetWidth, widgetHeight);
-            drawContext.opaque = false;
-
-            const widget = new ListWidget();
-            widget.backgroundColor = conWidgetBackgroundColor;
-
-            let myTextArea = widget.addStack();
-            myTextArea.topAlignContent();
-            myTextArea.size = new Size(widgetWidth, 150);
-
-            if (fresh) {
-                showLink(myTextArea, "Goto Telekom", conTelekomURL);
+            if (myRestPercentage < myRestTime) {
+                drawColor = conAlertColor;
             }
             else {
-                showTitle(myTextArea, "Telekom Data");
+                drawColor = Color.green();
             }
 
-            let { myRestData, myRestTime, myEndDate } = getRestInfo(myStoredData);
+            const point1 = new Point(spaceBetweenDays * i + 50, graphLow - (graphHeight * delta));
+            const point2 = new Point(spaceBetweenDays * i + 50, graphLow + 10);
+            drawLine(drawContext, point1, point2, vertLineWeight, drawColor);
+            //console.log(`${i} x: ${point1.x}- y: ${point1.y}`);
+            let dayColor;
 
-            //const bedsRight = widgetWidth - bedsPaddingRight;
-            //const freeBedsWidth = 0; //(bedsRight / beds) * freeBeds;
-            //const covidBedsWidth = (bedsRight / beds) * cases;
-            let myTextColor = conAccentColor1;
-            //if (myRestData < myRestTime) {
-            //    myTextColor = Color.red();
-            //}
-
-            let myRestDataRect = new Rect(bedsPaddingLeft, bedsGraphBaseline - 40, widgetWidth / 2 - 100, 26);
-            drawContext.setFont(Font.mediumSystemFont(26));
-            drawContext.setTextColor(myTextColor);
-            drawContext.drawTextInRect(myStoredData.data.usedVolumeStr + " / " + myStoredData.data.initialVolumeStr, myRestDataRect)
-
-            //const lineUsedVolume = list.addText(myStoredData.data.usedVolumeStr + " / " + myStoredData.data.initialVolumeStr)
-            //lineUsedVolume.font = Font.mediumSystemFont(12)
-
-            let myEndDateRect = new Rect(bedsPaddingLeft + widgetWidth / 2 - 90, bedsGraphBaseline - 40, widgetWidth / 2, 26);
-            let myDateString = `Runs until ${myEndDate.toLocaleString("DE-de")}`;
-            drawContext.drawTextInRect(myDateString, myEndDateRect)
-
-            let myAppTime = `App refresh: ${niceDateString(new Date())}`;
-            let myServerTime = `Server refresh: ${niceDateString(new Date(myStoredData.data.usedAt))}`;
-            //let myServerTime = `Server refresh: ${new Date(myStoredData.data.usedAt).toLocaleString("DE-de")}`;
-            //showObject(myStoredData, "myServerTime");
-            //console.log(`usedAt ${myStoredData.data.usedAt}- myServerTime${myServerTime}`);
-            let myWidth = 220;
-            drawContext.setFont(Font.mediumSystemFont(22));
-            let myAppInfoRect = new Rect(bedsPaddingLeft, bedsGraphBaseline - 0, widgetWidth - myWidth, 26);
-            drawContext.drawTextInRect(myServerTime, myAppInfoRect);
-
-            let myVersionInfoRect = new Rect(bedsPaddingLeft + widgetWidth - myWidth, bedsGraphBaseline - 0, myWidth, 26);
-            drawContext.setFont(Font.italicSystemFont(20));
-            drawContext.drawTextInRect(conVersion, myVersionInfoRect);
-
-            let min = 0;
-            let max = 100;
-
-            let diff = max - min;
-
-            console.log(`myNewHistory.length: ${myHistoryDatas.length}`);
-            for (let i = 0; i < myHistoryDatas.length; i++) {
-                // { entry: myOldestEntry, dateString: getDateStringFromDate(myNextDay), date: myNextDay }
-                const day = myHistoryDatas[i].date.getDate();
-                const dayOfWeek = myHistoryDatas[i].date.getDay();
-                const myRestPercentage = 100 - myHistoryDatas[i].entry.data.usedPercentage;
-                const delta = (myRestPercentage - min) / diff;
-
-                let myEndDate = calcEndDate(myHistoryDatas[i].entry);
-                if (!myEndDate) {
-                    throw "calcEndDate undefined";
-                }
-                let myRestSeconds = (myEndDate.getTime() - new Date().getTime()) / 1000;
-                // pack runs 31 days
-                const conTotalSeconds = conDaysPerPackage * DAY_IN_SECONDS;
-                let myRestTime = 100 * myRestSeconds / conTotalSeconds;
-
-                console.log(`${i} day: ${day}- myRestPercentage: ${myRestPercentage} myRestTime: ${myRestTime.toFixed()}`);
-
-                // Vertical Line
-
-                let drawColor;
-
-                if (myRestPercentage < myRestTime) {
-                    drawColor = conAlertColor;
-                }
-                else {
-                    drawColor = Color.green();
-                }
-
-                const point1 = new Point(spaceBetweenDays * i + 50, graphLow - (graphHeight * delta));
-                const point2 = new Point(spaceBetweenDays * i + 50, graphLow + 10);
-                drawLine(drawContext, point1, point2, vertLineWeight, drawColor);
-                //console.log(`${i} x: ${point1.x}- y: ${point1.y}`);
-
-                let dayColor;
-
-                if (dayOfWeek === 0 || dayOfWeek === 6) {
-                    dayColor = conAccentColor2;
-                } else {
-                    dayColor = conAccentColor1;
-                }
-                const conFontSize = 18;
-                //console.log(`${i} ${day} x: ${spaceBetweenDays * i + 20}- y: ${(graphLow - 40) - (graphHeight * delta)}`);
-                let myShowPercent = (i - myHistoryDatas.length + 1) % 3;
-                if (myShowPercent === 0) {
-                    const myRestPercentRect = new Rect(spaceBetweenDays * i + 38, (graphLow - 20) - (graphHeight * delta), 60, 23);
-                    drawTextR(drawContext, myRestPercentage + "%", myRestPercentRect, conAccentColor1, Font.systemFont(conFontSize));
-                }
-                const dayRect = new Rect(spaceBetweenDays * i + 40, graphLow + 15, 50, 23);
-                drawTextR(drawContext, day, dayRect, dayColor, Font.systemFont(conFontSize));
+            if (dayOfWeek === 0 || dayOfWeek === 6) {
+                dayColor = conAccentColor2;
+            } else {
+                dayColor = conAccentColor1;
             }
-
-            if (drawContext) {
-                //let myDrawStack = list.addStack();
-                widget.setPadding(0, 0, 0, 0);
-                widget.backgroundImage = (drawContext.getImage());
+            const conFontSize = 18;
+            //console.log(`${i} ${day} x: ${spaceBetweenDays * i + 20}- y: ${(graphLow - 40) - (graphHeight * delta)}`);
+            let myShowPercent = (i - myHistoryDatas.length + 1) % 3;
+            if (myShowPercent === 0) {
+                const myRestPercentRect = new Rect(spaceBetweenDays * i + 38, (graphLow - 20) - (graphHeight * delta), 60, 23);
+                drawTextR(drawContext, myRestPercentage + "%", myRestPercentRect, conAccentColor1, Font.systemFont(conFontSize));
             }
-
-            return widget; //{ widget: widget, drawContext: drawContext };
-        }
-        catch (err) {
-            const errorList = new ListWidget();
-            errorList.addText("error: " + err);
-            //throw "Please disable WiFi for initial execution (1)";
-            //return errorList;
-            //list.addText("error: " + err);
-            console.error("Err2");
-            console.error(err);
-            //showObject(err, "Err2");
-            return { widget: errorList };
+            const dayRect = new Rect(spaceBetweenDays * i + 40, graphLow + 15, 50, 23);
+            drawTextR(drawContext, day, dayRect, dayColor, Font.systemFont(conFontSize));
         }
     }
+
+    function showStoredData(myStoredData, drawContext) {
+        let { myRestData, myRestTime, myEndDate } = getRestInfo(myStoredData);
+
+        //const bedsRight = widgetWidth - bedsPaddingRight;
+        //const freeBedsWidth = 0; //(bedsRight / beds) * freeBeds;
+        //const covidBedsWidth = (bedsRight / beds) * cases;
+        let myTextColor = conAccentColor1;
+        //if (myRestData < myRestTime) {
+        //    myTextColor = Color.red();
+        //}
+        let myRestDataRect = new Rect(bedsPaddingLeft, bedsGraphBaseline - 40, widgetWidth / 2 - 100, 26);
+        drawContext.setFont(Font.mediumSystemFont(26));
+        drawContext.setTextColor(myTextColor);
+        drawContext.drawTextInRect(myStoredData.data.usedVolumeStr + " / " + myStoredData.data.initialVolumeStr, myRestDataRect);
+
+        //const lineUsedVolume = list.addText(myStoredData.data.usedVolumeStr + " / " + myStoredData.data.initialVolumeStr)
+        //lineUsedVolume.font = Font.mediumSystemFont(12)
+        let myEndDateRect = new Rect(bedsPaddingLeft + widgetWidth / 2 - 90, bedsGraphBaseline - 40, widgetWidth / 2, 26);
+        let myDateString = `Runs until ${myEndDate.toLocaleString("DE-de")}`;
+        drawContext.drawTextInRect(myDateString, myEndDateRect);
+
+        let myAppTime = `App refresh: ${niceDateString(new Date())}`;
+        let myServerTime = `Server refresh: ${niceDateString(new Date(myStoredData.data.usedAt))}`;
+        //let myServerTime = `Server refresh: ${new Date(myStoredData.data.usedAt).toLocaleString("DE-de")}`;
+        //showObject(myStoredData, "myServerTime");
+        //console.log(`usedAt ${myStoredData.data.usedAt}- myServerTime${myServerTime}`);
+        let myWidth = 220;
+        drawContext.setFont(Font.mediumSystemFont(22));
+        let myAppInfoRect = new Rect(bedsPaddingLeft, bedsGraphBaseline - 0, widgetWidth - myWidth, 26);
+        drawContext.drawTextInRect(myServerTime, myAppInfoRect);
+
+        let myVersionInfoRect = new Rect(bedsPaddingLeft + widgetWidth - myWidth, bedsGraphBaseline - 0, myWidth, 26);
+        drawContext.setFont(Font.italicSystemFont(20));
+        drawContext.drawTextInRect(conVersion, myVersionInfoRect);
+    }
+
+    function showHeader(widget, fresh) {
+        let myTextArea = widget.addStack();
+        myTextArea.topAlignContent();
+        myTextArea.size = new Size(widgetWidth, 150);
+
+        if (fresh) {
+            showLink(myTextArea, "Goto Telekom", conTelekomURL);
+        }
+        else {
+            showTitle(myTextArea, "Telekom Data");
+        }
+    }
+
     /**
      * 
      * @param {Date} myEndDate
@@ -420,13 +414,13 @@ async function run() {
         }
 
         // replace with new array
-        myStoredDatas = myNewStoredDatas;
+        //myStoredDatas = myNewStoredDatas;
 
-        myHistoryDataString = JSON.stringify(myStoredDatas);
-        fm.writeString(conHistoryPath, myHistoryDataString);
-        return myStoredDatas;
+        let myStoredDatasString = JSON.stringify(myNewStoredDatas);
+        fm.writeString(conHistoryPath, myStoredDatasString);
+        return myNewStoredDatas;
 
-        /** read from file */
+        /** read from file and sort*/
         async function readStoredDatas() {
             let myStoredDatas = [];
             if (fm.fileExists(conHistoryPath)) {
@@ -453,26 +447,26 @@ async function run() {
 
         /**
          * 
-         * @param {{usedVolume:number, accessTime:number}[]} pNewHistory
+         * @param {{usedVolume:number, accessTime:number}[]} pStoredDatas
          * @param {{usedVolume:number, accessTime:number}} pCurr
          */
-        function pushOrReplace(pNewHistory, pCurr) {
-            if (pNewHistory.length <= 0) {
+        function pushOrReplace(pStoredDatas, pCurr) {
+            if (pStoredDatas.length <= 0) {
                 //console.log("pushOrReplace: push to new");
-                pNewHistory.push(pCurr);
+                pStoredDatas.push(pCurr);
             }
             else {
-                if (pNewHistory[pNewHistory.length - 1].usedVolume > pCurr.usedVolume) {
+                if (pStoredDatas[pStoredDatas.length - 1].usedVolume > pCurr.usedVolume) {
                     // new pass
-                    pNewHistory = [pCurr];
+                    pStoredDatas = [pCurr];
                 }
                 else {
-                    if (getDateStringFromMSecs(pNewHistory[pNewHistory.length - 1].accessTime) === getDateStringFromMSecs(pCurr.accessTime)) {
+                    if (getDateStringFromMSecs(pStoredDatas[pStoredDatas.length - 1].accessTime) === getDateStringFromMSecs(pCurr.accessTime)) {
                         // update with latest entry from day
-                        pNewHistory[pNewHistory.length - 1] = pCurr;
+                        pStoredDatas[pStoredDatas.length - 1] = pCurr;
                     }
                     else {
-                        pNewHistory.push(pCurr);
+                        pStoredDatas.push(pCurr);
                     }
                 }
             }
