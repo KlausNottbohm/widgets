@@ -375,17 +375,13 @@ async function run() {
         const conStart2ndWordRow1 = conWidthFirstWordRow1 + 10;
 
         let myRestDataRect = new Rect(conBottomTextPadding, conBottomText - conFirstLineBottom, conWidthFirstWordRow1, conLineHeight);
-        drawContext.setFont(Font.mediumSystemFont(26));
-        drawContext.setTextColor(myTextColor);
         // expired? show empty data
-        let myUsedString = myRestTime > 0 ? "Used "+ pStoredData.data.usedVolumeStr + " / " + pStoredData.data.initialVolumeStr : "No data";
-        drawContext.drawTextInRect(myUsedString, myRestDataRect);
+        let myUsedString = myRestTime > 0 ? "Used " + pStoredData.data.usedVolumeStr + " / " + pStoredData.data.initialVolumeStr : "No data";
+        drawTextR(drawContext, myUsedString, myRestDataRect, myTextColor, Font.mediumSystemFont(26));
 
         let myEndDateRect = new Rect(conBottomTextPadding + conStart2ndWordRow1, conBottomText - conFirstLineBottom, widgetWidth - 2 * conBottomTextPadding - conStart2ndWordRow1, conLineHeight);
-        drawContext.setTextAlignedRight();
         let myDateString = myRestTime <= 0 ? `Expired! ${myEndDate.toLocaleString("DE-de")}` : `Runs until ${myEndDate.toLocaleString("DE-de")}`;
-        drawContext.drawTextInRect(myDateString, myEndDateRect);
-        drawContext.setTextAlignedLeft();
+        drawTextR(drawContext, myDateString, myEndDateRect, myTextColor, Font.mediumSystemFont(26), true);
 
         let myRefreshString = `Refresh Server: ${niceDateString(new Date(pStoredData.data.usedAt))}/ App: ${niceDateString(new Date())}`;
 
@@ -393,15 +389,11 @@ async function run() {
         const conStart2ndWordRow2 = conWidthFirstWordRow2 + 10;
         let myWidth = widgetWidth - 2 * conBottomTextPadding - conStart2ndWordRow2;
 
-        drawContext.setFont(Font.mediumSystemFont(22));
         let myAppInfoRect = new Rect(conBottomTextPadding, conBottomText - conSecondLineBottom, conWidthFirstWordRow2, conLineHeight);
-        drawContext.drawTextInRect(myRefreshString, myAppInfoRect);
+        drawTextR(drawContext, myRefreshString, myAppInfoRect, myTextColor, Font.mediumSystemFont(22));
 
-        drawContext.setTextAlignedRight();
         let myVersionInfoRect = new Rect(conBottomTextPadding + conStart2ndWordRow2, conBottomText - conSecondLineBottom, myWidth, conLineHeight);
-        drawContext.setFont(Font.italicSystemFont(20));
-        drawContext.drawTextInRect(conVersion, myVersionInfoRect);
-        drawContext.setTextAlignedLeft();
+        drawTextR(drawContext, conVersion, myVersionInfoRect, myTextColor, Font.italicSystemFont(20), true);
     }
     /**
      * show title or link
@@ -474,11 +466,21 @@ async function run() {
         footerStack.topAlignContent();
         return footerStack;
     }
-
-    function drawTextR(drawContext, text, rect, color, font) {
+    /**
+     * 
+     * @param {DrawContext} drawContext
+     * @param {string} text
+     * @param {Rect} rect
+     * @param {Color} color
+     * @param {Font} font
+     * @param {boolean} IsRightAligned
+     */
+    function drawTextR(drawContext, text, rect, color, font, IsRightAligned) {
         drawContext.setFont(font);
         drawContext.setTextColor(color);
+        IsRightAligned ? drawContext.setTextAlignedRight() : drawContext.setTextAlignedLeft();
         drawContext.drawTextInRect(new String(text).toString(), rect);
+        drawContext.setTextAlignedLeft();
     }
 
     function drawLine(drawContext, point1, point2, width, color) {
