@@ -13,8 +13,10 @@ async function run() {
      * undefined or "": real data
      * "low": show data until last day with low data in between
      * "empty": volume empty before end time
+     * "after": last read is after package expiration
+     * "new": last read is with new package
      * */
-    const conIsTest = "empty"; //"empty";
+    const conIsTest = "new"; //"empty";
 
     const conAPIUrl = "https://pass.telekom.de/api/service/generic/v1/status";
     const conTelekomURL = "https://pass.telekom.de";
@@ -83,6 +85,66 @@ async function run() {
             console.log("createTestStoredDatas: " + this._IsTest);
             try {
                 switch (this._IsTest) {
+                    case "new":
+                        {
+                            // old package expired 2 days ago
+                            let myNowTime = new Date().getTime();
+                            // 2 days expired, last package before new package is still stored
+                            this.startDate = new Date(myNowTime - (conDaysPerPackage + 2) * DAY_IN_MILLISECONDS);
+
+                            let myStoredDatas = [];
+
+                            let myStoredData1 = this.createTestStoredData(this.getEndDate(), new Date(this.startDate.getTime() + 5 * DAY_IN_MILLISECONDS), 50);
+                            myStoredDatas.push(myStoredData1);
+
+                            let myStoredData2 = this.createTestStoredData(this.getEndDate(), new Date(this.startDate.getTime() + 10 * DAY_IN_MILLISECONDS), 60);
+                            myStoredDatas.push(myStoredData2);
+
+                            console.log(`{myStartDate} {myEndDate} {myStoredDatas.length}: ${this.startDate} ${this.getEndDate()} ${myStoredDatas.length}`);
+
+                            for (let iEle of myStoredDatas) {
+                                this.logStoredData(iEle);
+                            }
+                            this.storedDatas = myStoredDatas;
+
+                            //  new package was purchased 1 day before
+                            this.startDate = new Date(myNowTime - DAY_IN_MILLISECONDS);
+                            console.log(`new startdate: ${this.startDate} ${this.getEndDate()}`);
+                            let myNowDate = new Date();
+                            let myUsedPercentage = 80;
+                            this.storedData = this.createTestStoredData(this.getEndDate(), myNowDate, myUsedPercentage);
+                            this.logStoredData(this.storedData);
+
+                            break;
+                        }
+                    case "after":
+                        {
+                            // one hour before expiration
+                            let myNowTime = new Date().getTime();
+                            // 2 days expired
+                            this.startDate = new Date(myNowTime - (conDaysPerPackage + 2) * DAY_IN_MILLISECONDS);
+
+                            let myNowDate = new Date();
+                            let myUsedPercentage = 80;
+                            this.storedData = this.createTestStoredData(this.getEndDate(), myNowDate, myUsedPercentage);
+                            this.logStoredData(this.storedData);
+
+                            let myStoredDatas = [];
+
+                            let myStoredData1 = this.createTestStoredData(this.getEndDate(), new Date(this.startDate.getTime() + 5 * DAY_IN_MILLISECONDS), 50);
+                            myStoredDatas.push(myStoredData1);
+
+                            let myStoredData2 = this.createTestStoredData(this.getEndDate(), new Date(this.startDate.getTime() + 10 * DAY_IN_MILLISECONDS), 75);
+                            myStoredDatas.push(myStoredData2);
+
+                            console.log(`{myStartDate} {myEndDate} {myStoredDatas.length}: ${this.startDate} ${this.getEndDate()} ${myStoredDatas.length}`)
+
+                            for (let iEle of myStoredDatas) {
+                                this.logStoredData(iEle);
+                            }
+                            this.storedDatas = myStoredDatas;
+                            break;
+                        }
                     case "low":
                         {
                             // one hour before expiration
@@ -174,7 +236,7 @@ async function run() {
         // #endregion
     }
     /** undefined, if !conIsTest  */
-    const mTestGenerator = conIsTest ? new TestCreator(conIsTest) : undefined;
+    const mTestGenerator = conIsTest ? new TestGenerator(conIsTest) : undefined;
 
     try {
         let widget = await createWidget();
@@ -231,12 +293,15 @@ async function run() {
    * @param {any} myHistoryDatas
    * @param {any} drawContext
    */
-    function showHistoryDatas(myHistoryDatas, drawContext) {
+    function showHistoryDatas(pHistoryDatas, drawContext) {
         let min = 0;
         let max = 100;
 
         let diff = max - min;
 
+        // show only last 31 days
+        console.log(`pHistoryDatas.length: ${pHistoryDatas.length}`);
+        let myHistoryDatas = pHistoryDatas.slice(-conDaysPerPackage);
         console.log(`myHistoryDatas.length: ${myHistoryDatas.length}`);
         for (let i = 0; i < myHistoryDatas.length; i++) {
             // { entry: myOldestEntry, dateString: getDateStringFromDate(myNextDay), date: myNextDay }
@@ -250,7 +315,7 @@ async function run() {
             // Vertical Line
             let drawColor;
 
-            if (myRestPercentage < myRestTime) {
+            if (myRestPercentage <= 0 || myRestPercentage < myRestTime) {
                 drawColor = conAlertColor;
             }
             else {
@@ -299,10 +364,12 @@ async function run() {
         let myRestDataRect = new Rect(conBottomTextPaddingLeft, bedsGraphBaseline - 40, widgetWidth / 2 - 100, 26);
         drawContext.setFont(Font.mediumSystemFont(26));
         drawContext.setTextColor(myTextColor);
-        drawContext.drawTextInRect(myStoredData.data.usedVolumeStr + " / " + myStoredData.data.initialVolumeStr, myRestDataRect);
+        // expired? show empty data
+        let myUsedString = myRestTime > 0 ? myStoredData.data.usedVolumeStr + " / " + myStoredData.data.initialVolumeStr : "No data";
+        drawContext.drawTextInRect(myUsedString, myRestDataRect);
 
         let myEndDateRect = new Rect(conBottomTextPaddingLeft + widgetWidth / 2 - 90, bedsGraphBaseline - 40, widgetWidth / 2, 26);
-        let myDateString = `Runs until ${myEndDate.toLocaleString("DE-de")}`;
+        let myDateString = myRestTime <= 0 ? `Expired! ${myEndDate.toLocaleString("DE-de")}` : `Runs until ${myEndDate.toLocaleString("DE-de")}`;
         drawContext.drawTextInRect(myDateString, myEndDateRect);
 
         let myAppTime = `App refresh: ${niceDateString(new Date())}`;
@@ -470,8 +537,6 @@ async function run() {
      * @param {Date} pDate 
      */
     function calcRest(pStoredData, pDate) {
-        const myRestPercentage = 100 - pStoredData.data.usedPercentage;
-
         let myEndDate = calcEndDate(pStoredData);
         if (!myEndDate) {
             throw "calcEndDate undefined";
@@ -480,6 +545,9 @@ async function run() {
         // pack runs 31 days
         const conTotalSeconds = conDaysPerPackage * DAY_IN_SECONDS;
         let myRestTime = 100 * myRestSeconds / conTotalSeconds;
+
+        const myRestPercentage = myRestSeconds <= 0 ? 0 : 100 - pStoredData.data.usedPercentage;
+
         return { myRestPercentage, myRestTime };
     }
 
@@ -620,6 +688,7 @@ async function run() {
                 // add only new data
                 console.log(`push new data: ${pStoredData.accessString}: ${pStoredData.data.usedPercentage}%`);
                 pushOrReplace(myNewStoredDatas, pStoredData);
+                console.log(`push new data-myNewStoredDatas: ${myNewStoredDatas.length}`);
             }
             return myNewStoredDatas;
         }
@@ -660,9 +729,16 @@ async function run() {
                 pNewStoredDatas.push(pStoredData);
             }
             else {
-                if (pNewStoredDatas[pNewStoredDatas.length - 1].usedVolume > pStoredData.usedVolume) {
+                let myPreviousEndDate = calcEndDate(pNewStoredDatas[pNewStoredDatas.length - 1]);
+                let myCurrEndDate = calcEndDate(pStoredData);
+                console.log(`pushOrReplace {myPreviousEndDate} {myCurrEndDate} ${myPreviousEndDate} ${myCurrEndDate}`);
+                if (pNewStoredDatas[pNewStoredDatas.length - 1].usedVolume > pStoredData.usedVolume || myCurrEndDate.getTime() > myPreviousEndDate.getTime() + HOUR_IN_SECONDS * 1000) {
                     // new pass
-                    pNewStoredDatas = [pStoredData];
+                    console.log("new pass");
+                    // clear pNewStoredDatas and add current item
+                    pNewStoredDatas.length = 0;
+                    pNewStoredDatas.push(pStoredData);
+                    //console.log(`pushOrReplace-pNewStoredDatas: ${pNewStoredDatas.length}`);
                 }
                 else {
                     if (getDateStringFromMSecs(pNewStoredDatas[pNewStoredDatas.length - 1].accessTime) === getDateStringFromMSecs(pStoredData.accessTime)) {
