@@ -9,7 +9,7 @@ async function run() {
 
     // #region constant definitions
     // do not make longer (space restrictions)
-    const conVersion = "V221118";
+    const conVersion = "V221119";
 
     /** possible values: 
      * undefined or "": real data
@@ -385,7 +385,7 @@ async function run() {
 
         let myRefreshString = `Refresh Server: ${niceDateString(new Date(pStoredData.data.usedAt))}/ App: ${niceDateString(new Date())}`;
 
-        const conWidthFirstWordRow2 = widgetWidth / 2 + 220;
+        const conWidthFirstWordRow2 = widgetWidth / 2 + 200;
         const conStart2ndWordRow2 = conWidthFirstWordRow2 + 10;
         let myWidth = widgetWidth - 2 * conBottomTextPadding - conStart2ndWordRow2;
 
