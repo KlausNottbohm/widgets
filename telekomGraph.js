@@ -14,8 +14,7 @@ async function run() {
      * "low": show data until last day with low data in between
      * "empty": volume empty before end time
      * */
-    const conIsTest = ""; //"empty";
-    const mTestGenerator = conIsTest ? new TestGenerator(conIsTest) : undefined;
+    const conIsTest = "empty"; //"empty";
 
     const conAPIUrl = "https://pass.telekom.de/api/service/generic/v1/status";
     const conTelekomURL = "https://pass.telekom.de";
@@ -60,6 +59,123 @@ async function run() {
     const bedsGraphBaseline = 290;
     const conBottomTextPaddingLeft = 32;
     // #endregion
+
+    /** generates test data, defined here because of hoisting problem */
+    class TestGenerator {
+        /**
+         * 
+         * @param {string} pIsTest
+         */
+        constructor(pIsTest) {
+            try {
+                console.log("constructor pIsTest: " + pIsTest);
+                this._IsTest = pIsTest;
+                this.fresh = true;
+                this.createTestStoredDatas();
+            } catch (e) {
+                console.log("constructor catch: " + e);
+            }
+        }
+        getEndDate = () => new Date(this.startDate.getTime() + conDaysPerPackage * DAY_IN_MILLISECONDS);
+
+        // #region test data
+        createTestStoredDatas() {
+            console.log("createTestStoredDatas: " + this._IsTest);
+            try {
+                switch (this._IsTest) {
+                    case "low":
+                        {
+                            // one hour before expiration
+                            let myNowTime = new Date().getTime();
+                            // 31 days ago + 1 hour
+                            this.startDate = new Date(myNowTime - conDaysPerPackage * DAY_IN_MILLISECONDS + HOUR_IN_SECONDS * 1000);
+
+                            let myNowDate = new Date();
+                            let myUsedPercentage = 80;
+                            this.storedData = this.createTestStoredData(this.getEndDate(), myNowDate, myUsedPercentage);
+                            this.logStoredData(this.storedData);
+
+                            let myStoredDatas = [];
+                            let myStoredData1 = this.createTestStoredData(this.getEndDate(), new Date(this.startDate.getTime() + 5 * DAY_IN_MILLISECONDS), 50);
+                            myStoredDatas.push(myStoredData1);
+
+                            let myStoredData2 = this.createTestStoredData(this.getEndDate(), new Date(this.startDate.getTime() + 10 * DAY_IN_MILLISECONDS), 75);
+                            myStoredDatas.push(myStoredData2);
+
+                            console.log(`{myStartDate} {myEndDate} {myStoredDatas.length}: ${this.startDate} ${this.getEndDate()} ${myStoredDatas.length}`)
+
+                            for (let iEle of myStoredDatas) {
+                                this.logStoredData(iEle);
+                            }
+                            this.storedDatas = myStoredDatas;
+                            break;
+                        }
+                    case "empty":
+                        {
+                            console.log("case empty: " + this._IsTest);
+                            // one hour before expiration
+                            let myNowTime = new Date().getTime();
+                            this.startDate = new Date(myNowTime - (conDaysPerPackage - 10) * DAY_IN_MILLISECONDS);
+                            let myStartDate = this.startDate;
+                            let myEndDate = this.getEndDate();
+                            let myStoredDatas = [];
+
+                            let myNowDate = new Date();
+                            let myUsedPercentage = 100;
+                            this.storedData = this.createTestStoredData(myEndDate, myNowDate, myUsedPercentage);
+                            this.logStoredData(this.storedData);
+
+                            // 50% after 1/3 of time
+                            let myStoredData1 = this.createTestStoredData(myEndDate, new Date(myStartDate.getTime() + 10 * DAY_IN_MILLISECONDS), 50);
+                            myStoredDatas.push(myStoredData1);
+
+                            let myStoredData2 = this.createTestStoredData(myEndDate, new Date(myStartDate.getTime() + 15 * DAY_IN_MILLISECONDS), 100);
+                            myStoredDatas.push(myStoredData2);
+
+                            // {myStartDate} {myEndDate} {myStoredDatas.length}
+                            console.log(`{myStartDate} {myEndDate} {myStoredDatas.length}: ${myStartDate} ${myEndDate} ${myStoredDatas.length}`)
+                            for (let iEle of myStoredDatas) {
+                                console.log(`{usedPercentage} {remainingSeconds} {accessString}: ${iEle.data.usedPercentage} ${iEle.data.remainingSeconds} ${iEle.accessString}`)
+                            }
+
+                            this.storedDatas = myStoredDatas;
+                            break;
+                        }
+                    default:
+                        throw "unknown test case: " + this._IsTest;
+                }
+            }
+            catch (e) {
+                console.log("err in test: " + e);
+                throw e;
+            }
+        }
+
+        /**
+         * log StoredData
+         * @param {any} pStoredData
+         */
+        logStoredData(pStoredData) {
+            console.log(`myStoredData {usedPercentage} {remainingSeconds} {accessString}: ${pStoredData.data.usedPercentage} ${pStoredData.data.remainingSeconds} ${pStoredData.accessString}`);
+        }
+
+        /**
+         * 
+         * @param {Date} pEndDate
+         * @param {Date} pUsedAtDate
+         * @param {number} pUsedPercentage
+         */
+        createTestStoredData(pEndDate, pUsedAtDate, pUsedPercentage) {
+            let myRemainingSeconds = (pEndDate.getTime() - pUsedAtDate.getTime()) / 1000;
+            let myServerData = createServerData(pUsedPercentage, myRemainingSeconds, pUsedAtDate);
+            let myStoredData = createStoredData(myServerData, pUsedAtDate);
+            return myStoredData;
+        }
+        // #endregion
+    }
+    /** undefined, if !conIsTest  */
+    const mTestGenerator = conIsTest ? new TestCreator(conIsTest) : undefined;
+
     try {
         let widget = await createWidget();
         await widget.presentMedium()
@@ -734,113 +850,4 @@ async function run() {
     // #endregion
 
     // #endregion
-
-
-    class TestGenerator {
-        /**
-         * 
-         * @param {string} pIsTest
-         */
-        constructor(pIsTest) {
-            this._IsTest = pIsTest;
-            this.fresh = true;
-            this.createTestStoredDatas();
-        }
-        getEndDate = () => new Date(this.startDate.getTime() + conDaysPerPackage * DAY_IN_MILLISECONDS);
-
-        // #region test data
-        createTestStoredDatas() {
-            console.log("createTestStoredDatas: " + this._IsTest);
-            try {
-                switch (this._IsTest) {
-                    case "low":
-                        {
-                            // one hour before expiration
-                            let myNowTime = new Date().getTime();
-                            // 31 days ago + 1 hour
-                            this.startDate = new Date(myNowTime - conDaysPerPackage * DAY_IN_MILLISECONDS + HOUR_IN_SECONDS * 1000);
-
-                            let myNowDate = new Date();
-                            let myUsedPercentage = 80;
-                            this.storedData = this.createTestStoredData(this.getEndDate(), myNowDate, myUsedPercentage);
-                            this.logStoredData(this.storedData);
-
-                            let myStoredDatas = [];
-                            let myStoredData1 = this.createTestStoredData(this.getEndDate(), new Date(this.startDate.getTime() + 5 * DAY_IN_MILLISECONDS), 50);
-                            myStoredDatas.push(myStoredData1);
-
-                            let myStoredData2 = this.createTestStoredData(this.getEndDate(), new Date(this.startDate.getTime() + 10 * DAY_IN_MILLISECONDS), 75);
-                            myStoredDatas.push(myStoredData2);
-
-                            console.log(`{myStartDate} {myEndDate} {myStoredDatas.length}: ${this.startDate} ${this.getEndDate()} ${myStoredDatas.length}`)
-
-                            for (let iEle of myStoredDatas) {
-                                this.logStoredData(iEle);
-                            }
-                            this.storedDatas = myStoredDatas;
-                            break;
-                        }
-                    case "empty":
-                        {
-                            console.log("case empty: " + this._IsTest);
-                            // one hour before expiration
-                            let myNowTime = new Date().getTime();
-                            this.startDate = new Date(myNowTime - (conDaysPerPackage - 10) * DAY_IN_MILLISECONDS);
-                            let myStartDate = this.startDate;
-                            let myEndDate = this.getEndDate();
-                            let myStoredDatas = [];
-
-                            let myNowDate = new Date();
-                            let myUsedPercentage = 100;
-                            this.storedData = this.createTestStoredData(myEndDate, myNowDate, myUsedPercentage);
-                            this.logStoredData(this.storedData);
-
-                            // 50% after 1/3 of time
-                            let myStoredData1 = this.createTestStoredData(myEndDate, new Date(myStartDate.getTime() + 10 * DAY_IN_MILLISECONDS), 50);
-                            myStoredDatas.push(myStoredData1);
-
-                            let myStoredData2 = this.createTestStoredData(myEndDate, new Date(myStartDate.getTime() + 15 * DAY_IN_MILLISECONDS), 100);
-                            myStoredDatas.push(myStoredData2);
-
-                            // {myStartDate} {myEndDate} {myStoredDatas.length}
-                            console.log(`{myStartDate} {myEndDate} {myStoredDatas.length}: ${myStartDate} ${myEndDate} ${myStoredDatas.length}`)
-                            for (let iEle of myStoredDatas) {
-                                console.log(`{usedPercentage} {remainingSeconds} {accessString}: ${iEle.data.usedPercentage} ${iEle.data.remainingSeconds} ${iEle.accessString}`)
-                            }
-
-                            this.storedDatas = myStoredDatas;
-                            break;
-                        }
-                    default:
-                        throw "unknown test case: " + this._IsTest;
-                }
-            }
-            catch (e) {
-                console.log("err in test: " + e);
-                throw e;
-            }
-        }
-
-        /**
-         * log StoredData
-         * @param {any} pStoredData
-         */
-        logStoredData(pStoredData) {
-            console.log(`myStoredData {usedPercentage} {remainingSeconds} {accessString}: ${pStoredData.data.usedPercentage} ${pStoredData.data.remainingSeconds} ${pStoredData.accessString}`);
-        }
-
-        /**
-         * 
-         * @param {Date} pEndDate
-         * @param {Date} pUsedAtDate
-         * @param {number} pUsedPercentage
-         */
-        createTestStoredData(pEndDate, pUsedAtDate, pUsedPercentage) {
-            let myRemainingSeconds = (pEndDate.getTime() - pUsedAtDate.getTime()) / 1000;
-            let myServerData = createServerData(pUsedPercentage, myRemainingSeconds, pUsedAtDate);
-            let myStoredData = createStoredData(myServerData, pUsedAtDate);
-            return myStoredData;
-        }
-        // #endregion
-    }
 }
