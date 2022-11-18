@@ -8,7 +8,8 @@ run();
 async function run() {
 
     // #region constant definitions
-    const conVersion = "V221118graph";
+    // do not make longer (space restrictions)
+    const conVersion = "V221118";
 
     /** possible values: 
      * undefined or "": real data
@@ -353,11 +354,11 @@ async function run() {
 
     /**
      * show info about current status at bottom
-     * @param {any} myStoredData
-     * @param {any} drawContext
+     * @param {any} pStoredData StoredData
+     * @param {DrawContext} drawContext
      */
-    function showStoredData(myStoredData, drawContext) {
-        let { myRestData, myRestTime, myEndDate } = getRestInfo(myStoredData);
+    function showStoredData(pStoredData, drawContext) {
+        let { myRestData, myRestTime, myEndDate } = getRestInfo(pStoredData);
 
         let myTextColor = conAccentColor1;
         //if (myRestData < myRestTime) {
@@ -377,27 +378,30 @@ async function run() {
         drawContext.setFont(Font.mediumSystemFont(26));
         drawContext.setTextColor(myTextColor);
         // expired? show empty data
-        let myUsedString = myRestTime > 0 ? myStoredData.data.usedVolumeStr + " / " + myStoredData.data.initialVolumeStr : "No data";
+        let myUsedString = myRestTime > 0 ? "Used "+ pStoredData.data.usedVolumeStr + " / " + pStoredData.data.initialVolumeStr : "No data";
         drawContext.drawTextInRect(myUsedString, myRestDataRect);
 
-        let myEndDateRect = new Rect(conBottomTextPadding + conStart2ndWordRow1, conBottomText - conFirstLineBottom, widgetWidth - conBottomTextPadding - conStart2ndWordRow1, conLineHeight);
+        let myEndDateRect = new Rect(conBottomTextPadding + conStart2ndWordRow1, conBottomText - conFirstLineBottom, widgetWidth - 2 * conBottomTextPadding - conStart2ndWordRow1, conLineHeight);
+        drawContext.setTextAlignedRight();
         let myDateString = myRestTime <= 0 ? `Expired! ${myEndDate.toLocaleString("DE-de")}` : `Runs until ${myEndDate.toLocaleString("DE-de")}`;
         drawContext.drawTextInRect(myDateString, myEndDateRect);
+        drawContext.setTextAlignedLeft();
 
-        //let myAppTime = `App refresh: ${niceDateString(new Date())}`;
-        let myServerTime = `Server refresh: ${niceDateString(new Date(myStoredData.data.usedAt))}`;
+        let myRefreshString = `Refresh Server: ${niceDateString(new Date(pStoredData.data.usedAt))}/ App: ${niceDateString(new Date())}`;
 
-        const conWidthFirstWordRow2 = widgetWidth / 2 + 150;
+        const conWidthFirstWordRow2 = widgetWidth / 2 + 220;
         const conStart2ndWordRow2 = conWidthFirstWordRow2 + 10;
-        let myWidth = widgetWidth - conBottomTextPadding - conStart2ndWordRow2;
+        let myWidth = widgetWidth - 2 * conBottomTextPadding - conStart2ndWordRow2;
 
         drawContext.setFont(Font.mediumSystemFont(22));
         let myAppInfoRect = new Rect(conBottomTextPadding, conBottomText - conSecondLineBottom, conWidthFirstWordRow2, conLineHeight);
-        drawContext.drawTextInRect(myServerTime, myAppInfoRect);
+        drawContext.drawTextInRect(myRefreshString, myAppInfoRect);
 
+        drawContext.setTextAlignedRight();
         let myVersionInfoRect = new Rect(conBottomTextPadding + conStart2ndWordRow2, conBottomText - conSecondLineBottom, myWidth, conLineHeight);
         drawContext.setFont(Font.italicSystemFont(20));
         drawContext.drawTextInRect(conVersion, myVersionInfoRect);
+        drawContext.setTextAlignedLeft();
     }
     /**
      * show title or link
