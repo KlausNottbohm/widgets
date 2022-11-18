@@ -1,8 +1,9 @@
-16.11.22 Telekom
+18.11.22 Telekom
 . test run mit fake daten 
-    . today für test faken
-    . anderes File
-. refactoring: konsequente Namen für item, data, entry
+    "new": fake new package
+    "after": 5 days after expiration
+        . show bottom with "expired: date" (different font?)
+        . show last 31 entries (slice)
 
 9.6.21
 . Wetter:

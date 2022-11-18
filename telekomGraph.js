@@ -15,6 +15,7 @@ async function run() {
      * "empty": volume empty before end time
      * */
     const conIsTest = ""; //"empty";
+    const mTestGenerator = conIsTest ? new TestGenerator(conIsTest) : undefined;
 
     const conAPIUrl = "https://pass.telekom.de/api/service/generic/v1/status";
     const conTelekomURL = "https://pass.telekom.de";
@@ -59,13 +60,16 @@ async function run() {
     const bedsGraphBaseline = 290;
     const conBottomTextPaddingLeft = 32;
     // #endregion
+    try {
+        let widget = await createWidget();
+        await widget.presentMedium()
 
-    let widget = await createWidget();
-
-    await widget.presentMedium()
-
-    Script.setWidget(widget)
-    Script.complete()
+        Script.setWidget(widget)
+        Script.complete()
+    } catch (e) {
+        console.log(e);
+        throw e;
+    }
 
     async function createWidget() {
         // local did not reliably work on 11.11.2021
@@ -83,7 +87,6 @@ async function run() {
 
         let myStoredDatas = await readAndUpdateStoredDatas(fm, fresh ? myStoredData : undefined);
 
-        console.log("Show data: " + myStoredDatas.length);
         let myHistoryDatas = getHistoryDatas(myStoredDatas);
 
         const widget = new ListWidget();
@@ -126,18 +129,16 @@ async function run() {
             const dayOfWeek = iHistoryData.date.getDay();
             var { myRestPercentage, myRestTime } = calcRest(iHistoryData.entry, iHistoryData.date);
 
-            console.log(`${i} day: ${day}- myRestPercentage: ${myRestPercentage} myRestTime: ${myRestTime.toFixed()}`);
+            //console.log(`${i} day: ${day}- myRestPercentage: ${myRestPercentage} myRestTime: ${myRestTime.toFixed()}`);
 
             // Vertical Line
             let drawColor;
 
             if (myRestPercentage < myRestTime) {
                 drawColor = conAlertColor;
-                console.log("drawColor = conAlertColor");
             }
             else {
                 drawColor = Color.green();
-                console.log("drawColor = Color.green()");
             }
 
             const delta = (myRestPercentage - min) / diff;
@@ -414,9 +415,9 @@ async function run() {
    * @param {FileManager} fm
    */
     async function getStoredData(fm) {
-        if (conIsTest) {
-            let myStoredData = createTestStoredDatas().storedData;
-            return { fresh: true, myStoredData };
+        if (mTestGenerator) {
+            let myStoredData = mTestGenerator.storedData;
+            return { fresh: mTestGenerator.fresh, myStoredData };
         }
 
         let dir = fm.documentsDirectory();
@@ -467,48 +468,60 @@ async function run() {
      * @param {undefined | {usedVolume:number, accessTime:number}} pStoredData: undefined or server entry
      */
     async function readAndUpdateStoredDatas(fm, pStoredData) {
-        if (conIsTest) {
-            let myStoredDatas = createTestStoredDatas().storedDatas;
-            myStoredDatas.push(pStoredData);
+        if (mTestGenerator) {
+            let myStoredDatas = mTestGenerator.storedDatas;
             // sort ascending
             myStoredDatas.sort(function (left, right) { return left.accessTime - right.accessTime; });
+            /**purged copy of myStoredDatas */
+            let myNewStoredDatas = purgeStoredData(myStoredDatas, pStoredData);
+            return myNewStoredDatas;
+        }
+        else {
+            let dir = fm.documentsDirectory()
+            const conHistoryPath = fm.joinPath(dir, "ScriptableTelekomHistory.json");
 
-            return myStoredDatas;
+            let myStoredDatas = await readStoredDatas(conHistoryPath);
+            /**purged copy of myStoredDatas */
+            let myNewStoredDatas = purgeStoredData(myStoredDatas, pStoredData);
+
+            let myStoredDatasString = JSON.stringify(myNewStoredDatas);
+            fm.writeString(conHistoryPath, myStoredDatasString);
+            return myNewStoredDatas;
         }
 
-        let dir = fm.documentsDirectory()
-        const conHistoryPath = fm.joinPath(dir, "ScriptableTelekomHistory.json");
-
-        let myStoredDatas = await readStoredDatas();
-
-        /**purged copy of myStoredDatas */
-        let myNewStoredDatas = [];
-        for (let i = 0; i < myStoredDatas.length; i++) {
-            let myCurr = myStoredDatas[i];
-            pushOrReplace(myNewStoredDatas, myCurr);
+        /**
+         * 
+         * @param {any} pStoredDatas
+         * @param {any} pStoredData
+         */
+        function purgeStoredData(pStoredDatas, pStoredData) {
+            let myNewStoredDatas = [];
+            for (let i = 0; i < pStoredDatas.length; i++) {
+                let myCurr = pStoredDatas[i];
+                pushOrReplace(myNewStoredDatas, myCurr);
+            }
+            if (pStoredData) {
+                // add only new data
+                console.log(`push new data: ${pStoredData.accessString}: ${pStoredData.data.usedPercentage}%`);
+                pushOrReplace(myNewStoredDatas, pStoredData);
+            }
+            return myNewStoredDatas;
         }
-        if (pStoredData) {
-            // add only new data
-            console.log(`push new data: ${pStoredData.accessString}: ${pStoredData.data.usedPercentage}%`);
-            pushOrReplace(myNewStoredDatas, pStoredData);
-        }
 
-        let myStoredDatasString = JSON.stringify(myNewStoredDatas);
-        fm.writeString(conHistoryPath, myStoredDatasString);
-        return myNewStoredDatas;
-
-        /** read from file and sort*/
-        async function readStoredDatas() {
-            let myStoredDatas = [];
-            if (fm.fileExists(conHistoryPath)) {
-                await fm.downloadFileFromiCloud(conHistoryPath);
-                let myHistoryDataString = fm.readString(conHistoryPath);
+        /** read from file and sort or use test data*/
+        async function readStoredDatas(pHistoryPath) {
+            if (fm.fileExists(pHistoryPath)) {
+                await fm.downloadFileFromiCloud(pHistoryPath);
+                let myHistoryDataString = fm.readString(pHistoryPath);
                 if (myHistoryDataString) {
-                    myStoredDatas = JSON.parse(myHistoryDataString);
+                    let myStoredDatas = JSON.parse(myHistoryDataString);
                     console.log("fileExists: ");
                     for (let iEle of myStoredDatas) {
                         console.log(`${iEle.accessString}: ${iEle.data.usedPercentage}%`);
                     }
+                    // sort ascending
+                    myStoredDatas.sort(function (left, right) { return left.accessTime - right.accessTime; });
+                    return myStoredDatas;
                 }
                 else {
                     console.log("file does not exist");
@@ -517,33 +530,31 @@ async function run() {
             else {
                 console.log("file not Exists: ");
             }
-            // sort ascending
-            myStoredDatas.sort(function (left, right) { return left.accessTime - right.accessTime; });
-            return myStoredDatas;
+            return [];
         }
 
         /**
          * 
-         * @param {{usedVolume:number, accessTime:number}[]} pStoredDatas
-         * @param {{usedVolume:number, accessTime:number}} pCurr
+         * @param {{usedVolume:number, accessTime:number}[]} pNewStoredDatas StoredData[]
+         * @param {{usedVolume:number, accessTime:number}} pStoredData StoredData
          */
-        function pushOrReplace(pStoredDatas, pCurr) {
-            if (pStoredDatas.length <= 0) {
+        function pushOrReplace(pNewStoredDatas, pStoredData) {
+            if (pNewStoredDatas.length <= 0) {
                 //console.log("pushOrReplace: push to new");
-                pStoredDatas.push(pCurr);
+                pNewStoredDatas.push(pStoredData);
             }
             else {
-                if (pStoredDatas[pStoredDatas.length - 1].usedVolume > pCurr.usedVolume) {
+                if (pNewStoredDatas[pNewStoredDatas.length - 1].usedVolume > pStoredData.usedVolume) {
                     // new pass
-                    pStoredDatas = [pCurr];
+                    pNewStoredDatas = [pStoredData];
                 }
                 else {
-                    if (getDateStringFromMSecs(pStoredDatas[pStoredDatas.length - 1].accessTime) === getDateStringFromMSecs(pCurr.accessTime)) {
+                    if (getDateStringFromMSecs(pNewStoredDatas[pNewStoredDatas.length - 1].accessTime) === getDateStringFromMSecs(pStoredData.accessTime)) {
                         // update with latest entry from day
-                        pStoredDatas[pStoredDatas.length - 1] = pCurr;
+                        pNewStoredDatas[pNewStoredDatas.length - 1] = pStoredData;
                     }
                     else {
-                        pStoredDatas.push(pCurr);
+                        pNewStoredDatas.push(pStoredData);
                     }
                 }
             }
@@ -714,107 +725,122 @@ async function run() {
         // usedVolume: 880088349
         // passStage: 1
         // passName: Data Flex 2, 5 GB
+
+        // 6000 MB
         let myInitial = 6000;
         let myUsedVolume = pUsedPercentage * myInitial / 100;
         return { usedPercentage: pUsedPercentage, remainingSeconds: pRemainingSeconds, usedAt: pUsedAt.getTime(), usedVolumeStr: `${myUsedVolume} MB`, initialVolumeStr: `${myInitial} MB` };
     }
+    // #endregion
+
+    // #endregion
 
 
-    // #region test data
-    function createTestStoredDatas() {
-        console.log("createTestStoredDatas: " + conIsTest);
-        try {
-            switch (conIsTest) {
-                case "low":
-                    {
-                        console.log("case low: " + conIsTest);
-                        // one hour before expiration
-                        let myNowTime = new Date().getTime();
-                        let myStartDate = new Date(myNowTime - conDaysPerPackage * DAY_IN_MILLISECONDS + HOUR_IN_SECONDS * 1000);
-                        let myEndDate = new Date(myStartDate.getTime() + conDaysPerPackage * DAY_IN_MILLISECONDS);
-                        let myStoredDatas = [];
-                        console.log("case low 1: " + conIsTest);
+    class TestGenerator {
+        /**
+         * 
+         * @param {string} pIsTest
+         */
+        constructor(pIsTest) {
+            this._IsTest = pIsTest;
+            this.fresh = true;
+            this.createTestStoredDatas();
+        }
+        getEndDate = () => new Date(this.startDate.getTime() + conDaysPerPackage * DAY_IN_MILLISECONDS);
 
-                        let myNowDate = new Date();
-                        let myUsedPercentage = 80;
-                        let myStoredData = createTestStoredData(myEndDate, myNowDate, myUsedPercentage);
-                        let iEle = myStoredData;
+        // #region test data
+        createTestStoredDatas() {
+            console.log("createTestStoredDatas: " + this._IsTest);
+            try {
+                switch (this._IsTest) {
+                    case "low":
+                        {
+                            // one hour before expiration
+                            let myNowTime = new Date().getTime();
+                            // 31 days ago + 1 hour
+                            this.startDate = new Date(myNowTime - conDaysPerPackage * DAY_IN_MILLISECONDS + HOUR_IN_SECONDS * 1000);
 
-                        console.log(`myStoredData {usedPercentage} {remainingSeconds} {accessString}: ${iEle.data.usedPercentage} ${iEle.data.remainingSeconds} ${iEle.accessString}`)
+                            let myNowDate = new Date();
+                            let myUsedPercentage = 80;
+                            this.storedData = this.createTestStoredData(this.getEndDate(), myNowDate, myUsedPercentage);
+                            this.logStoredData(this.storedData);
 
-                        myNowDate = new Date(myStartDate.getTime() + 5 * DAY_IN_MILLISECONDS);
-                        myUsedPercentage = 50;
-                        let myStoredData1 = createTestStoredData(myEndDate, myNowDate, myUsedPercentage);
-                        myStoredDatas.push(myStoredData1);
-                        console.log("case low 2: " + conIsTest);
+                            let myStoredDatas = [];
+                            let myStoredData1 = this.createTestStoredData(this.getEndDate(), new Date(this.startDate.getTime() + 5 * DAY_IN_MILLISECONDS), 50);
+                            myStoredDatas.push(myStoredData1);
 
-                        myNowDate = new Date(myStartDate.getTime() + 10 * DAY_IN_MILLISECONDS);
-                        myUsedPercentage = 75;
-                        let myStoredData2 = createTestStoredData(myEndDate, myNowDate, myUsedPercentage);
-                        myStoredDatas.push(myStoredData2);
+                            let myStoredData2 = this.createTestStoredData(this.getEndDate(), new Date(this.startDate.getTime() + 10 * DAY_IN_MILLISECONDS), 75);
+                            myStoredDatas.push(myStoredData2);
 
-                        // {myStartDate} {myEndDate} {myStoredDatas.length}
-                        console.log(`{myStartDate} {myEndDate} {myStoredDatas.length}: ${myStartDate} ${myEndDate} ${myStoredDatas.length}`)
-                        for (let iEle of myStoredDatas) {
-                            console.log(`{usedPercentage} {remainingSeconds} {accessString}: ${iEle.data.usedPercentage} ${iEle.data.remainingSeconds} ${iEle.accessString}`)
+                            console.log(`{myStartDate} {myEndDate} {myStoredDatas.length}: ${this.startDate} ${this.getEndDate()} ${myStoredDatas.length}`)
+
+                            for (let iEle of myStoredDatas) {
+                                this.logStoredData(iEle);
+                            }
+                            this.storedDatas = myStoredDatas;
+                            break;
                         }
+                    case "empty":
+                        {
+                            console.log("case empty: " + this._IsTest);
+                            // one hour before expiration
+                            let myNowTime = new Date().getTime();
+                            this.startDate = new Date(myNowTime - (conDaysPerPackage - 10) * DAY_IN_MILLISECONDS);
+                            let myStartDate = this.startDate;
+                            let myEndDate = this.getEndDate();
+                            let myStoredDatas = [];
 
-                        return { storedDatas: myStoredDatas, storedData: myStoredData };
-                    }
-                case "empty":
-                    {
-                        console.log("case empty: " + conIsTest);
-                        // one hour before expiration
-                        let myNowTime = new Date().getTime();
-                        let myStartDate = new Date(myNowTime - (conDaysPerPackage - 10) * DAY_IN_MILLISECONDS);
-                        let myEndDate = new Date(myStartDate.getTime() + conDaysPerPackage * DAY_IN_MILLISECONDS);
-                        let myStoredDatas = [];
-                        //console.log("case empty 1: " + conIsTest);
+                            let myNowDate = new Date();
+                            let myUsedPercentage = 100;
+                            this.storedData = this.createTestStoredData(myEndDate, myNowDate, myUsedPercentage);
+                            this.logStoredData(this.storedData);
 
-                        let myNowDate = new Date();
-                        let myUsedPercentage = 100;
-                        let myStoredData = createTestStoredData(myEndDate, myNowDate, myUsedPercentage);
+                            // 50% after 1/3 of time
+                            let myStoredData1 = this.createTestStoredData(myEndDate, new Date(myStartDate.getTime() + 10 * DAY_IN_MILLISECONDS), 50);
+                            myStoredDatas.push(myStoredData1);
 
-                        let iEle = myStoredData;
-                        console.log(`myStoredData {usedPercentage} {remainingSeconds} {accessString}: ${iEle.data.usedPercentage} ${iEle.data.remainingSeconds} ${iEle.accessString}`)
+                            let myStoredData2 = this.createTestStoredData(myEndDate, new Date(myStartDate.getTime() + 15 * DAY_IN_MILLISECONDS), 100);
+                            myStoredDatas.push(myStoredData2);
 
-                        myNowDate = new Date(myStartDate.getTime() + 10 * DAY_IN_MILLISECONDS);
-                        myUsedPercentage = 50;
-                        let myStoredData1 = createTestStoredData(myEndDate, myNowDate, myUsedPercentage);
-                        myStoredDatas.push(myStoredData1);
-                        console.log("case low 2: " + conIsTest);
+                            // {myStartDate} {myEndDate} {myStoredDatas.length}
+                            console.log(`{myStartDate} {myEndDate} {myStoredDatas.length}: ${myStartDate} ${myEndDate} ${myStoredDatas.length}`)
+                            for (let iEle of myStoredDatas) {
+                                console.log(`{usedPercentage} {remainingSeconds} {accessString}: ${iEle.data.usedPercentage} ${iEle.data.remainingSeconds} ${iEle.accessString}`)
+                            }
 
-                        myNowDate = new Date(myStartDate.getTime() + 15 * DAY_IN_MILLISECONDS);
-                        myUsedPercentage = 100;
-                        let myStoredData2 = createTestStoredData(myEndDate, myNowDate, myUsedPercentage);
-                        myStoredDatas.push(myStoredData2);
-
-                        // {myStartDate} {myEndDate} {myStoredDatas.length}
-                        console.log(`{myStartDate} {myEndDate} {myStoredDatas.length}: ${myStartDate} ${myEndDate} ${myStoredDatas.length}`)
-                        for (let iEle of myStoredDatas) {
-                            console.log(`{usedPercentage} {remainingSeconds} {accessString}: ${iEle.data.usedPercentage} ${iEle.data.remainingSeconds} ${iEle.accessString}`)
+                            this.storedDatas = myStoredDatas;
+                            break;
                         }
-
-                        return { storedDatas: myStoredDatas, storedData: myStoredData };
-                    }
-                default:
-                    break;
+                    default:
+                        throw "unknown test case: " + this._IsTest;
+                }
+            }
+            catch (e) {
+                console.log("err in test: " + e);
+                throw e;
             }
         }
-        catch (e) {
-            console.log("err in test: " + e);
-            throw e;
+
+        /**
+         * log StoredData
+         * @param {any} pStoredData
+         */
+        logStoredData(pStoredData) {
+            console.log(`myStoredData {usedPercentage} {remainingSeconds} {accessString}: ${pStoredData.data.usedPercentage} ${pStoredData.data.remainingSeconds} ${pStoredData.accessString}`);
         }
-    }
 
-    function createTestStoredData(pEndDate, pUsedAtDate, pUsedPercentage) {
-        let myRemainingSeconds = (pEndDate.getTime() - pUsedAtDate.getTime()) / 1000;
-        let myServerData = createServerData(pUsedPercentage, myRemainingSeconds, pUsedAtDate);
-        let myStoredData = createStoredData(myServerData, pUsedAtDate);
-        return myStoredData;
+        /**
+         * 
+         * @param {Date} pEndDate
+         * @param {Date} pUsedAtDate
+         * @param {number} pUsedPercentage
+         */
+        createTestStoredData(pEndDate, pUsedAtDate, pUsedPercentage) {
+            let myRemainingSeconds = (pEndDate.getTime() - pUsedAtDate.getTime()) / 1000;
+            let myServerData = createServerData(pUsedPercentage, myRemainingSeconds, pUsedAtDate);
+            let myStoredData = createStoredData(myServerData, pUsedAtDate);
+            return myStoredData;
+        }
+        // #endregion
     }
-    // #endregion
-    // #endregion
-
-    // #endregion
 }
