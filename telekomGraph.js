@@ -1,6 +1,7 @@
 // Variables used by Scriptable.
 // These must be at the very top of the file. Do not edit.
 // icon-color: brown; icon-glyph: magic;
+/// <reference path="TypeDefinitions/scriptable.d.ts" />
 run();
 
 /**wrapped all in function to remedy const access to other js files by eslint */
@@ -16,7 +17,7 @@ async function run() {
      * "after": last read is after package expiration
      * "new": last read is with new package
      * */
-    const conIsTest = "new"; //"empty";
+    const conIsTest = ""; //"empty";
 
     const conAPIUrl = "https://pass.telekom.de/api/service/generic/v1/status";
     const conTelekomURL = "https://pass.telekom.de";
@@ -51,15 +52,13 @@ async function run() {
     const HOUR_IN_SECONDS = 60 * 60;
     const DAY_IN_SECONDS = 24 * HOUR_IN_SECONDS;
     const DAY_IN_MILLISECONDS = DAY_IN_SECONDS * 1000;
-    const vertLineWeight = 18;
 
     const widgetHeight = 338;
     const widgetWidth = 720;
-    const graphLow = 200;
-    const graphHeight = 100;
+    const vertLineWeight = 18;
+    const graphLow = 210;
+    const graphHeight = 110;
     const spaceBetweenDays = 22;
-    const bedsGraphBaseline = 290;
-    const conBottomTextPaddingLeft = 32;
     // #endregion
 
     /** generates test data, defined here because of hoisting problem */
@@ -294,15 +293,16 @@ async function run() {
    * @param {any} drawContext
    */
     function showHistoryDatas(pHistoryDatas, drawContext) {
-        let min = 0;
+        // ensure display of column with 0
+        let min = -10;
         let max = 100;
 
         let diff = max - min;
 
         // show only last 31 days
-        console.log(`pHistoryDatas.length: ${pHistoryDatas.length}`);
         let myHistoryDatas = pHistoryDatas.slice(-conDaysPerPackage);
-        console.log(`myHistoryDatas.length: ${myHistoryDatas.length}`);
+
+        let myXPosAdd = 8;
         for (let i = 0; i < myHistoryDatas.length; i++) {
             // { entry: myOldestEntry, dateString: getDateStringFromDate(myNextDay), date: myNextDay }
             let iHistoryData = myHistoryDatas[i];
@@ -322,9 +322,11 @@ async function run() {
                 drawColor = Color.green();
             }
 
+            // 0<= delta <=1
             const delta = (myRestPercentage - min) / diff;
-            const point1 = new Point(spaceBetweenDays * i + 20, graphLow - (graphHeight * delta));
-            const point2 = new Point(spaceBetweenDays * i + 20, graphLow + 10);
+            const myX = spaceBetweenDays * i + 12 + myXPosAdd;
+            const point1 = new Point(myX, graphLow - (graphHeight * delta));
+            const point2 = new Point(myX, graphLow);
             drawLine(drawContext, point1, point2, vertLineWeight, drawColor);
             let dayColor;
 
@@ -336,7 +338,7 @@ async function run() {
             const conFontSize = 18;
             let myShowPercent = (i - myHistoryDatas.length + 1) % 3;
             if (myShowPercent === 0) {
-                const myRestPercentRect = new Rect(spaceBetweenDays * i + 8, (graphLow - 20) - (graphHeight * delta), 60, 23);
+                const myRestPercentRect = new Rect(spaceBetweenDays * i + myXPosAdd, (graphLow - 20) - (graphHeight * delta), 60, 23);
                 if (myRestPercentage <= 0) {
                     drawTextR(drawContext, "0!", myRestPercentRect, conAccentColor1, Font.systemFont(conFontSize));
                 }
@@ -344,7 +346,7 @@ async function run() {
                     drawTextR(drawContext, myRestPercentage + "%", myRestPercentRect, conAccentColor1, Font.systemFont(conFontSize));
                 }
             }
-            const dayRect = new Rect(spaceBetweenDays * i + 10, graphLow + 15, 50, 23);
+            const dayRect = new Rect(spaceBetweenDays * i + myXPosAdd + 2, graphLow + 5, 50, 23);
             drawTextR(drawContext, day, dayRect, dayColor, Font.systemFont(conFontSize));
         }
     }
@@ -361,25 +363,39 @@ async function run() {
         //if (myRestData < myRestTime) {
         //    myTextColor = Color.red();
         //}
-        let myRestDataRect = new Rect(conBottomTextPaddingLeft, bedsGraphBaseline - 40, widgetWidth / 2 - 100, 26);
+        const conBottomText = 290;
+        const conBottomTextPadding = 32;
+
+        const conLineHeight = 26;
+        // conFirstLineBottom greater conLineHeight
+        const conFirstLineBottom = 40;
+        const conSecondLineBottom = 0;
+        const conWidthFirstWordRow1 = widgetWidth / 2 - 100;
+        const conStart2ndWordRow1 = conWidthFirstWordRow1 + 10;
+
+        let myRestDataRect = new Rect(conBottomTextPadding, conBottomText - conFirstLineBottom, conWidthFirstWordRow1, conLineHeight);
         drawContext.setFont(Font.mediumSystemFont(26));
         drawContext.setTextColor(myTextColor);
         // expired? show empty data
         let myUsedString = myRestTime > 0 ? myStoredData.data.usedVolumeStr + " / " + myStoredData.data.initialVolumeStr : "No data";
         drawContext.drawTextInRect(myUsedString, myRestDataRect);
 
-        let myEndDateRect = new Rect(conBottomTextPaddingLeft + widgetWidth / 2 - 90, bedsGraphBaseline - 40, widgetWidth / 2, 26);
+        let myEndDateRect = new Rect(conBottomTextPadding + conStart2ndWordRow1, conBottomText - conFirstLineBottom, widgetWidth - conBottomTextPadding - conStart2ndWordRow1, conLineHeight);
         let myDateString = myRestTime <= 0 ? `Expired! ${myEndDate.toLocaleString("DE-de")}` : `Runs until ${myEndDate.toLocaleString("DE-de")}`;
         drawContext.drawTextInRect(myDateString, myEndDateRect);
 
-        let myAppTime = `App refresh: ${niceDateString(new Date())}`;
+        //let myAppTime = `App refresh: ${niceDateString(new Date())}`;
         let myServerTime = `Server refresh: ${niceDateString(new Date(myStoredData.data.usedAt))}`;
-        let myWidth = 220;
+
+        const conWidthFirstWordRow2 = widgetWidth / 2 + 150;
+        const conStart2ndWordRow2 = conWidthFirstWordRow2 + 10;
+        let myWidth = widgetWidth - conBottomTextPadding - conStart2ndWordRow2;
+
         drawContext.setFont(Font.mediumSystemFont(22));
-        let myAppInfoRect = new Rect(conBottomTextPaddingLeft, bedsGraphBaseline - 0, widgetWidth - myWidth, 26);
+        let myAppInfoRect = new Rect(conBottomTextPadding, conBottomText - conSecondLineBottom, conWidthFirstWordRow2, conLineHeight);
         drawContext.drawTextInRect(myServerTime, myAppInfoRect);
 
-        let myVersionInfoRect = new Rect(conBottomTextPaddingLeft + widgetWidth - myWidth, bedsGraphBaseline - 0, myWidth, 26);
+        let myVersionInfoRect = new Rect(conBottomTextPadding + conStart2ndWordRow2, conBottomText - conSecondLineBottom, myWidth, conLineHeight);
         drawContext.setFont(Font.italicSystemFont(20));
         drawContext.drawTextInRect(conVersion, myVersionInfoRect);
     }
