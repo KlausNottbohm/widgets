@@ -1,9 +1,5 @@
-18.11.22 Telekom
-. test run mit fake daten 
-    "new": fake new package
-    "after": 5 days after expiration
-        . show bottom with "expired: date" (different font?)
-        . show last 31 entries (slice)
+19.11.22 Telekom
+. when test mode show in data section at bottom
 
 9.6.21
 . Wetter:

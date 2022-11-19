@@ -18,7 +18,7 @@ async function run() {
      * "after": last read is after package expiration
      * "new": last read is with new package
      * */
-    const conIsTest = ""; //"empty";
+    const conIsTest = "empty"; //"empty";
 
     const conAPIUrl = "https://pass.telekom.de/api/service/generic/v1/status";
     const conTelekomURL = "https://pass.telekom.de";
@@ -511,11 +511,14 @@ async function run() {
         }
         return myEndDate.toLocaleString("DE-de");
     }
+    /**
+     * 
+     * @param {any} pStoredData StoredData
+     */
+    function getRestInfo(pStoredData) {
+        let myRestData = 100 - pStoredData.data.usedPercentage;
 
-    function getRestInfo(myStoredData) {
-        let myRestData = 100 - myStoredData.data.usedPercentage;
-
-        let myEndDate = calcEndDate(myStoredData);
+        let myEndDate = calcEndDate(pStoredData);
         let myRestSeconds = (myEndDate.getTime() - new Date().getTime()) / 1000;
         // pack runs 31 days
         const conTotalSeconds = conDaysPerPackage * DAY_IN_SECONDS;
@@ -526,10 +529,10 @@ async function run() {
 
     /**
      * string from server entry
-     * @param {any} pEntry HistoryData
+     * @param {any} pStoredData StoredData
      */
-    function getDateStringFromEntry(pEntry) {
-        return getDateStringFromMSecs(pEntry.accessTime);
+    function getDateStringFromEntry(pStoredData) {
+        return getDateStringFromMSecs(pStoredData.accessTime);
     }
     /**
      * string from mSecs
@@ -575,7 +578,7 @@ async function run() {
 
     /**
      * calc end date from current + remaining seconds
-     * @param {any} pStoredData StoredData
+     * @param {{accessTime: number}} pStoredData StoredData
      */
     function calcEndDate(pStoredData) {
         // usedAt = msec
@@ -594,7 +597,7 @@ async function run() {
      */
     function showObject(pObject, title) {
         let myTitle = title ? title : "No title";
-        console.log(`showObject ${myTitle}: ${new Date().toLocaleString()}`);
+        console.log(`showObject ${myTitle}`);
         console.log(`type- ${typeof (pObject)}`);
         if (pObject === null) {
             console.log("object is null");
@@ -652,7 +655,7 @@ async function run() {
             return { fresh: true, myStoredData };
         }
         catch (err) {
-            showObject(err, "catch (err)");
+            //             showObject(err, "catch (err)");
             // if reading from pass.telekom.de not possible-> read data from iCloud file
             let myStoredData = JSON.parse(fm.readString(path), null);
             showObject(myStoredData, "fm.readString");
@@ -703,14 +706,14 @@ async function run() {
         function purgeStoredData(pStoredDatas, pStoredData) {
             let myNewStoredDatas = [];
             for (let i = 0; i < pStoredDatas.length; i++) {
-                let myCurr = pStoredDatas[i];
-                pushOrReplace(myNewStoredDatas, myCurr);
+                let iStoredData = pStoredDatas[i];
+                pushOrReplace(myNewStoredDatas, iStoredData);
             }
             if (pStoredData) {
                 // add only new data
-                console.log(`push new data: ${pStoredData.accessString}: ${pStoredData.data.usedPercentage}%`);
+                //                 console.log(`push new data: ${pStoredData.accessString}: ${pStoredData.data.usedPercentage}%`);
                 pushOrReplace(myNewStoredDatas, pStoredData);
-                console.log(`push new data-myNewStoredDatas: ${myNewStoredDatas.length}`);
+                //                 console.log(`push new data-myNewStoredDatas: ${myNewStoredDatas.length}`);
             }
             return myNewStoredDatas;
         }
@@ -742,8 +745,8 @@ async function run() {
 
         /**
          * 
-         * @param {{usedVolume:number, accessTime:number}[]} pNewStoredDatas StoredData[]
-         * @param {{usedVolume:number, accessTime:number}} pStoredData StoredData
+         * @param {{data: {usedVolume:number}, accessTime:number}[]} pNewStoredDatas StoredData[]
+         * @param {{data: {usedVolume:number}, accessTime:number}} pStoredData StoredData
          */
         function pushOrReplace(pNewStoredDatas, pStoredData) {
             if (pNewStoredDatas.length <= 0) {
@@ -753,8 +756,8 @@ async function run() {
             else {
                 let myPreviousEndDate = calcEndDate(pNewStoredDatas[pNewStoredDatas.length - 1]);
                 let myCurrEndDate = calcEndDate(pStoredData);
-                console.log(`pushOrReplace {myPreviousEndDate} {myCurrEndDate} ${myPreviousEndDate} ${myCurrEndDate}`);
-                if (pNewStoredDatas[pNewStoredDatas.length - 1].usedVolume > pStoredData.usedVolume || myCurrEndDate.getTime() > myPreviousEndDate.getTime() + HOUR_IN_SECONDS * 1000) {
+                //                 console.log(`pushOrReplace {myPreviousEndDate} {myCurrEndDate} ${myPreviousEndDate} ${myCurrEndDate}`);
+                if (myCurrEndDate.getTime() > myPreviousEndDate.getTime() + HOUR_IN_SECONDS * 1000) {
                     // new pass
                     console.log("new pass");
                     // clear pNewStoredDatas and add current item
@@ -811,22 +814,27 @@ async function run() {
 
             while (getDateStringFromDate(myNextDay).localeCompare(myNowString) <= 0) {
                 for (let i = myIndex; i < pStoredDatas.length; i++) {
-                    let myCurr = pStoredDatas[i];
-                    if (getDateStringFromEntry(myCurr).localeCompare(getDateStringFromDate(myNextDay)) <= 0) {
+                    let myCurrStoredData = pStoredDatas[i];
+                    if (getDateStringFromEntry(myCurrStoredData).localeCompare(getDateStringFromDate(myNextDay)) <= 0) {
                         myIndex = i;
-                        myOldestStoredData = myCurr;
+                        myOldestStoredData = myCurrStoredData;
                     }
                     else {
                         break;
                     }
                 }
 
-                let myHistoryData = createHistoryData(myOldestStoredData);
-                myHistoryDatas.push({ entry: myOldestStoredData, dateString: getDateStringFromDate(myNextDay), date: myNextDay });
-                myNextDay = new Date(myNextDay.getTime() + 24 * 60 * 60 * 1000);
+                //let myHistoryData = createHistoryData(myOldestStoredData);
+                let myHistoryData = {
+                    entry: myOldestStoredData,
+                    dateString: getDateStringFromDate(myNextDay),
+                    date: myNextDay
+                };
+                myHistoryDatas.push(myHistoryData);
+                myNextDay = new Date(myNextDay.getTime() + DAY_IN_MILLISECONDS);
             }
             // pack runs 31 days
-            const conTotalSeconds = 31 * 24 * 60 * 60;
+            const conTotalSeconds = conDaysPerPackage * DAY_IN_SECONDS;
 
             for (let iEle of myHistoryDatas) {
                 let myRestSeconds = (myEndDate.getTime() - iEle.date.getTime()) / 1000;
@@ -941,9 +949,9 @@ async function run() {
         // passName: Data Flex 2, 5 GB
 
         // 6000 MB
-        let myInitial = 6000;
-        let myUsedVolume = pUsedPercentage * myInitial / 100;
-        return { usedPercentage: pUsedPercentage, remainingSeconds: pRemainingSeconds, usedAt: pUsedAt.getTime(), usedVolumeStr: `${myUsedVolume} MB`, initialVolumeStr: `${myInitial} MB` };
+        const conInitialVolume = 6000;
+        let myUsedVolume = pUsedPercentage * conInitialVolume / 100;
+        return { usedPercentage: pUsedPercentage, remainingSeconds: pRemainingSeconds, usedAt: pUsedAt.getTime(), usedVolumeStr: `${myUsedVolume} MB`, initialVolumeStr: `${conInitialVolume} MB` };
     }
     // #endregion
 
