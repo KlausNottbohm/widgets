@@ -230,7 +230,7 @@ async function run() {
         createTestStoredData(pEndDate, pUsedAtDate, pUsedPercentage) {
             let myRemainingSeconds = (pEndDate.getTime() - pUsedAtDate.getTime()) / 1000;
             let myServerData = createServerData(pUsedPercentage, myRemainingSeconds, pUsedAtDate);
-            let myStoredData = createStoredData(myServerData, pUsedAtDate);
+            let myStoredData = createStoredData(myServerData);
             return myStoredData;
         }
         // #endregion
@@ -800,9 +800,7 @@ async function run() {
             let myUsed = 0;
 
             let myStartServerData = createServerData(myUsed, myRemainingSeconds, myStartDate);
-
-            let myOldestStoredData = createStoredData(myStartServerData, myStartDate);
-            // { data: myStartServerData, accessTime: myStartDate.getTime(), accessString: new Date(myStartDate.getTime()).toString() };
+            let myOldestStoredData = createStoredData(myStartServerData);
             showObject(myOldestStoredData, "myOldestStoredData");
 
             let myHistoryData = createHistoryData(myOldestStoredData);
@@ -823,13 +821,7 @@ async function run() {
                         break;
                     }
                 }
-
-                //let myHistoryData = createHistoryData(myOldestStoredData);
-                let myHistoryData = {
-                    entry: myOldestStoredData,
-                    dateString: getDateStringFromDate(myNextDay),
-                    date: myNextDay
-                };
+                let myHistoryData = createHistoryData(myOldestStoredData, myNextDay);
                 myHistoryDatas.push(myHistoryData);
                 myNextDay = new Date(myNextDay.getTime() + DAY_IN_MILLISECONDS);
             }
@@ -906,24 +898,36 @@ async function run() {
     // #region create structures
 
     /**
-    //* 
-    //* @param {any} pStoredData StoredData
-    //*/
-    function createHistoryData(pStoredData) {
-        return { entry: pStoredData, dateString: getDateStringFromEntry(pStoredData), date: new Date(pStoredData.accessTime) };
+     * history data has a possible different date from StoredData.accessTime
+     * @param {{ version: string, data: { usedPercentage: number, remainingSeconds: number, usedAt: number, usedVolume: number, usedVolumeStr: string, initialVolumeStr: string }, accessTime: number, accessString: string }} pStoredData StoredData
+     * @param {Date} pDate
+     */
+    function createHistoryData(pStoredData, pDate) {
+        let myDate = pDate ? pDate : new Date(pStoredData.accessTime);
+        return {
+            entry: pStoredData,
+            dateString: myDate.toString(),
+            date: myDate
+        };
     }
 
     /**
-     * 
-     * @param {any} pServerdata ServerData
+     * StoredData has a possible different accessTime from ServerData.usedAt
+     * @param {{ usedPercentage: number, remainingSeconds: number, usedAt: number, usedVolume: number, usedVolumeStr: string, initialVolumeStr: string }} pServerdata ServerData
      * @param {Date} pAccessTime
      */
     function createStoredData(pServerdata, pAccessTime) {
-        return { version: `Written by telekom.js version: ${conVersion}`, data: pServerdata, accessTime: pAccessTime.getTime(), accessString: pAccessTime.toString() };
+        let myAccessTime = pAccessTime ? pAccessTime : new Date(pServerdata.usedAt);
+        return {
+            version: `Written by telekom.js version: ${conVersion}`,
+            data: pServerdata,
+            accessTime: myAccessTime.getTime(),
+            accessString: myAccessTime.toString()
+        };
     }
 
     /**
-     * 
+     * subset of data sent from server
      * @param {number} pUsedPercentage
      * @param {number} pRemainingSeconds
      * @param {Date} pUsedAt
@@ -951,7 +955,14 @@ async function run() {
         // 6000 MB
         const conInitialVolume = 6000;
         let myUsedVolume = pUsedPercentage * conInitialVolume / 100;
-        return { usedPercentage: pUsedPercentage, remainingSeconds: pRemainingSeconds, usedAt: pUsedAt.getTime(), usedVolumeStr: `${myUsedVolume} MB`, initialVolumeStr: `${conInitialVolume} MB` };
+        return {
+            usedPercentage: pUsedPercentage,
+            remainingSeconds: pRemainingSeconds,
+            usedAt: pUsedAt.getTime(),
+            usedVolume: myUsedVolume,
+            usedVolumeStr: `${myUsedVolume} MB`,
+            initialVolumeStr: `${conInitialVolume} MB`
+        };
     }
     // #endregion
 
