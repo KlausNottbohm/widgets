@@ -9,7 +9,7 @@ async function run() {
 
     // #region constant definitions
     // do not make longer (space restrictions)
-    const conVersion = "V221119";
+    const conVersion = "V221120";
 
     /** possible values: 
      * undefined or "": real data
@@ -18,7 +18,7 @@ async function run() {
      * "after": last read is after package expiration
      * "new": last read is with new package
      * */
-    const conIsTest = "empty"; //"empty";
+    const conIsTest = ""; //"empty";
 
     const conAPIUrl = "https://pass.telekom.de/api/service/generic/v1/status";
     const conTelekomURL = "https://pass.telekom.de";
