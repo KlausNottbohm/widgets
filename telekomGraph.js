@@ -371,16 +371,18 @@ async function run() {
         // conFirstLineBottom greater conLineHeight
         const conFirstLineBottom = 40;
         const conSecondLineBottom = 0;
-        const conWidthFirstWordRow1 = widgetWidth / 2 - 100;
+        const conWidthFirstWordRow1 = widgetWidth / 2 - 70;
         const conStart2ndWordRow1 = conWidthFirstWordRow1 + 10;
 
         let myRestDataRect = new Rect(conBottomTextPadding, conBottomText - conFirstLineBottom, conWidthFirstWordRow1, conLineHeight);
+        // if test show here
+        let myInitialVolume = conIsTest ? `Test ${conIsTest}` : pStoredData.data.initialVolumeStr;
         // expired? show empty data
-        let myUsedString = myRestTime > 0 ? "Used " + pStoredData.data.usedVolumeStr + " / " + pStoredData.data.initialVolumeStr : "No data";
+        let myUsedString = myRestTime > 0 ? `Used ${pStoredData.data.usedVolumeStr} / ${myInitialVolume}` :`No data / ${myInitialVolume}`;
         drawTextR(drawContext, myUsedString, myRestDataRect, myTextColor, Font.mediumSystemFont(26));
 
         let myEndDateRect = new Rect(conBottomTextPadding + conStart2ndWordRow1, conBottomText - conFirstLineBottom, widgetWidth - 2 * conBottomTextPadding - conStart2ndWordRow1, conLineHeight);
-        let myDateString = myRestTime <= 0 ? `Expired! ${myEndDate.toLocaleString("DE-de")}` : `Runs until ${myEndDate.toLocaleString("DE-de")}`;
+        let myDateString = myRestTime <= 0 ? `Expired! ${myEndDate.toLocaleString("DE-de")}` : `Expires ${myEndDate.toLocaleString("DE-de")}`;
         drawTextR(drawContext, myDateString, myEndDateRect, myTextColor, Font.mediumSystemFont(26), true);
 
         let myRefreshString = `Refresh Server: ${niceDateString(new Date(pStoredData.data.usedAt))}/ App: ${niceDateString(new Date())}`;
@@ -899,7 +901,21 @@ async function run() {
 
     /**
      * history data has a possible different date from StoredData.accessTime
-     * @param {{ version: string, data: { usedPercentage: number, remainingSeconds: number, usedAt: number, usedVolume: number, usedVolumeStr: string, initialVolumeStr: string }, accessTime: number, accessString: string }} pStoredData StoredData
+     * @param 
+     * {{ 
+     * version: string, 
+     * data: 
+         * { 
+         * usedPercentage: number, 
+         * remainingSeconds: number, 
+         * usedAt: number, 
+         * usedVolume: number, 
+         * usedVolumeStr: string, 
+         * initialVolumeStr: string 
+         * }, 
+     * accessTime: number, 
+     * accessString: string 
+     * }} pStoredData StoredData
      * @param {Date} pDate
      */
     function createHistoryData(pStoredData, pDate) {
@@ -913,7 +929,13 @@ async function run() {
 
     /**
      * StoredData has a possible different accessTime from ServerData.usedAt
-     * @param {{ usedPercentage: number, remainingSeconds: number, usedAt: number, usedVolume: number, usedVolumeStr: string, initialVolumeStr: string }} pServerdata ServerData
+     * @param {{ 
+     * usedPercentage: number, 
+     * remainingSeconds: number, 
+     * usedAt: number, 
+     * usedVolume: number, 
+     * usedVolumeStr: string, 
+     * initialVolumeStr: string }} pServerdata ServerData
      * @param {Date} pAccessTime
      */
     function createStoredData(pServerdata, pAccessTime) {
