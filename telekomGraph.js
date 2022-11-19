@@ -17,6 +17,7 @@ async function run() {
      * "empty": volume empty before end time
      * "after": last read is after package expiration
      * "new": last read is with new package
+     * "wifi": show wifi problem
      * */
     const conIsTest = ""; //"empty";
 
@@ -65,13 +66,12 @@ async function run() {
     /** generates test data, defined here because of hoisting problem */
     class TestGenerator {
         /**
-         * 
-         * @param {string} pIsTest
+         * constructor for test data
          */
-        constructor(pIsTest) {
+        constructor() {
             try {
-                console.log("constructor pIsTest: " + pIsTest);
-                this._IsTest = pIsTest;
+                console.log("constructor pIsTest: " + conIsTest);
+                this._IsTest = conIsTest;
                 this.fresh = true;
                 this.createTestStoredDatas();
             } catch (e) {
@@ -85,6 +85,9 @@ async function run() {
             console.log("createTestStoredDatas: " + this._IsTest);
             try {
                 switch (this._IsTest) {
+                    case "wifi":
+                        this.wifiProblem = "Please disable WiFi for initial execution(test)";
+                        break;
                     case "new":
                         {
                             // old package expired 2 days ago
@@ -378,7 +381,7 @@ async function run() {
         // if test show here
         let myInitialVolume = conIsTest ? `Test ${conIsTest}` : pStoredData.data.initialVolumeStr;
         // expired? show empty data
-        let myUsedString = myRestTime > 0 ? `Used ${pStoredData.data.usedVolumeStr} / ${myInitialVolume}` :`No data / ${myInitialVolume}`;
+        let myUsedString = myRestTime > 0 ? `Used ${pStoredData.data.usedVolumeStr} / ${myInitialVolume}` : `No data / ${myInitialVolume}`;
         drawTextR(drawContext, myUsedString, myRestDataRect, myTextColor, Font.mediumSystemFont(26));
 
         let myEndDateRect = new Rect(conBottomTextPadding + conStart2ndWordRow1, conBottomText - conFirstLineBottom, widgetWidth - 2 * conBottomTextPadding - conStart2ndWordRow1, conLineHeight);
@@ -628,7 +631,7 @@ async function run() {
     async function getStoredData(fm) {
         if (mTestGenerator) {
             let myStoredData = mTestGenerator.storedData;
-            return { fresh: mTestGenerator.fresh, myStoredData };
+            return { fresh: mTestGenerator.fresh, myStoredData, wifiProblem: mTestGenerator.wifiProblem };
         }
 
         let dir = fm.documentsDirectory();
