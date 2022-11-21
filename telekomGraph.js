@@ -21,9 +21,8 @@ async function run() {
      * "wifi": show wifi problem
      * "nohist": no data in history file, curr reading fresh === false
      * "latehist": data in history newer than curr reading
-
      * */
-    const conIsTest = "latehist"; //"empty";
+    const conIsTest = ""; //"empty";
     const conShowLog = true;
 
     const conAPIUrl = "https://pass.telekom.de/api/service/generic/v1/status";
