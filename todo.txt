@@ -1,5 +1,4 @@
-19.11.22 Telekom
-. when test mode show in data section at bottom
+21.11.22 Telekom
 
 9.6.21
 . Wetter:

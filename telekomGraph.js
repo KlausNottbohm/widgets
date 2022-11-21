@@ -19,8 +19,12 @@ async function run() {
      * "after": last read is after package expiration
      * "new": last read is with new package
      * "wifi": show wifi problem
+     * "nohist": no data in history file, curr reading fresh === false
+     * "latehist": data in history newer than curr reading
+
      * */
-    const conIsTest = ""; //"empty";
+    const conIsTest = "latehist"; //"empty";
+    const conShowLog = true;
 
     const conAPIUrl = "https://pass.telekom.de/api/service/generic/v1/status";
     const conTelekomURL = "https://pass.telekom.de";
@@ -86,6 +90,50 @@ async function run() {
             console.log("createTestStoredDatas: " + this._IsTest);
             try {
                 switch (this._IsTest) {
+                    // "latehist": data in history newer than curr reading
+                    case "latehist": {
+                        // one hour before expiration
+                        let myNowTime = new Date().getTime();
+                        // 10 days back
+                        this.startDate = new Date(myNowTime - 10 * DAY_IN_MILLISECONDS);
+
+                        // older than newest history item
+                        let myNowDate = new Date(new Date() - 4 * DAY_IN_MILLISECONDS);
+                        let myUsedPercentage = 80;
+                        this.storedData = this.createTestStoredData(this.getEndDate(), myNowDate, myUsedPercentage);
+                        logStoredData(this.storedData, "this.storedData");
+
+                        let myStoredDatas = [];
+
+                        let myStoredData1 = this.createTestStoredData(this.getEndDate(), new Date(this.startDate.getTime() + 2 * DAY_IN_MILLISECONDS), 50);
+                        myStoredDatas.push(myStoredData1);
+
+                        let myStoredData2 = this.createTestStoredData(this.getEndDate(), new Date(this.startDate.getTime() + 8 * DAY_IN_MILLISECONDS), 85);
+                        myStoredDatas.push(myStoredData2);
+
+                        console.log(`{myStartDate} {myEndDate} {myStoredDatas.length}: ${this.startDate} ${this.getEndDate()} ${myStoredDatas.length}`)
+
+                        for (let iEle of myStoredDatas) {
+                            logStoredData(iEle, "let iEle of myStoredDatas");
+                        }
+                        this.storedDatas = myStoredDatas;
+                        break;
+                    }
+                    // "nohist": no data in history file, curr reading fresh === false
+                    case "nohist": {
+                        let myNowTime = new Date().getTime();
+                        this.storedDatas = [];
+                        //  new package was purchased 1 day before
+
+                        this.startDate = new Date(myNowTime - DAY_IN_MILLISECONDS);
+                        console.log(`new startdate: ${this.startDate} ${this.getEndDate()}`);
+                        let myNowDate = new Date();
+                        let myUsedPercentage = 20;
+                        this.storedData = this.createTestStoredData(this.getEndDate(), myNowDate, myUsedPercentage);
+                        this.fresh = false;
+                        logStoredData(this.storedData);
+                        break;
+                    }
                     case "wifi":
                         this.wifiProblem = "Please disable WiFi for initial execution(test)";
                         break;
@@ -107,7 +155,7 @@ async function run() {
                             console.log(`{myStartDate} {myEndDate} {myStoredDatas.length}: ${this.startDate} ${this.getEndDate()} ${myStoredDatas.length}`);
 
                             for (let iEle of myStoredDatas) {
-                                this.logStoredData(iEle);
+                                logStoredData(iEle);
                             }
                             this.storedDatas = myStoredDatas;
 
@@ -117,7 +165,7 @@ async function run() {
                             let myNowDate = new Date();
                             let myUsedPercentage = 80;
                             this.storedData = this.createTestStoredData(this.getEndDate(), myNowDate, myUsedPercentage);
-                            this.logStoredData(this.storedData);
+                            logStoredData(this.storedData);
 
                             break;
                         }
@@ -131,7 +179,7 @@ async function run() {
                             let myNowDate = new Date();
                             let myUsedPercentage = 80;
                             this.storedData = this.createTestStoredData(this.getEndDate(), myNowDate, myUsedPercentage);
-                            this.logStoredData(this.storedData);
+                            logStoredData(this.storedData);
 
                             let myStoredDatas = [];
 
@@ -144,7 +192,7 @@ async function run() {
                             console.log(`{myStartDate} {myEndDate} {myStoredDatas.length}: ${this.startDate} ${this.getEndDate()} ${myStoredDatas.length}`)
 
                             for (let iEle of myStoredDatas) {
-                                this.logStoredData(iEle);
+                                logStoredData(iEle);
                             }
                             this.storedDatas = myStoredDatas;
                             break;
@@ -159,7 +207,7 @@ async function run() {
                             let myNowDate = new Date();
                             let myUsedPercentage = 80;
                             this.storedData = this.createTestStoredData(this.getEndDate(), myNowDate, myUsedPercentage);
-                            this.logStoredData(this.storedData);
+                            logStoredData(this.storedData);
 
                             let myStoredDatas = [];
                             let myStoredData1 = this.createTestStoredData(this.getEndDate(), new Date(this.startDate.getTime() + 5 * DAY_IN_MILLISECONDS), 50);
@@ -171,7 +219,7 @@ async function run() {
                             console.log(`{myStartDate} {myEndDate} {myStoredDatas.length}: ${this.startDate} ${this.getEndDate()} ${myStoredDatas.length}`)
 
                             for (let iEle of myStoredDatas) {
-                                this.logStoredData(iEle);
+                                logStoredData(iEle);
                             }
                             this.storedDatas = myStoredDatas;
                             break;
@@ -189,7 +237,7 @@ async function run() {
                             let myNowDate = new Date();
                             let myUsedPercentage = 100;
                             this.storedData = this.createTestStoredData(myEndDate, myNowDate, myUsedPercentage);
-                            this.logStoredData(this.storedData);
+                            logStoredData(this.storedData);
 
                             // 50% after 1/3 of time
                             let myStoredData1 = this.createTestStoredData(myEndDate, new Date(myStartDate.getTime() + 10 * DAY_IN_MILLISECONDS), 50);
@@ -201,7 +249,7 @@ async function run() {
                             // {myStartDate} {myEndDate} {myStoredDatas.length}
                             console.log(`{myStartDate} {myEndDate} {myStoredDatas.length}: ${myStartDate} ${myEndDate} ${myStoredDatas.length}`)
                             for (let iEle of myStoredDatas) {
-                                console.log(`{usedPercentage} {remainingSeconds} {accessString}: ${iEle.data.usedPercentage} ${iEle.data.remainingSeconds} ${iEle.accessString}`)
+                                logStoredData(iEle, "iEle of myStoredDatas");
                             }
 
                             this.storedDatas = myStoredDatas;
@@ -215,14 +263,6 @@ async function run() {
                 console.log("err in test: " + e);
                 throw e;
             }
-        }
-
-        /**
-         * log StoredData
-         * @param {any} pStoredData
-         */
-        logStoredData(pStoredData) {
-            console.log(`myStoredData {usedPercentage} {remainingSeconds} {accessString}: ${pStoredData.data.usedPercentage} ${pStoredData.data.remainingSeconds} ${pStoredData.accessString}`);
         }
 
         /**
@@ -598,6 +638,19 @@ async function run() {
     }
 
     /**
+     * log StoredData
+     * @param {StoredData} pStoredData
+     * @param {string|undefined} pTitle optional title
+     */
+    function logStoredData(pStoredData, pTitle) {
+        if (!conShowLog) {
+            return;
+        }
+        let myTitle = pTitle ? pTitle : "";
+        console.log(`${myTitle}: StoredData {usedPercentage} {remainingSeconds} {accessString}: ${pStoredData.data.usedPercentage} ${pStoredData.data.remainingSeconds} ${pStoredData.accessString}`);
+    }
+
+    /**
      * show members of pObject
      * @param {any} pObject
      */
@@ -647,6 +700,10 @@ async function run() {
         try {
             // Fetch data from pass.telekom.de
             let myServerdata = await r.loadJSON();
+            if (!myServerdata || !myServerdata.usedPercentage) {
+                showObject(myServerdata, "Server Problem: invalid data");
+                return { wifiProblem: "Server Problem: invalid data" };
+            }
             let myStoredData = createStoredData(myServerdata, new Date());
 
             let myStoredStringWrite = JSON.stringify(myStoredData, null, 2);
@@ -670,7 +727,7 @@ async function run() {
             }
             myServerdata = myStoredData.data; // ? myStoredData.data : myStoredData;
             if (!myServerdata || !myServerdata.usedPercentage) {
-                return { wifiProblem: "Please disable WiFi for initial execution (1)" }
+                return { wifiProblem: "Please disable WiFi for initial execution (2)" }
             }
             return { fresh: false, myStoredData };
         }
@@ -696,24 +753,24 @@ async function run() {
     async function readAndUpdateStoredDatas(fm, pStoredData, pFresh) {
         let dir = fm.documentsDirectory()
         const conHistoryPath = fm.joinPath(dir, "ScriptableTelekomHistory.json");
-        //showObject(pStoredData, "pStoredData");
-        //let myStoredDatas = await readStoredDatas();
-        //for (let iEle of myStoredDatas) {
-        //    showObject(iEle, "myStoredDatas");
-        //}
+        logStoredData(pStoredData, "pStoredData");
+        let myStoredDatas = await readStoredDatas();
+        for (let iEle of myStoredDatas) {
+            logStoredData(iEle, "myStoredDatas");
+        }
 
         if (pFresh && pStoredData) {
             // fresh data beats stored history
             myStoredDatas = myStoredDatas.filter(function (pVal) { return pVal.accessTime <= pStoredData.accessTime });
-            //for (let iEle of myStoredDatas) {
-            //    showObject(iEle, "myStoredDatas.filter");
-            //}
+            for (let iEle of myStoredDatas) {
+                logStoredData(iEle, "myStoredDatas.filter");
+            }
         }
         if ((pFresh || myStoredDatas.length <= 0) && pStoredData) {
             myStoredDatas.push(pStoredData);
-            //for (let iEle of myStoredDatas) {
-            //    showObject(iEle, "myStoredDatas.push");
-            //}
+            for (let iEle of myStoredDatas) {
+                logStoredData(iEle, "myStoredDatas.push");
+            }
         }
         // sort ascending
         myStoredDatas.sort(function (left, right) { return left.accessTime - right.accessTime; });
@@ -727,7 +784,7 @@ async function run() {
             fm.writeString(conHistoryPath, myStoredDatasString);
         }
         for (let iEle of myNewStoredDatas) {
-            showObject(iEle, "myNewStoredDatas");
+            logStoredData(iEle, "myNewStoredDatas");
         }
         return myNewStoredDatas;
 

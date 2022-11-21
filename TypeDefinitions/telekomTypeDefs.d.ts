@@ -30,6 +30,7 @@ declare interface ServerData {
 /** data as read and stored from files */
 declare interface StoredData {
     version: string;
+    /**as read from server */
     data: ServerData;
     /** creation date of this entry, can be different from ServerData.usedAt */
     accessTime: number;
