@@ -83,7 +83,7 @@ async function run() {
                 console.log("constructor catch: " + e);
             }
         }
-        getEndDate = () => new Date(this.startDate.getTime() + conDaysPerPackage * DAY_IN_MILLISECONDS);
+        getEndDate = () => addDays(this.startDate, conDaysPerPackage);
 
         // #region test data
         createTestStoredDatas() {
@@ -93,22 +93,21 @@ async function run() {
                     // "latehist": data in history newer than curr reading
                     case "latehist": {
                         // one hour before expiration
-                        let myNowTime = new Date().getTime();
                         // 10 days back
-                        this.startDate = new Date(myNowTime - 10 * DAY_IN_MILLISECONDS);
+                        this.startDate = addDays(new Date(), -10);
 
                         // older than newest history item
-                        let myNowDate = new Date(new Date() - 4 * DAY_IN_MILLISECONDS);
+                        let myNowDate = addDays(new Date(), -4);
                         let myUsedPercentage = 80;
                         this.storedData = this.createTestStoredData(this.getEndDate(), myNowDate, myUsedPercentage);
                         logStoredData(this.storedData, "this.storedData");
 
                         let myStoredDatas = [];
 
-                        let myStoredData1 = this.createTestStoredData(this.getEndDate(), new Date(this.startDate.getTime() + 2 * DAY_IN_MILLISECONDS), 50);
+                        let myStoredData1 = this.createTestStoredData(this.getEndDate(), addDays(this.startDate, 2), 50);
                         myStoredDatas.push(myStoredData1);
 
-                        let myStoredData2 = this.createTestStoredData(this.getEndDate(), new Date(this.startDate.getTime() + 8 * DAY_IN_MILLISECONDS), 85);
+                        let myStoredData2 = this.createTestStoredData(this.getEndDate(), addDays(this.startDate, 8), 85);
                         myStoredDatas.push(myStoredData2);
 
                         console.log(`{myStartDate} {myEndDate} {myStoredDatas.length}: ${this.startDate} ${this.getEndDate()} ${myStoredDatas.length}`)
@@ -121,11 +120,10 @@ async function run() {
                     }
                     // "nohist": no data in history file, curr reading fresh === false
                     case "nohist": {
-                        let myNowTime = new Date().getTime();
                         this.storedDatas = [];
                         //  new package was purchased 1 day before
 
-                        this.startDate = new Date(myNowTime - DAY_IN_MILLISECONDS);
+                        this.startDate = addDays(new Date(), -1);
                         console.log(`new startdate: ${this.startDate} ${this.getEndDate()}`);
                         let myNowDate = new Date();
                         let myUsedPercentage = 20;
@@ -140,16 +138,15 @@ async function run() {
                     case "new":
                         {
                             // old package expired 2 days ago
-                            let myNowTime = new Date().getTime();
                             // 2 days expired, last package before new package is still stored
-                            this.startDate = new Date(myNowTime - (conDaysPerPackage + 2) * DAY_IN_MILLISECONDS);
+                            this.startDate = addDays(new Date(), -(conDaysPerPackage + 2));
 
                             let myStoredDatas = [];
 
-                            let myStoredData1 = this.createTestStoredData(this.getEndDate(), new Date(this.startDate.getTime() + 5 * DAY_IN_MILLISECONDS), 50);
+                            let myStoredData1 = this.createTestStoredData(this.getEndDate(), addDays(this.startDate, 5), 50);
                             myStoredDatas.push(myStoredData1);
 
-                            let myStoredData2 = this.createTestStoredData(this.getEndDate(), new Date(this.startDate.getTime() + 10 * DAY_IN_MILLISECONDS), 60);
+                            let myStoredData2 = this.createTestStoredData(this.getEndDate(), addDays(this.startDate, 10), 60);
                             myStoredDatas.push(myStoredData2);
 
                             console.log(`{myStartDate} {myEndDate} {myStoredDatas.length}: ${this.startDate} ${this.getEndDate()} ${myStoredDatas.length}`);
@@ -160,7 +157,7 @@ async function run() {
                             this.storedDatas = myStoredDatas;
 
                             //  new package was purchased 1 day before
-                            this.startDate = new Date(myNowTime - DAY_IN_MILLISECONDS);
+                            this.startDate = addDays(new Date(), -1);
                             console.log(`new startdate: ${this.startDate} ${this.getEndDate()}`);
                             let myNowDate = new Date();
                             let myUsedPercentage = 80;
@@ -172,9 +169,8 @@ async function run() {
                     case "after":
                         {
                             // one hour before expiration
-                            let myNowTime = new Date().getTime();
                             // 2 days expired
-                            this.startDate = new Date(myNowTime - (conDaysPerPackage + 2) * DAY_IN_MILLISECONDS);
+                            this.startDate = addDays(new Date(), - (conDaysPerPackage + 2));
 
                             let myNowDate = new Date();
                             let myUsedPercentage = 80;
@@ -675,6 +671,16 @@ async function run() {
         }
     }
 
+    /**
+     * add pToAddDays days to pDate
+     * @param {Date} pDate
+     * @param {number} pToAddDays
+     */
+    function addDays(pDate, pToAddDays) {
+        let myResult = new Date(pDate.getTime() + pToAddDays * DAY_IN_MILLISECONDS);
+        return myResult;
+    }
+
     // #endregion
 
     // #region data functions
@@ -892,7 +898,7 @@ async function run() {
             let myFirstStoredData = pStoredDatas[0];
             let myEndDate = calcEndDate(myFirstStoredData);
             console.log(`myFirstStoredData: ${getDateStringFromStoredData(myFirstStoredData)} - end time: ${myEndDate.toLocaleString()}`);
-            let myStartDate = new Date(myEndDate.getTime() - conDaysPerPackage * DAY_IN_MILLISECONDS);
+            let myStartDate = addDays(myEndDate, -conDaysPerPackage);
             console.log(`myStartDate: ${myStartDate.toLocaleString()}`);
 
             let myRemainingSeconds = conDaysPerPackage * DAY_IN_SECONDS;
@@ -907,7 +913,7 @@ async function run() {
 
             let myIndex = 0;
             let myNowString = getDateStringFromDate(new Date());
-            let myNextDay = new Date(myOldestStoredData.accessTime + DAY_IN_MILLISECONDS);
+            let myNextDay = addDays(new Date(myOldestStoredData.accessTime), 1);
 
             while (getDateStringFromDate(myNextDay).localeCompare(myNowString) <= 0) {
                 for (let i = myIndex; i < pStoredDatas.length; i++) {
@@ -922,7 +928,7 @@ async function run() {
                 }
                 let myHistoryData = createHistoryData(myOldestStoredData, myNextDay);
                 myHistoryDatas.push(myHistoryData);
-                myNextDay = new Date(myNextDay.getTime() + DAY_IN_MILLISECONDS);
+                myNextDay = addDays(myNextDay, 1);
             }
             // pack runs 31 days
             const conTotalSeconds = conDaysPerPackage * DAY_IN_SECONDS;
