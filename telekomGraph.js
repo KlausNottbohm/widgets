@@ -706,6 +706,7 @@ async function run() {
         try {
             // Fetch data from pass.telekom.de
             let myServerdata = await r.loadJSON();
+            //showObject(myServerdata, "myServerdata");
             if (!myServerdata || !myServerdata.usedPercentage) {
                 showObject(myServerdata, "Server Problem: invalid data");
                 return { wifiProblem: "Server Problem: invalid data" };
@@ -724,7 +725,7 @@ async function run() {
             return { fresh: true, myStoredData };
         }
         catch (err) {
-            //             showObject(err, "catch (err)");
+            //showObject(err, "catch (err)");
             // if reading from pass.telekom.de not possible-> read data from iCloud file
             let myStoredData = readFromFile();
             showObject(myStoredData, "fm.readString");
