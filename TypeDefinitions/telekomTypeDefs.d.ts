@@ -1,5 +1,5 @@
 
-/** data as read from telekom server */
+/** subset of data as read from telekom server */
 declare interface ServerData {
     // ServerData
     // usedVolumeStr: 839, 31 MB
@@ -27,6 +27,26 @@ declare interface ServerData {
     initialVolumeStr: string;
 }
 
+/** generated from server output on http://json2ts.com/ */
+declare interface ServerDataComplete {
+    usedVolumeStr: string;
+    remainingTimeStr: string;
+    hasOffers: boolean;
+    remainingSeconds: number;
+    usedAt: number;
+    validityPeriod: number;
+    usedPercentage: number;
+    title: string;
+    initialVolume: number;
+    initialVolumeStr: string;
+    passType: number;
+    nextUpdate: number;
+    subscriptions: string[];
+    usedVolume: number;
+    passStage: number;
+    passName: string;
+}
+
 /** data as read and stored from files */
 declare interface StoredData {
     version: string;
@@ -41,5 +61,6 @@ declare interface StoredData {
 declare interface HistoryData {
     entry: StoredData;
     dateString: string;
+    /** can be different from accesstime for generated history items*/
     date: Date;
 }
