@@ -297,7 +297,11 @@ async function run() {
         if (wifiProblem) {
             // for wifi problem show error text (all other exceptions not caught)
             const errorList = new ListWidget();
-            errorList.addText(wifiProblem);
+            let myText = errorList.addText(wifiProblem);
+            myText.textColor = conMagenta;
+            // on tap goto settings: https://github.com/FifiTheBulldog/ios-settings-urls/blob/master/settings-urls.md
+            errorList.url = 'app-Prefs:root=WIFI'
+
             return errorList;
         }
         await notifyIfNeeded(myStoredData);
