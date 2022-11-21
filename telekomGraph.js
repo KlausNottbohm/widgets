@@ -10,7 +10,7 @@ async function run() {
 
     // #region constant definitions
     // do not make longer (space restrictions)
-    const conVersion = "V221120";
+    const conVersion = "V221121";
 
     /** possible values: 
      * undefined or "": real data
