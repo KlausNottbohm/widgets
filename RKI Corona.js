@@ -6,6 +6,7 @@
 // icon-color: deep-gray; icon-glyph: magic;
 // Licence: Robert Koch-Institut (RKI), dl-de/by-2-0
 //
+/// <reference path="TypeDefinitions/RKI_Data.d.ts" />
 // first version, did not work after upgrade of Scriptable app, now works again
 const conVersion = "Corona221114";
 // ---------------------------
@@ -23,9 +24,11 @@ const colorMed = new Color('#E8B365', 1); // < 100
 const colorHigh = new Color('#DD5045', 1); // < 200
 const colorUltra = new Color('#8E0000', 1); // >= 200
 // Landkreis Inzidenz
-const apiUrl = (location) => `https://services7.arcgis.com/mOBPykOjAyBO2ZKk/arcgis/rest/services/RKI_Landkreisdaten/FeatureServer/0/query?where=1%3D1&outFields=GEN,EWZ,cases,death_rate,deaths,cases7_per_100k,cases7_bl_per_100k,BL,county&geometry=${location.longitude.toFixed(3)}%2C${location.latitude.toFixed(3)}&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelWithin&returnGeometry=false&outSR=4326&f=json`;
+const conLandKreisApiUrl = (location) => `https://services7.arcgis.com/mOBPykOjAyBO2ZKk/arcgis/rest/services/RKI_Landkreisdaten/FeatureServer/0/query?where=1%3D1&outFields=GEN,EWZ,cases,death_rate,deaths,cases7_per_100k,cases7_bl_per_100k,BL,county&geometry=${location.longitude.toFixed(3)}%2C${location.latitude.toFixed(3)}&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelWithin&returnGeometry=false&outSR=4326&f=json`;
 // Intensivbetten
 const diviApiUrl = (location) => `https://services7.arcgis.com/mOBPykOjAyBO2ZKk/arcgis/rest/services/DIVI_Intensivregister_Landkreise/FeatureServer/0/query?where=1%3D1&outFields=*&geometry=${location.longitude.toFixed(3)}%2C${location.latitude.toFixed(3)}&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelWithin&returnGeometry=false&outSR=4326&f=json`;
+// landkreis and date
+const apiUrlData = (county, minDate) => `https://services7.arcgis.com/mOBPykOjAyBO2ZKk/arcgis/rest/services/Covid19_RKI_Sums/FeatureServer/0/query?where=Landkreis+LIKE+%27%25${encodeURIComponent(county)}%25%27+AND+Meldedatum+%3E+%27${encodeURIComponent(minDate)}%27&objectIds=&time=&resultType=none&outFields=*&returnIdsOnly=false&returnUniqueIdsOnly=false&returnCountOnly=false&returnDistinctValues=false&cacheHint=false&orderByFields=Meldedatum&groupByFieldsForStatistics=&outStatistics=&having=&resultOffset=&resultRecordCount=&sqlFormat=none&f=json&token=`;
 
 const widgetHeight = 338;
 const widgetWidth = 720;
@@ -93,9 +96,8 @@ async function createWidget() {
     }
     //location.latitude = location.latitude - 0.2;
 
-    const locationData = await new Request(apiUrl(location)).loadJSON();
-    console.log(apiUrl(location));
-
+    const locationData = await getLandkreisData(location);
+    console.log(conLandKreisApiUrl(location));
 
     if (!locationData || !locationData.features || !locationData.features.length) {
 
@@ -106,7 +108,7 @@ async function createWidget() {
         return errorList;
     }
     showObject(locationData.features[0].attributes, "locationData");
-    const diviLocationData = await new Request(diviApiUrl(location)).loadJSON();
+    const diviLocationData = await getDIVIData(location);
 
     if (!diviLocationData || !diviLocationData.features || !diviLocationData.features.length) {
         const errorList = new ListWidget();
@@ -136,11 +138,10 @@ async function createWidget() {
     const date = new Date();
     date.setTime(date.getTime() - 21 * DAY_IN_MICROSECONDS);
     const minDate = ('0' + (date.getMonth() + 1)).slice(-2) + '-' + ('0' + date.getDate()).slice(-2) + '-' + date.getFullYear();
-    const apiUrlData = `https://services7.arcgis.com/mOBPykOjAyBO2ZKk/arcgis/rest/services/Covid19_RKI_Sums/FeatureServer/0/query?where=Landkreis+LIKE+%27%25${encodeURIComponent(county)}%25%27+AND+Meldedatum+%3E+%27${encodeURIComponent(minDate)}%27&objectIds=&time=&resultType=none&outFields=*&returnIdsOnly=false&returnUniqueIdsOnly=false&returnCountOnly=false&returnDistinctValues=false&cacheHint=false&orderByFields=Meldedatum&groupByFieldsForStatistics=&outStatistics=&having=&resultOffset=&resultRecordCount=&sqlFormat=none&f=json&token=`;
     console.log("apiUrlData");
-    console.log(apiUrlData);
+    console.log(apiUrlData(county, minDate));
 
-    const cityData = await new Request(apiUrlData).loadJSON();
+    const cityData = await readCOVIDSumsData(apiUrlData(county, minDate));
 
     if (!cityData || !cityData.features || !cityData.features.length) {
         const errorList = new ListWidget();
@@ -255,6 +256,35 @@ async function createWidget() {
     }
 
     return list;
+}
+
+/**
+ * 
+ * @param {any} location
+ * @returns {Promise<RKI_Landkreisdaten.RootObject>}
+ */
+async function getLandkreisData(location) {
+    return await new Request(conLandKreisApiUrl(location)).loadJSON();
+}
+
+/**
+ * 
+ * @param {any} location
+ * @returns {Promise<DIVI_Intensivregister_Landkreise.RootObject>}
+ */
+async function getDIVIData(location) {
+    return await new Request(diviApiUrl(location)).loadJSON();
+}
+
+/**
+ * 
+ * @param {string} apiUrlData
+ * @returns {Promise<Covid19_RKI_Sums.RootObject>}
+ */
+async function readCOVIDSumsData(apiUrlData) {
+    let myRequest = new Request(apiUrlData);
+    let myResult = await myRequest.loadJSON();
+    return myResult;
 }
 
 function drawTextR(text, rect, color, font) {

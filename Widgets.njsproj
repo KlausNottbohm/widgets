@@ -89,6 +89,7 @@
     <Folder Include="Typescript\src\" />
   </ItemGroup>
   <ItemGroup>
+    <TypeScriptCompile Include="TypeDefinitions\RKI_Data.d.ts" />
     <TypeScriptCompile Include="TypeDefinitions\scriptable.d.ts">
       <SubType>Code</SubType>
     </TypeScriptCompile>
