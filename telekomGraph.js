@@ -695,6 +695,8 @@ async function run() {
             const conHistoryPath = fm.joinPath(dir, "ScriptableTelekomHistory.json");
 
             let myStoredDatas = await readStoredDatas(conHistoryPath);
+            // sort ascending
+            myStoredDatas.sort(function (left, right) { return left.accessTime - right.accessTime; });
             /**purged copy of myStoredDatas */
             let myNewStoredDatas = purgeStoredData(myStoredDatas, pStoredData);
 
@@ -702,11 +704,10 @@ async function run() {
             fm.writeString(conHistoryPath, myStoredDatasString);
             return myNewStoredDatas;
         }
-
         /**
          * 
-         * @param {any} pStoredDatas
-         * @param {any} pStoredData
+         * @param {{accessTime:number}[]} pStoredDatas sorted array of StoredData
+         * @param {{accessTime:number}[]} pStoredData
          */
         function purgeStoredData(pStoredDatas, pStoredData) {
             let myNewStoredDatas = [];
@@ -734,8 +735,6 @@ async function run() {
                     for (let iEle of myStoredDatas) {
                         console.log(`${iEle.accessString}: ${iEle.data.usedPercentage}%`);
                     }
-                    // sort ascending
-                    myStoredDatas.sort(function (left, right) { return left.accessTime - right.accessTime; });
                     return myStoredDatas;
                 }
                 else {
@@ -750,8 +749,8 @@ async function run() {
 
         /**
          * 
-         * @param {{data: {usedVolume:number}, accessTime:number}[]} pNewStoredDatas StoredData[]
-         * @param {{data: {usedVolume:number}, accessTime:number}} pStoredData StoredData
+         * @param {{accessTime:number}[]} pNewStoredDatas StoredData[]
+         * @param {{accessTime:number}} pStoredData StoredData
          */
         function pushOrReplace(pNewStoredDatas, pStoredData) {
             if (pNewStoredDatas.length <= 0) {
@@ -985,9 +984,20 @@ async function run() {
             remainingSeconds: pRemainingSeconds,
             usedAt: pUsedAt.getTime(),
             usedVolume: myUsedVolume,
-            usedVolumeStr: `${myUsedVolume} MB`,
-            initialVolumeStr: `${conInitialVolume} MB`
+            usedVolumeStr: niceVolumeString(myUsedVolume),
+            initialVolumeStr: niceVolumeString(conInitialVolume)
         };
+        /**
+         * 
+         * @param {number} pVolume
+         */
+        function niceVolumeString(pVolume) {
+            let myInitString = `${pVolume} MB`;
+            if (pVolume > 100) {
+                myInitString = `${(pVolume / 1000).toFixed(1)} GB`;
+            }
+            return myInitString;
+        }
     }
     // #endregion
 
