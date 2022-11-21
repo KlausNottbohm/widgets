@@ -92,6 +92,9 @@
     <TypeScriptCompile Include="TypeDefinitions\scriptable.d.ts">
       <SubType>Code</SubType>
     </TypeScriptCompile>
+    <TypeScriptCompile Include="TypeDefinitions\telekomTypeDefs.d.ts">
+      <SubType>Code</SubType>
+    </TypeScriptCompile>
   </ItemGroup>
   <Import Project="$(VSToolsPath)\Node.js Tools\Microsoft.NodejsToolsV2.targets" />
   <ProjectExtensions>

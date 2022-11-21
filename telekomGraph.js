@@ -2,6 +2,7 @@
 // These must be at the very top of the file. Do not edit.
 // icon-color: brown; icon-glyph: magic;
 /// <reference path="TypeDefinitions/scriptable.d.ts" />
+/// <reference path="TypeDefinitions/telekomTypeDefs.d.ts" />
 run();
 
 /**wrapped all in function to remedy const access to other js files by eslint */
@@ -266,7 +267,7 @@ async function run() {
         }
         await notifyIfNeeded(myStoredData);
 
-        let myStoredDatas = await readAndUpdateStoredDatas(fm, fresh ? myStoredData : undefined);
+        let myStoredDatas = await readAndUpdateStoredDatas(fm, myStoredData, fresh);
 
         let myHistoryDatas = getHistoryDatas(myStoredDatas);
 
@@ -533,21 +534,21 @@ async function run() {
     }
 
     /**
-     * string from server entry
-     * @param {any} pStoredData StoredData
+     * string yyyy-mm-dd  from StoredData entry
+     * @param {StoredData} pStoredData StoredData
      */
-    function getDateStringFromEntry(pStoredData) {
+    function getDateStringFromStoredData(pStoredData) {
         return getDateStringFromMSecs(pStoredData.accessTime);
     }
     /**
-     * string from mSecs
+     * string yyyy-mm-dd  from mSecs
      * @param {number} pDateMSecs
      */
     function getDateStringFromMSecs(pDateMSecs) {
         return getDateStringFromDate(new Date(pDateMSecs));
     }
     /**
-     * string from date
+     * string yyyy-mm-dd from date
      * @param {Date} pDate
      */
     function getDateStringFromDate(pDate) {
@@ -563,7 +564,7 @@ async function run() {
 
     /**
      * 
-     * @param {any} pStoredData StoredData
+     * @param {StoredData} pStoredData StoredData
      * @param {Date} pDate 
      */
     function calcRest(pStoredData, pDate) {
@@ -583,7 +584,7 @@ async function run() {
 
     /**
      * calc end date from current + remaining seconds
-     * @param {{accessTime: number}} pStoredData StoredData
+     * @param {StoredData} pStoredData StoredData
      */
     function calcEndDate(pStoredData) {
         // usedAt = msec
@@ -631,11 +632,11 @@ async function run() {
     async function getStoredData(fm) {
         if (mTestGenerator) {
             let myStoredData = mTestGenerator.storedData;
-            return { fresh: mTestGenerator.fresh, myStoredData, wifiProblem: mTestGenerator.wifiProblem };
+            if (mTestGenerator.wifiProblem) {
+                return { wifiProblem: mTestGenerator.wifiProblem }
+            }
+            return { fresh: mTestGenerator.fresh, myStoredData };
         }
-
-        let dir = fm.documentsDirectory();
-        let path = fm.joinPath(dir, "scriptable-telekom.json");
 
         let r = new Request(conAPIUrl);
         // API only answers for mobile Safari
@@ -662,7 +663,7 @@ async function run() {
         catch (err) {
             //             showObject(err, "catch (err)");
             // if reading from pass.telekom.de not possible-> read data from iCloud file
-            let myStoredData = JSON.parse(fm.readString(path), null);
+            let myStoredData = readFromFile();
             showObject(myStoredData, "fm.readString");
             if (!myStoredData) {
                 return { wifiProblem: "Please disable WiFi for initial execution (1)" }
@@ -673,59 +674,95 @@ async function run() {
             }
             return { fresh: false, myStoredData };
         }
+        /**
+         * @returns {StoredData}
+         * */
+        function readFromFile() {
+            let dir = fm.documentsDirectory();
+            let path = fm.joinPath(dir, "scriptable-telekom.json");
+
+            let myStoredData = JSON.parse(fm.readString(path), null);
+            return myStoredData;
+        }
     }
 
     /**
      * return ascending history
      * @param {FileManager} fm
      * @param {string} conHistoryPath
-     * @param {undefined | {usedVolume:number, accessTime:number}} pStoredData: undefined or server entry
+     * @param {StoredData} pStoredData: StoredData
+     * @param {boolean} pFresh
      */
-    async function readAndUpdateStoredDatas(fm, pStoredData) {
-        if (mTestGenerator) {
-            let myStoredDatas = mTestGenerator.storedDatas;
-            // sort ascending
-            myStoredDatas.sort(function (left, right) { return left.accessTime - right.accessTime; });
-            /**purged copy of myStoredDatas */
-            let myNewStoredDatas = purgeStoredData(myStoredDatas, pStoredData);
-            return myNewStoredDatas;
+    async function readAndUpdateStoredDatas(fm, pStoredData, pFresh) {
+        let dir = fm.documentsDirectory()
+        const conHistoryPath = fm.joinPath(dir, "ScriptableTelekomHistory.json");
+        //showObject(pStoredData, "pStoredData");
+        //let myStoredDatas = await readStoredDatas();
+        //for (let iEle of myStoredDatas) {
+        //    showObject(iEle, "myStoredDatas");
+        //}
+
+        if (pFresh && pStoredData) {
+            // fresh data beats stored history
+            myStoredDatas = myStoredDatas.filter(function (pVal) { return pVal.accessTime <= pStoredData.accessTime });
+            //for (let iEle of myStoredDatas) {
+            //    showObject(iEle, "myStoredDatas.filter");
+            //}
         }
-        else {
-            let dir = fm.documentsDirectory()
-            const conHistoryPath = fm.joinPath(dir, "ScriptableTelekomHistory.json");
+        if ((pFresh || myStoredDatas.length <= 0) && pStoredData) {
+            myStoredDatas.push(pStoredData);
+            //for (let iEle of myStoredDatas) {
+            //    showObject(iEle, "myStoredDatas.push");
+            //}
+        }
+        // sort ascending
+        myStoredDatas.sort(function (left, right) { return left.accessTime - right.accessTime; });
 
-            let myStoredDatas = await readStoredDatas(conHistoryPath);
-            // sort ascending
-            myStoredDatas.sort(function (left, right) { return left.accessTime - right.accessTime; });
-            /**purged copy of myStoredDatas */
-            let myNewStoredDatas = purgeStoredData(myStoredDatas, pStoredData);
+        /**purged copy of myStoredDatas */
+        let myNewStoredDatas = purgeStoredData(myStoredDatas, pStoredData);
 
+        if (!mTestGenerator) {
+            // non test data is written back to file
             let myStoredDatasString = JSON.stringify(myNewStoredDatas);
             fm.writeString(conHistoryPath, myStoredDatasString);
-            return myNewStoredDatas;
         }
+        for (let iEle of myNewStoredDatas) {
+            showObject(iEle, "myNewStoredDatas");
+        }
+        return myNewStoredDatas;
+
+        /** read from history file or test data
+         * @returns{Promise<StoredData[]>}
+         * */
+        async function readStoredDatas() {
+            if (mTestGenerator) {
+                return mTestGenerator.storedDatas;
+            }
+            else {
+                let myStoredDatas = await readFromFileStoredDatas(conHistoryPath);
+                return myStoredDatas;
+            }
+        }
+
         /**
          * 
-         * @param {{accessTime:number}[]} pStoredDatas sorted array of StoredData
-         * @param {{accessTime:number}[]} pStoredData
+         * @param {StoredData[]} pStoredDatas sorted array of StoredData
+         * @returns {StoredData[]}
          */
-        function purgeStoredData(pStoredDatas, pStoredData) {
+        function purgeStoredData(pStoredDatas) {
             let myNewStoredDatas = [];
             for (let i = 0; i < pStoredDatas.length; i++) {
                 let iStoredData = pStoredDatas[i];
                 pushOrReplace(myNewStoredDatas, iStoredData);
             }
-            if (pStoredData) {
-                // add only new data
-                //                 console.log(`push new data: ${pStoredData.accessString}: ${pStoredData.data.usedPercentage}%`);
-                pushOrReplace(myNewStoredDatas, pStoredData);
-                //                 console.log(`push new data-myNewStoredDatas: ${myNewStoredDatas.length}`);
-            }
             return myNewStoredDatas;
         }
 
-        /** read from file and sort or use test data*/
-        async function readStoredDatas(pHistoryPath) {
+        /** read from file
+         * @param {string} pHistoryPath
+         * @returns {Promise<StoredData[]>}
+         */
+        async function readFromFileStoredDatas(pHistoryPath) {
             if (fm.fileExists(pHistoryPath)) {
                 await fm.downloadFileFromiCloud(pHistoryPath);
                 let myHistoryDataString = fm.readString(pHistoryPath);
@@ -748,9 +785,9 @@ async function run() {
         }
 
         /**
-         * 
-         * @param {{accessTime:number}[]} pNewStoredDatas StoredData[]
-         * @param {{accessTime:number}} pStoredData StoredData
+         * push, replace or clear pNewStoredDatas (destructive on pNewStoredDatas)
+         * @param {StoredData[]} pNewStoredDatas StoredData[]
+         * @param {StoredData} pStoredData StoredData
          */
         function pushOrReplace(pNewStoredDatas, pStoredData) {
             if (pNewStoredDatas.length <= 0) {
@@ -770,7 +807,7 @@ async function run() {
                     //console.log(`pushOrReplace-pNewStoredDatas: ${pNewStoredDatas.length}`);
                 }
                 else {
-                    if (getDateStringFromMSecs(pNewStoredDatas[pNewStoredDatas.length - 1].accessTime) === getDateStringFromMSecs(pStoredData.accessTime)) {
+                    if (getDateStringFromStoredData(pNewStoredDatas[pNewStoredDatas.length - 1]) === getDateStringFromStoredData(pStoredData)) {
                         // update with latest entry from day
                         pNewStoredDatas[pNewStoredDatas.length - 1] = pStoredData;
                     }
@@ -785,6 +822,7 @@ async function run() {
     /**
      * 
      * @param {StoredData[]} pStoredDatas
+     * @returns {HistoryData[]}
      */
     function getHistoryDatas(pStoredDatas) {
         // #region get myNewHistory
@@ -796,7 +834,7 @@ async function run() {
         if (pStoredDatas.length >= 0) {
             let myFirstStoredData = pStoredDatas[0];
             let myEndDate = calcEndDate(myFirstStoredData);
-            console.log(`myFirstStoredData: ${getDateStringFromEntry(myFirstStoredData)} - end time: ${myEndDate.toLocaleString()}`);
+            console.log(`myFirstStoredData: ${getDateStringFromStoredData(myFirstStoredData)} - end time: ${myEndDate.toLocaleString()}`);
             let myStartDate = new Date(myEndDate.getTime() - conDaysPerPackage * DAY_IN_MILLISECONDS);
             console.log(`myStartDate: ${myStartDate.toLocaleString()}`);
 
@@ -817,7 +855,7 @@ async function run() {
             while (getDateStringFromDate(myNextDay).localeCompare(myNowString) <= 0) {
                 for (let i = myIndex; i < pStoredDatas.length; i++) {
                     let myCurrStoredData = pStoredDatas[i];
-                    if (getDateStringFromEntry(myCurrStoredData).localeCompare(getDateStringFromDate(myNextDay)) <= 0) {
+                    if (getDateStringFromStoredData(myCurrStoredData).localeCompare(getDateStringFromDate(myNextDay)) <= 0) {
                         myIndex = i;
                         myOldestStoredData = myCurrStoredData;
                     }
@@ -843,12 +881,11 @@ async function run() {
         }
         return myHistoryDatas;
         // #endregion
-
     }
 
     /**
      * notify on low data or time
-     * @param {any} pStoredData StoredData
+     * @param {StoredData} pStoredData StoredData
      */
     async function notifyIfNeeded(pStoredData) {
         let myServerData = pStoredData.data;
@@ -903,22 +940,9 @@ async function run() {
 
     /**
      * history data has a possible different date from StoredData.accessTime
-     * @param 
-     * {{ 
-     * version: string, 
-     * data: 
-         * { 
-         * usedPercentage: number, 
-         * remainingSeconds: number, 
-         * usedAt: number, 
-         * usedVolume: number, 
-         * usedVolumeStr: string, 
-         * initialVolumeStr: string 
-         * }, 
-     * accessTime: number, 
-     * accessString: string 
-     * }} pStoredData StoredData
+     * @param {StoredData} pStoredData StoredData
      * @param {Date} pDate
+     * @returns {HistoryData}
      */
     function createHistoryData(pStoredData, pDate) {
         let myDate = pDate ? pDate : new Date(pStoredData.accessTime);
@@ -931,14 +955,9 @@ async function run() {
 
     /**
      * StoredData has a possible different accessTime from ServerData.usedAt
-     * @param {{ 
-     * usedPercentage: number, 
-     * remainingSeconds: number, 
-     * usedAt: number, 
-     * usedVolume: number, 
-     * usedVolumeStr: string, 
-     * initialVolumeStr: string }} pServerdata ServerData
+     * @param {ServerData} pServerdata ServerData
      * @param {Date} pAccessTime
+     * @returns {StoredData}
      */
     function createStoredData(pServerdata, pAccessTime) {
         let myAccessTime = pAccessTime ? pAccessTime : new Date(pServerdata.usedAt);
@@ -956,26 +975,9 @@ async function run() {
      * @param {number} pRemainingSeconds
      * @param {Date} pUsedAt
      * @param {string} pUsedVolumeStr
+     * @returns {ServerData}
      */
     function createServerData(pUsedPercentage, pRemainingSeconds, pUsedAt) {
-        // ServerData
-        // usedVolumeStr: 839, 31 MB
-        // remainingTimeStr: 12 Tage 5 Std.
-        // hasOffers: true
-        // remainingSeconds: 1055447
-        // usedAt: 1620191668000
-        // validityPeriod: 5
-        // usedPercentage: 33
-        // title:
-        // initialVolume: 2684354560
-        // initialVolumeStr: 2, 5 GB
-        // passType: 101
-        // nextUpdate: 10800
-        // subscriptions: speedon, roamLikeHome, tns, m4mBundle, migtest
-        // usedVolume: 880088349
-        // passStage: 1
-        // passName: Data Flex 2, 5 GB
-
         // 6000 MB
         const conInitialVolume = 6000;
         let myUsedVolume = pUsedPercentage * conInitialVolume / 100;
