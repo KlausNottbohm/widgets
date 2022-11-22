@@ -103,6 +103,7 @@ async function run() {
                 this.createTestStoredDatas();
             } catch (e) {
                 console.log("constructor catch: " + e);
+                this.wifiProblem = e.toString();
             }
         }
         getEndDate = () => addDays(this.startDate, conDaysPerPackage);
@@ -751,7 +752,7 @@ async function run() {
         if (mTestGenerator) {
             let myStoredData = mTestGenerator.storedData;
             if (mTestGenerator.wifiProblem) {
-                return { wifiProblem: mTestGenerator.wifiProblem }
+                return { wifiProblem: mTestGenerator.wifiProblem };
             }
             return { fresh: mTestGenerator.fresh, myStoredData };
         }

@@ -52,7 +52,7 @@ declare module RKI_Landkreisdaten {
         EWZ_BL: number;
         /**city name */
         GEN: string;
-        /**Einwohnerzahll */
+        /**Einwohnerzahl */
         EWZ: number;
         cases: number;
         death_rate: number;
