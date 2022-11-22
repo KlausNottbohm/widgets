@@ -24,6 +24,26 @@ async function run() {
      * */
     const conIsTest = ""; //"empty";
     const conShowLog = true;
+    const conShowGradient = false;
+
+    const conMagentaValue = "#E20074"; //
+    const conLightMagentaValue = "#FF77FF";
+    const conLightRedValue = "#FF7F7F";
+    const conRedValue = "#FF0000";
+
+    let myAlpha = 0.3;
+    let startColor = new Color(conMagentaValue, myAlpha)
+    let endColor = new Color(conLightMagentaValue, myAlpha)
+    let gradient = new LinearGradient()
+    gradient.colors = [startColor, endColor]
+    gradient.locations = [0.0, 1]
+
+    let myAlphaA = 0.3;
+    let startColorA = new Color(conRedValue, myAlphaA);
+    let endColorA = new Color(conLightRedValue, myAlphaA);
+    let gradientAlert = new LinearGradient()
+    gradientAlert.colors = [startColorA, endColorA]
+    gradientAlert.locations = [0.0, 1]
 
     const conAPIUrl = "https://pass.telekom.de/api/service/generic/v1/status";
     const conTelekomURL = "https://pass.telekom.de";
@@ -31,20 +51,23 @@ async function run() {
     // antiquewhite : #faebd7
     const conAntiqueWhite = new Color("#faebd7");
     // telekom magenta 0xE20074
-    const conMagenta = new Color("#E20074");
+    const conMagenta = new Color(conMagentaValue);
     const conWidgetBackgroundColor = conMagenta; //conAntiqueWhite
 
     // choose a color fitting to conWidgetBackgroundColor (alternatives for conAntiqueWhite after comment signs//)
-    /**color for normal font */
-    const conAccentColor1 = Color.white(); //conAntiqueWhite Color.black()
+    /**color for normal font at the bottom*/
+    const conAccentColor1 = conShowGradient ? Color.black() : Color.white(); //conAntiqueWhite Color.black()
+    /** textcolor at top */
+    const conAccentColor1Top = Color.white();
     /**weekend color */
     const conAccentColor2 = Color.lightGray();
     // light blue: #ADD8E6
     const conLightBlue = new Color("#ADD8E6");
+    const conVeryLightBlue = new Color("#e6f3f7");
     // middle blue : #6190E6
     const conMiddleBlue = new Color("#6190E6");
     /**color for link */
-    const conLinkColor = conMiddleBlue; // conAntiqueWhite Color.blue()
+    const conLinkColor = conShowGradient ? conVeryLightBlue : conLightBlue; // conAntiqueWhite Color.blue()
     // light red : #FF7F7F
     /**color for low data value */
     const conAlertColor = new Color("#FF7F7F"); // conAntiqueWhite Color.red()
@@ -311,8 +334,31 @@ async function run() {
         let myHistoryDatas = getHistoryDatas(myStoredDatas);
 
         const widget = new ListWidget();
-        widget.backgroundColor = conWidgetBackgroundColor;
         widget.url = conTelekomURL;
+        if (conShowGradient) {
+            widget.backgroundGradient = gradient;
+        }
+        else {
+            widget.backgroundColor = conWidgetBackgroundColor;
+        }
+        let myCheck = checkPackageEmpty(myStoredData);
+        if (myCheck) {
+            // alert!
+            if (conShowGradient) {
+                widget.backgroundGradient = gradientAlert;
+            }
+            else {
+                widget.backgroundColor = Color.red();
+            }
+        }
+        else {
+            if (conShowGradient) {
+                widget.backgroundGradient = gradient;
+            }
+            else {
+                widget.backgroundColor = conWidgetBackgroundColor;
+            }
+        }
 
         let myDrawContext = new DrawContext();
         myDrawContext.size = new Size(widgetWidth, widgetHeight);
@@ -333,8 +379,8 @@ async function run() {
     // #region UI functions
     /**
    * show progress in columns
-   * @param {any} myHistoryDatas
-   * @param {any} drawContext
+   * @param {HistoryData[]} pHistoryDatas
+   * @param {DrawContext} drawContext
    */
     function showHistoryDatas(pHistoryDatas, drawContext) {
         // ensure display of column with 0
@@ -450,11 +496,10 @@ async function run() {
         myTextArea.topAlignContent();
         myTextArea.size = new Size(widgetWidth, 150);
 
-        let myRest = calcRest(pStoredData, new Date(pStoredData.accessTime));
-        if (myRest.myRestTime <= 0 || myRest.myRestPercentage <= 0) {
+        let myCheck = checkPackageEmpty(pStoredData);
+        if (myCheck) {
             // alert!
-            showLink(myTextArea, "Package empty! Goto Telekom", conTelekomURL, conLightBlue);
-            widget.backgroundColor = Color.red();
+            showLink(myTextArea, "Package empty! Goto Telekom", conTelekomURL, conLinkColor);
         }
         else {
             if (fresh) {
@@ -468,10 +513,19 @@ async function run() {
 
     // #region UI helpers
     /**
+     * 
+     * @param {StoredData} pStoredData
+     */
+    function checkPackageEmpty(pStoredData) {
+        let myRest = calcRest(pStoredData, new Date(pStoredData.accessTime));
+        return myRest.myRestTime <= 0 || myRest.myRestPercentage <= 0;
+    }
+    /**
    * add link in blue
    * @param {ListWidget} widget
    * @param {string} title
    * @param {string} pURL
+   * @param {Color} pColor optional Color, default = conLinkColor
    */
     function showLink(widget, title, pURL, pColor) {
         let myLinkColor = pColor ? pColor : conLinkColor;
@@ -497,16 +551,18 @@ async function run() {
 
     /**
      * add title in black
-     * @param {any} widget
-     * @param {any} title
+     * @param {ListWidget} widget
+     * @param {string} title
+     * @param {Color} pColor optional Color, default = conAccentColor1Top
      */
-    function showTitle(widget, title) {
+    function showTitle(widget, title, pColor) {
         widget.addSpacer(8)
         let footerStack = widget.addStack()
         let linkStack = footerStack.addStack()
         let linkElement = linkStack.addText(title)
         linkElement.font = Font.title2(); //Font.mediumSystemFont(13)
-        linkElement.textColor = conAccentColor1;
+        let myLinkColor = pColor ? pColor : conAccentColor1Top;
+        linkElement.textColor = myLinkColor;
         linkStack.addSpacer(3)
         footerStack.topAlignContent();
         return footerStack;
