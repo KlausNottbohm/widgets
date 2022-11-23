@@ -16,7 +16,7 @@ async function run() {
 
     // #region constant definitions
     // do not make longer (space restrictions)
-    const conVersion = "V2211221";
+    const conVersion = "V221123";
     let myShowGradient = "";
     let myTestCase = "";
     if (args.widgetParameter) {
@@ -43,20 +43,23 @@ async function run() {
     const conLightMagentaValue = "#FF77FF";
     const conLightRedValue = "#FF7F7F";
     const conRedValue = "#FF0000";
+    const conAntiqueWhiteValue = "#faebd7";
 
     let myAlpha = 0.3;
+    let startColor1 = new Color(conMagentaValue, 1.0)
     let startColor = new Color(conMagentaValue, myAlpha)
-    let endColor = new Color(conLightMagentaValue, myAlpha)
+    let endColor = new Color(conAntiqueWhiteValue, myAlpha)
     let gradient = new LinearGradient()
-    gradient.colors = [startColor, endColor]
-    gradient.locations = [0.0, 1]
+    gradient.colors = [startColor1, startColor, endColor]
+    gradient.locations = [0.0, 0.3, 1]
 
     let myAlphaA = 0.3;
+    let startColorA1 = new Color(conRedValue, 1.0);
     let startColorA = new Color(conRedValue, myAlphaA);
-    let endColorA = new Color(conLightRedValue, myAlphaA);
+    let endColorA = new Color(conAntiqueWhiteValue, myAlphaA);
     let gradientAlert = new LinearGradient()
-    gradientAlert.colors = [startColorA, endColorA]
-    gradientAlert.locations = [0.0, 1]
+    gradientAlert.colors = [startColorA1, startColorA, endColorA]
+    gradientAlert.locations = [0.0, 0.3, 1]
 
     const conAPIUrl = "https://pass.telekom.de/api/service/generic/v1/status";
     const conTelekomURL = "https://pass.telekom.de";
