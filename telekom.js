@@ -151,7 +151,7 @@ async function createWidget() {
 
         // now data contains data from server or from local file
         //showObject(data, "Data");
-        showLink(list, fresh ? "Goto Telekom" : "Rest data/time", conTelekomURL);
+        showLink(list, "Rest data/time", conTelekomURL);
         let myRestData = 100 - data.usedPercentage;
 
         // time = msec
