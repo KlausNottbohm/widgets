@@ -8,6 +8,7 @@
 // if you enable conIsTest, widget does not run on IOS 16 (class definition test generator problem?)-> try test cases on IOS 15
 
 // on IOS 16 you have to close the script and reopen it before running, otherwise it hangs on second call
+//    args.widgetParameter:   myTestCase = myArgs[1]; myShowGradient = myArgs[0]; e.g. args could be "grad,empty"
 run();
 
 /**wrapped all in function to remedy const access to other js files by eslint */
@@ -15,7 +16,14 @@ async function run() {
 
     // #region constant definitions
     // do not make longer (space restrictions)
-    const conVersion = "V221122";
+    const conVersion = "V2211221";
+    let myShowGradient = "";
+    let myTestCase = "";
+    if (args.widgetParameter) {
+        let myArgs = args.widgetParameter.split(',');
+        myShowGradient = myArgs[0];
+        myTestCase = myArgs[1];
+    }
 
     /** possible values: 
      * undefined or "": real data
@@ -27,9 +35,9 @@ async function run() {
      * "nohist": no data in history file, curr reading fresh === false
      * "latehist": data in history newer than curr reading
      * */
-    const conIsTest = ""; //"empty";
+    const conIsTest = myTestCase ? myTestCase : ""; //"empty";
     const conShowLog = false;
-    const conShowGradient = false;
+    const conShowGradient = myShowGradient === "grad" ? true : false;
 
     const conMagentaValue = "#E20074"; //
     const conLightMagentaValue = "#FF77FF";
