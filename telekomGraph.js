@@ -1,8 +1,13 @@
+/// <reference path="TypeDefinitions/scriptable.d.ts" />
+/// <reference path="TypeDefinitions/telekomTypeDefs.d.ts" />
 // Variables used by Scriptable.
 // These must be at the very top of the file. Do not edit.
 // icon-color: brown; icon-glyph: magic;
-/// <reference path="TypeDefinitions/scriptable.d.ts" />
-/// <reference path="TypeDefinitions/telekomTypeDefs.d.ts" />
+
+// reference statements must be at the top, otherwise the widget does not run on IOS 16
+// if you enable conIsTest, widget does not run on IOS 16 (class definition test generator problem?)-> try test cases on IOS 15
+
+// on IOS 16 you have to close the script and reopen it before running, otherwise it hangs on second call
 run();
 
 /**wrapped all in function to remedy const access to other js files by eslint */
@@ -23,7 +28,7 @@ async function run() {
      * "latehist": data in history newer than curr reading
      * */
     const conIsTest = ""; //"empty";
-    const conShowLog = true;
+    const conShowLog = false;
     const conShowGradient = false;
 
     const conMagentaValue = "#E20074"; //
@@ -303,9 +308,12 @@ async function run() {
 
     try {
         let widget = await createWidget();
-        await widget.presentMedium()
-
-        Script.setWidget(widget)
+        if (!config.runsInWidget) {
+            await widget.presentMedium()
+        }
+        else {
+            Script.setWidget(widget)
+        }
         Script.complete()
     } catch (e) {
         console.log(e);
@@ -703,7 +711,19 @@ async function run() {
             return;
         }
         let myTitle = pTitle ? pTitle : "";
-        console.log(`${myTitle}: StoredData {usedPercentage} {remainingSeconds} {accessString}: ${pStoredData.data.usedPercentage} ${pStoredData.data.remainingSeconds} ${pStoredData.accessString}`);
+        consoleLog(`${myTitle}: StoredData {usedPercentage} {remainingSeconds} {accessString}: ${pStoredData.data.usedPercentage} ${pStoredData.data.remainingSeconds} ${pStoredData.accessString}`);
+    }
+
+    /**
+     * conditional console.log
+     * @param {any} pTitle
+     */
+    function consoleLog(pTitle) {
+        if (!conShowLog) {
+            return;
+        }
+        let myTitle = pTitle ? pTitle : "";
+        console.log(myTitle);
     }
 
     /**
@@ -720,13 +740,13 @@ async function run() {
         else {
             if (typeof pObject === "object") {
                 let myObjString = JSON.stringify(pObject, null, 2);
-                console.log(myObjString);
+                console.log("obj: " + myObjString);
             }
             else if (typeof pObject === "function") {
                 console.log("Object is a function");
             }
             else {
-                console.log(`${pObject}`);
+                console.log(`no obj:  ${pObject}`);
             }
         }
     }
@@ -757,6 +777,8 @@ async function run() {
             return { fresh: mTestGenerator.fresh, myStoredData };
         }
 
+        let dir = fm.documentsDirectory();
+        let path = fm.joinPath(dir, "scriptable-telekom.json");
         let r = new Request(conAPIUrl);
         // API only answers for mobile Safari
         r.headers = {
@@ -785,9 +807,16 @@ async function run() {
             return { fresh: true, myStoredData };
         }
         catch (err) {
-            //showObject(err, "catch (err)");
+            console.log(err.toString());
+            // Server error, if phone is on wifi, not LTE:
+            // Error: Die Daten konnten nicht gelesen werden, da sie nicht das korrekte Format haben.
+            let myIndex = err.toString().toUpperCase().indexOf("FORMAT");
+            if (myIndex < 0) {
+                // no request error
+                throw "catch err: " + err;
+            }
             // if reading from pass.telekom.de not possible-> read data from iCloud file
-            let myStoredData = readFromFile();
+            let myStoredData = readFromFile(path);
             showObject(myStoredData, "fm.readString");
             if (!myStoredData) {
                 return { wifiProblem: "Please disable WiFi for initial execution (1)" }
@@ -799,12 +828,10 @@ async function run() {
             return { fresh: false, myStoredData };
         }
         /**
+        * @param {string} path
          * @returns {StoredData}
          * */
-        function readFromFile() {
-            let dir = fm.documentsDirectory();
-            let path = fm.joinPath(dir, "scriptable-telekom.json");
-
+        function readFromFile(path) {
             let myStoredData = JSON.parse(fm.readString(path), null);
             return myStoredData;
         }
@@ -997,7 +1024,7 @@ async function run() {
             for (let iEle of myHistoryDatas) {
                 let myRestSeconds = (myEndDate.getTime() - iEle.date.getTime()) / 1000;
                 let myRestTime = 100 * myRestSeconds / conTotalSeconds;
-                console.log(`${iEle.dateString}: data: ${100 - iEle.entry.data.usedPercentage}% time: ${myRestTime.toFixed()}%`);
+                consoleLog(`${iEle.dateString}: data: ${100 - iEle.entry.data.usedPercentage}% time: ${myRestTime.toFixed()}%`);
             }
         }
         else {
