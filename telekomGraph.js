@@ -380,15 +380,18 @@ async function run() {
             }
         }
 
+        let myTextStack = widget.addStack();
+        myTextStack.layoutVertically();
+
         let myDrawContext = new DrawContext();
         myDrawContext.size = new Size(widgetWidth, widgetHeight);
         myDrawContext.opaque = false;
 
-        showHeader(widget, fresh, myStoredData);
+        showHeader(myTextStack, fresh, myStoredData);
 
-        showStoredData(myStoredData, myDrawContext);
+        showStoredDataInStack(myStoredData, myTextStack);
 
-        showHistoryDatas(myHistoryDatas, myDrawContext);
+        //showHistoryDatas(myHistoryDatas, myDrawContext);
 
         widget.setPadding(0, 0, 0, 0);
         widget.backgroundImage = (myDrawContext.getImage());
@@ -507,14 +510,71 @@ async function run() {
         drawTextR(drawContext, conVersion, myVersionInfoRect, myTextColor, Font.italicSystemFont(20), true);
     }
     /**
+ * show info about current status at bottom
+ * @param {StoredData} pStoredData StoredData
+ * @param {WidgetStack} pBottomStack
+ */
+    function showStoredDataInStack(pStoredData, pBottomStack) {
+        let myBottomStack = pBottomStack.addStack();
+        myBottomStack.layoutVertically();
+        myBottomStack.borderWidth = 2;
+
+        let { myRestData, myRestTime, myEndDate } = getRestInfo(pStoredData);
+
+        let myTextColor = conAccentColor1;
+
+        let Line1 = myBottomStack.addStack();
+        Line1.borderWidth = 2;
+
+        // if test show here
+        let myInitialVolume = conIsTest ? `Test ${conIsTest}` : pStoredData.data.initialVolumeStr;
+        // expired? show empty data
+        let myUsedString = myRestTime > 0 ? `Used ${pStoredData.data.usedVolumeStr} / ${myInitialVolume}` : `No data / ${myInitialVolume}`;
+
+        let lineFirst = Line1.addStack();
+        lineFirst.borderWidth = 2;
+        let Line1First = lineFirst.addText(myUsedString);
+        Line1First.font = Font.mediumSystemFont(10);
+        Line1First.textColor = myTextColor;
+
+        let myDateString = myRestTime <= 0 ? `Expired! ${myEndDate.toLocaleString("DE-de")}` : `Expires ${myEndDate.toLocaleString("DE-de")}`;
+
+        lineFirst = Line1.addStack();
+        lineFirst.borderWidth = 2;
+
+        Line1First = lineFirst.addText(myDateString);
+        Line1First.font = Font.mediumSystemFont(10);
+        Line1First.textColor = myTextColor;
+        Line1First.rightAlignText();
+
+        Line1 = myBottomStack.addStack();
+        Line1.borderWidth = 2;
+
+        let myRefreshString = `Refresh Server: ${niceDateString(new Date(pStoredData.data.usedAt))}/ App: ${niceDateString(new Date())}`;
+
+        lineFirst = Line1.addStack();
+        lineFirst.borderWidth = 2;
+        Line1First = lineFirst.addText(myRefreshString);
+        Line1First.font = Font.mediumSystemFont(8);
+        Line1First.textColor = myTextColor;
+
+        //Line1.addSpacer(8);
+        lineFirst = Line1.addStack();
+        lineFirst.borderWidth = 2;
+        Line1First = lineFirst.addText(conVersion);
+        Line1First.font = Font.italicSystemFont(6);
+        Line1First.textColor = myTextColor;
+        Line1First.rightAlignText();
+    }
+    /**
      * show title or link
-     * @param {any} widget
-     * @param {any} fresh
+     * @param {WidgetStack} pStack
+     * @param {boolean} fresh
      */
-    function showHeader(widget, fresh, pStoredData) {
-        let myTextArea = widget.addStack();
+    function showHeader(pStack, fresh, pStoredData) {
+        let myTextArea = pStack.addStack();
         myTextArea.topAlignContent();
-        myTextArea.size = new Size(widgetWidth, 150);
+        //myTextArea.size = new Size(widgetWidth, 150);
 
         let myCheck = checkPackageEmpty(pStoredData);
         if (myCheck) {
@@ -549,7 +609,7 @@ async function run() {
    */
     function showLink(widget, title, pURL, pColor) {
         let myLinkColor = pColor ? pColor : conLinkColor;
-        widget.addSpacer(8)
+        //widget.addSpacer(8)
         // Add button to open documentation
         let linkSymbol = SFSymbol.named("arrow.up.forward")
         let footerStack = widget.addStack()
