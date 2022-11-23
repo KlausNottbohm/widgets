@@ -8,7 +8,7 @@
     "strictNullChecks": true,
     //"strictPropertyInitialization": true,
     //"noImplicitAny": true,
-    "lib": [ "2017", "dom", "scripthost", "es2016.array.include" ]
+    "lib": [ "es2017", "dom", "es2016.array.include" ]
   },
   "include": [
     "./TypeScript/src/**/*"
