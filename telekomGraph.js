@@ -729,8 +729,13 @@ async function run() {
     /**
      * show members of pObject
      * @param {any} pObject
+     * @param {string} title
+     * @param {boolean} pIsDebug
      */
-    function showObject(pObject, title) {
+    function showObject(pObject, title, pIsDebug) {
+        if (pIsDebug && !conShowLog) {
+            return;
+        }
         let myTitle = title ? title : "No title";
         console.log(`showObject ${myTitle}`);
         console.log(`type- ${typeof (pObject)}`);
@@ -921,7 +926,7 @@ async function run() {
                     let myStoredDatas = JSON.parse(myHistoryDataString);
                     console.log("fileExists: ");
                     for (let iEle of myStoredDatas) {
-                        console.log(`${iEle.accessString}: ${iEle.data.usedPercentage}%`);
+                        consoleLog(`${iEle.accessString}: ${iEle.data.usedPercentage}%`);
                     }
                     return myStoredDatas;
                 }
@@ -951,7 +956,7 @@ async function run() {
                 //                 console.log(`pushOrReplace {myPreviousEndDate} {myCurrEndDate} ${myPreviousEndDate} ${myCurrEndDate}`);
                 if (myCurrEndDate.getTime() > myPreviousEndDate.getTime() + HOUR_IN_SECONDS * 1000) {
                     // new pass
-                    console.log("new pass");
+                    consoleLog("new pass");
                     // clear pNewStoredDatas and add current item
                     pNewStoredDatas.length = 0;
                     pNewStoredDatas.push(pStoredData);
@@ -980,21 +985,21 @@ async function run() {
         // history
         let myHistoryDatas = [];
 
-        console.log("Show data: " + pStoredDatas.length);
+        consoleLog("Show data: " + pStoredDatas.length);
         // set true, if test for red needed
         if (pStoredDatas.length >= 0) {
             let myFirstStoredData = pStoredDatas[0];
             let myEndDate = calcEndDate(myFirstStoredData);
-            console.log(`myFirstStoredData: ${getDateStringFromStoredData(myFirstStoredData)} - end time: ${myEndDate.toLocaleString()}`);
+            consoleLog(`myFirstStoredData: ${getDateStringFromStoredData(myFirstStoredData)} - end time: ${myEndDate.toLocaleString()}`);
             let myStartDate = addDays(myEndDate, -conDaysPerPackage);
-            console.log(`myStartDate: ${myStartDate.toLocaleString()}`);
+            consoleLog(`myStartDate: ${myStartDate.toLocaleString()}`);
 
             let myRemainingSeconds = conDaysPerPackage * DAY_IN_SECONDS;
             let myUsed = 0;
 
             let myStartServerData = createServerData(myUsed, myRemainingSeconds, myStartDate);
             let myOldestStoredData = createStoredData(myStartServerData);
-            showObject(myOldestStoredData, "myOldestStoredData");
+            showObject(myOldestStoredData, "myOldestStoredData", true);
 
             let myHistoryData = createHistoryData(myOldestStoredData);
             myHistoryDatas = [myHistoryData];
