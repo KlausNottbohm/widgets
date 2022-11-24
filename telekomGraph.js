@@ -1,11 +1,8 @@
-/// <reference path="TypeDefinitions/scriptable.d.ts" />
-/// <reference path="TypeDefinitions/telekomTypeDefs.d.ts" />
 // Variables used by Scriptable.
 // These must be at the very top of the file. Do not edit.
 // icon-color: brown; icon-glyph: magic;
-
-// reference statements must be at the top, otherwise the widget does not run on IOS 16
-// if you enable conIsTest, widget does not run on IOS 16 (class definition test generator problem?)-> try test cases on IOS 15
+/// <reference path="TypeDefinitions/scriptable.d.ts" />
+/// <reference path="TypeDefinitions/telekomTypeDefs.d.ts" />
 
 // on IOS 16 you have to close the script and reopen it before running, otherwise it hangs on second call
 //    args.widgetParameter:   myTestCase = myArgs[1]; myShowGradient = myArgs[0]; e.g. args could be "grad,empty"
@@ -17,7 +14,7 @@ async function run() {
     // #region constant definitions
     // do not make longer (space restrictions)
     const conVersion = "V221123";
-    let myShowGradient = "";
+    let myShowGradient = "grad";
     let myTestCase = "";
     if (args.widgetParameter) {
         let myArgs = args.widgetParameter.split(',');
@@ -101,7 +98,8 @@ async function run() {
     const widgetHeight = 338;
     const widgetWidth = 720;
     const vertLineWeight = 18;
-    const graphLow = 210;
+    /** lower bound of graphic */
+    const graphLow = 250;
     const graphHeight = 110;
     const spaceBetweenDays = 22;
     // #endregion
@@ -391,6 +389,7 @@ async function run() {
         showHistoryDatas(myHistoryDatas, myDrawContext);
 
         widget.setPadding(0, 0, 0, 0);
+        //widget.addImage(myDrawContext.getImage());
         widget.backgroundImage = (myDrawContext.getImage());
 
         return widget;
@@ -470,6 +469,7 @@ async function run() {
         let { myRestData, myRestTime, myEndDate } = getRestInfo(pStoredData);
 
         let myTextColor = conAccentColor1;
+        let myTextColorUpper = conAccentColor1; //new Color(conAntiqueWhiteValue, 1);
         //if (myRestData < myRestTime) {
         //    myTextColor = Color.red();
         //}
@@ -478,7 +478,7 @@ async function run() {
 
         const conLineHeight = 26;
         // conFirstLineBottom greater conLineHeight
-        const conFirstLineBottom = 40;
+        const conFirstLineBottom = 220;
         const conSecondLineBottom = 0;
         const conWidthFirstWordRow1 = widgetWidth / 2 - 70;
         const conStart2ndWordRow1 = conWidthFirstWordRow1 + 10;
@@ -488,11 +488,11 @@ async function run() {
         let myInitialVolume = conIsTest ? `Test ${conIsTest}` : pStoredData.data.initialVolumeStr;
         // expired? show empty data
         let myUsedString = myRestTime > 0 ? `Used ${pStoredData.data.usedVolumeStr} / ${myInitialVolume}` : `No data / ${myInitialVolume}`;
-        drawTextR(drawContext, myUsedString, myRestDataRect, myTextColor, Font.mediumSystemFont(26));
+        drawTextR(drawContext, myUsedString, myRestDataRect, myTextColorUpper, Font.mediumSystemFont(26));
 
         let myEndDateRect = new Rect(conBottomTextPadding + conStart2ndWordRow1, conBottomText - conFirstLineBottom, widgetWidth - 2 * conBottomTextPadding - conStart2ndWordRow1, conLineHeight);
         let myDateString = myRestTime <= 0 ? `Expired! ${myEndDate.toLocaleString("DE-de")}` : `Expires ${myEndDate.toLocaleString("DE-de")}`;
-        drawTextR(drawContext, myDateString, myEndDateRect, myTextColor, Font.mediumSystemFont(26), true);
+        drawTextR(drawContext, myDateString, myEndDateRect, myTextColorUpper, Font.mediumSystemFont(26), true);
 
         let myRefreshString = `Refresh Server: ${niceDateString(new Date(pStoredData.data.usedAt))}/ App: ${niceDateString(new Date())}`;
 
