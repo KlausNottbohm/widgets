@@ -14,7 +14,10 @@ async function run() {
     // #region constant definitions
     // do not make longer (space restrictions)
     const conVersion = "V221123";
-    let myShowGradient = "grad";
+    /**default UI: 
+     * "": original magenta, grad: gradient, info at bottom, top: gradient, info at top  */
+    let myShowGradient = "";
+    /**default test case */
     let myTestCase = "";
     if (args.widgetParameter) {
         let myArgs = args.widgetParameter.split(',');
@@ -34,7 +37,9 @@ async function run() {
      * */
     const conIsTest = myTestCase ? myTestCase : ""; //"empty";
     const conShowLog = false;
-    const conShowGradient = myShowGradient === "grad" ? true : false;
+    /** nograd: original magenta, grad: gradient, info at bottom, top: gradient, info at top */
+    const conShowGradient = myShowGradient ? myShowGradient : "nograd";
+    console.log("conShowGradient: " + conShowGradient);
 
     const conMagentaValue = "#E20074"; //
     const conLightMagentaValue = "#FF77FF";
@@ -69,7 +74,7 @@ async function run() {
 
     // choose a color fitting to conWidgetBackgroundColor (alternatives for conAntiqueWhite after comment signs//)
     /**color for normal font at the bottom*/
-    const conAccentColor1 = conShowGradient ? Color.black() : Color.white(); //conAntiqueWhite Color.black()
+    const conAccentColor1 = conShowGradient !== "nograd" ? Color.black() : Color.white(); //conAntiqueWhite Color.black()
     /** textcolor at top */
     const conAccentColor1Top = Color.white();
     /**weekend color */
@@ -80,7 +85,7 @@ async function run() {
     // middle blue : #6190E6
     const conMiddleBlue = new Color("#6190E6");
     /**color for link */
-    const conLinkColor = conShowGradient ? conVeryLightBlue : conLightBlue; // conAntiqueWhite Color.blue()
+    const conLinkColor = conShowGradient !== "nograd" ? conVeryLightBlue : conLightBlue; // conAntiqueWhite Color.blue()
     // light red : #FF7F7F
     /**color for low data value */
     const conAlertColor = new Color("#FF7F7F"); // conAntiqueWhite Color.red()
@@ -353,7 +358,7 @@ async function run() {
 
         const widget = new ListWidget();
         widget.url = conTelekomURL;
-        if (conShowGradient) {
+        if (conShowGradient !== "nograd") {
             widget.backgroundGradient = conGradient;
         }
         else {
@@ -362,7 +367,7 @@ async function run() {
         let myPackageEmpty = checkPackageEmpty(myStoredData);
         if (myPackageEmpty) {
             // alert!
-            if (conShowGradient) {
+            if (conShowGradient !== "nograd") {
                 widget.backgroundGradient = conGradientAlert;
             }
             else {
@@ -370,7 +375,7 @@ async function run() {
             }
         }
         else {
-            if (conShowGradient) {
+            if (conShowGradient !== "nograd") {
                 widget.backgroundGradient = conGradient;
             }
             else {
@@ -382,7 +387,10 @@ async function run() {
         myDrawContext.size = new Size(widgetWidth, widgetHeight);
         myDrawContext.opaque = false;
 
-        showHeader(widget, fresh, myStoredData);
+        let myMainStack = widget.addStack();
+        myMainStack.layoutVertically();
+
+        showHeader(myMainStack, fresh, myStoredData);
 
         showStoredData(myStoredData, myDrawContext);
 
@@ -462,7 +470,7 @@ async function run() {
 
     /**
      * show info about current status at bottom
-     * @param {any} pStoredData StoredData
+     * @param {StoredData} pStoredData StoredData
      * @param {DrawContext} drawContext
      */
     function showStoredData(pStoredData, drawContext) {
@@ -482,17 +490,19 @@ async function run() {
         const conSecondLineBottom = 0;
         const conWidthFirstWordRow1 = widgetWidth / 2 - 70;
         const conStart2ndWordRow1 = conWidthFirstWordRow1 + 10;
+        if (conShowGradient !== "top") {
+            let myRestDataRect = new Rect(conBottomTextPadding, conBottomText - conFirstLineBottom, conWidthFirstWordRow1, conLineHeight);
+            // if test show here
+            let myInitialVolume = conIsTest ? `Test ${conIsTest}` : pStoredData.data.initialVolumeStr;
+            // expired? show empty data
+            let myUsedString = myRestTime > 0 ? `Used ${pStoredData.data.usedVolumeStr} / ${myInitialVolume}` : `No data / ${myInitialVolume}`;
+            drawTextR(drawContext, myUsedString, myRestDataRect, myTextColorUpper, Font.mediumSystemFont(26));
 
-        let myRestDataRect = new Rect(conBottomTextPadding, conBottomText - conFirstLineBottom, conWidthFirstWordRow1, conLineHeight);
-        // if test show here
-        let myInitialVolume = conIsTest ? `Test ${conIsTest}` : pStoredData.data.initialVolumeStr;
-        // expired? show empty data
-        let myUsedString = myRestTime > 0 ? `Used ${pStoredData.data.usedVolumeStr} / ${myInitialVolume}` : `No data / ${myInitialVolume}`;
-        drawTextR(drawContext, myUsedString, myRestDataRect, myTextColorUpper, Font.mediumSystemFont(26));
-
-        let myEndDateRect = new Rect(conBottomTextPadding + conStart2ndWordRow1, conBottomText - conFirstLineBottom, widgetWidth - 2 * conBottomTextPadding - conStart2ndWordRow1, conLineHeight);
-        let myDateString = myRestTime <= 0 ? `Expired! ${myEndDate.toLocaleString("DE-de")}` : `Expires ${myEndDate.toLocaleString("DE-de")}`;
-        drawTextR(drawContext, myDateString, myEndDateRect, myTextColorUpper, Font.mediumSystemFont(26), true);
+            let myEndDateRect = new Rect(conBottomTextPadding + conStart2ndWordRow1, conBottomText - conFirstLineBottom, widgetWidth - 2 * conBottomTextPadding - conStart2ndWordRow1, conLineHeight);
+            let myEndDateStr = dateStringNoSeconds(myEndDate);
+            let myDateString = myRestTime <= 0 ? `Expired! ${myEndDateStr}` : `Expires ${myEndDateStr}`;
+            drawTextR(drawContext, myDateString, myEndDateRect, myTextColorUpper, Font.mediumSystemFont(26), true);
+        }
 
         let myRefreshString = `Refresh Server: ${niceDateString(new Date(pStoredData.data.usedAt))}/ App: ${niceDateString(new Date())}`;
 
@@ -508,13 +518,15 @@ async function run() {
     }
     /**
      * show title or link
-     * @param {any} widget
-     * @param {any} fresh
+     * @param {WidgetStack} pStack stack with layoutvertical
+     * @param {boolean} fresh
+     * @param {StoredData} pStoredData
      */
-    function showHeader(widget, fresh, pStoredData) {
-        let myTextArea = widget.addStack();
+    function showHeader(pStack, fresh, pStoredData) {
+        let myHeight = conShowGradient === "top" ? -10 : 150;
+        let myTextArea = pStack.addStack();
         myTextArea.topAlignContent();
-        myTextArea.size = new Size(widgetWidth, 150);
+        myTextArea.size = new Size(widgetWidth, myHeight);
 
         let myCheck = checkPackageEmpty(pStoredData);
         if (myCheck) {
@@ -529,6 +541,22 @@ async function run() {
                 showTitle(myTextArea, "Telekom Data");
             }
         }
+        if (conShowGradient === "top") {
+            let { myRestData, myRestTime, myEndDate } = getRestInfo(pStoredData);
+            // if test show here
+            let myInitialVolume = conIsTest ? `Test ${conIsTest}` : pStoredData.data.initialVolumeStr;
+            // expired? show empty data
+            let myUsedString = myRestTime > 0 ? `Used ${pStoredData.data.usedVolumeStr} / ${myInitialVolume}` : `No data / ${myInitialVolume}`;
+            let myEndDateStrNice = dateStringNoSeconds(myEndDate);
+            let myDateString = myRestTime <= 0 ? `Expired! ${myEndDateStrNice}` : `Expires ${myEndDateStrNice}`;
+
+            let myUsedArea = pStack.addStack();
+            myUsedArea.size = new Size(widgetWidth, 120);
+            showText(myUsedArea, myUsedString);
+            myUsedArea.addSpacer(24)
+
+            showText(myUsedArea, myDateString);
+        }
     }
 
     // #region UI helpers
@@ -542,17 +570,17 @@ async function run() {
     }
     /**
    * add link in blue
-   * @param {ListWidget} widget
+   * @param {WidgetStack} pStack
    * @param {string} title
    * @param {string} pURL
    * @param {Color} pColor optional Color, default = conLinkColor
    */
-    function showLink(widget, title, pURL, pColor) {
+    function showLink(pStack, title, pURL, pColor) {
         let myLinkColor = pColor ? pColor : conLinkColor;
-        widget.addSpacer(8)
+        pStack.addSpacer(8)
         // Add button to open documentation
         let linkSymbol = SFSymbol.named("arrow.up.forward")
-        let footerStack = widget.addStack()
+        let footerStack = pStack.addStack()
         let linkStack = footerStack.addStack()
         //linkStack.
         // if the widget is small, link does not work!
@@ -571,16 +599,16 @@ async function run() {
 
     /**
      * show text
-     * @param {ListWidget} widget
-     * @param {string} title
+     * @param {WidgetStack} pStack stack for line: layouthorizontal
+     * @param {string} pText
      * @param {Color} pColor optional Color, default = conAccentColor1Top
      */
-    function showText(widget, title, pColor) {
-        widget.addSpacer(8)
-        let footerStack = widget.addStack()
+    function showText(pStack, pText, pColor) {
+        //pStack.addSpacer(8)
+        let footerStack = pStack.addStack()
         let linkStack = footerStack.addStack()
-        let linkElement = linkStack.addText(title)
-        linkElement.font = Font.title2(); //Font.mediumSystemFont(13)
+        let linkElement = linkStack.addText(pText)
+        linkElement.font = Font.mediumSystemFont(13)
         let myLinkColor = pColor ? pColor : conAccentColor1Top;
         linkElement.textColor = myLinkColor;
         linkStack.addSpacer(3)
@@ -590,13 +618,13 @@ async function run() {
 
     /**
      * add title in black
-     * @param {ListWidget} widget
+     * @param {WidgetStack} pStack
      * @param {string} title
      * @param {Color} pColor optional Color, default = conAccentColor1Top
      */
-    function showTitle(widget, title, pColor) {
-        widget.addSpacer(8)
-        let footerStack = widget.addStack()
+    function showTitle(pStack, title, pColor) {
+        pStack.addSpacer(8)
+        let footerStack = pStack.addStack()
         let linkStack = footerStack.addStack()
         let linkElement = linkStack.addText(title)
         linkElement.font = Font.title2(); //Font.mediumSystemFont(13)
@@ -1190,4 +1218,14 @@ async function run() {
     // #endregion
 
     // #endregion
+}
+
+/**
+ * 
+ * @param {Date} myEndDate
+ */
+function dateStringNoSeconds(myEndDate) {
+    let myEndDateStr = myEndDate.toLocaleString("DE-de");
+    let myEndDateStrNice = myEndDateStr.slice(0, myEndDateStr.length - 3);
+    return myEndDateStrNice;
 }
