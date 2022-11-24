@@ -46,17 +46,17 @@ async function run() {
     let startColor1 = new Color(conMagentaValue, 1.0)
     let startColor = new Color(conMagentaValue, myAlpha)
     let endColor = new Color(conAntiqueWhiteValue, myAlpha)
-    let gradient = new LinearGradient()
-    gradient.colors = [startColor1, startColor, endColor]
-    gradient.locations = [0.0, 0.3, 1]
+    let conGradient = new LinearGradient()
+    conGradient.colors = [startColor1, startColor, endColor]
+    conGradient.locations = [0.0, 0.3, 1]
 
     let myAlphaA = 0.3;
     let startColorA1 = new Color(conRedValue, 1.0);
     let startColorA = new Color(conRedValue, myAlphaA);
     let endColorA = new Color(conAntiqueWhiteValue, myAlphaA);
-    let gradientAlert = new LinearGradient()
-    gradientAlert.colors = [startColorA1, startColorA, endColorA]
-    gradientAlert.locations = [0.0, 0.3, 1]
+    let conGradientAlert = new LinearGradient()
+    conGradientAlert.colors = [startColorA1, startColorA, endColorA]
+    conGradientAlert.locations = [0.0, 0.3, 1]
 
     const conAPIUrl = "https://pass.telekom.de/api/service/generic/v1/status";
     const conTelekomURL = "https://pass.telekom.de";
@@ -354,16 +354,16 @@ async function run() {
         const widget = new ListWidget();
         widget.url = conTelekomURL;
         if (conShowGradient) {
-            widget.backgroundGradient = gradient;
+            widget.backgroundGradient = conGradient;
         }
         else {
             widget.backgroundColor = conWidgetBackgroundColor;
         }
-        let myCheck = checkPackageEmpty(myStoredData);
-        if (myCheck) {
+        let myPackageEmpty = checkPackageEmpty(myStoredData);
+        if (myPackageEmpty) {
             // alert!
             if (conShowGradient) {
-                widget.backgroundGradient = gradientAlert;
+                widget.backgroundGradient = conGradientAlert;
             }
             else {
                 widget.backgroundColor = Color.red();
@@ -371,7 +371,7 @@ async function run() {
         }
         else {
             if (conShowGradient) {
-                widget.backgroundGradient = gradient;
+                widget.backgroundGradient = conGradient;
             }
             else {
                 widget.backgroundColor = conWidgetBackgroundColor;
@@ -565,6 +565,25 @@ async function run() {
         let linkSymbolElement = linkStack.addImage(linkSymbol.image)
         linkSymbolElement.imageSize = new Size(11, 11)
         linkSymbolElement.tintColor = myLinkColor;
+        footerStack.topAlignContent();
+        return footerStack;
+    }
+
+    /**
+     * show text
+     * @param {ListWidget} widget
+     * @param {string} title
+     * @param {Color} pColor optional Color, default = conAccentColor1Top
+     */
+    function showText(widget, title, pColor) {
+        widget.addSpacer(8)
+        let footerStack = widget.addStack()
+        let linkStack = footerStack.addStack()
+        let linkElement = linkStack.addText(title)
+        linkElement.font = Font.title2(); //Font.mediumSystemFont(13)
+        let myLinkColor = pColor ? pColor : conAccentColor1Top;
+        linkElement.textColor = myLinkColor;
+        linkStack.addSpacer(3)
         footerStack.topAlignContent();
         return footerStack;
     }
