@@ -13,7 +13,7 @@ async function run() {
 
     // #region constant definitions
     // do not make longer (space restrictions)
-    const conVersion = "V221123";
+    const conVersion = "V221125";
     /**default UI: 
      * nograd: original magenta, nogradtop: original magenta, info at top, grad: gradient, info at bottom, top: gradient, info at top  */
     let myShowUI = "grad";
