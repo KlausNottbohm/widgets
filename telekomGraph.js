@@ -54,7 +54,8 @@ async function run() {
     let endColor = new Color(conAntiqueWhiteValue, myAlpha)
     let conGradient = new LinearGradient()
     conGradient.colors = [startColor1, startColor, endColor]
-    conGradient.locations = [0.0, 0.3, 1]
+    let myMiddleLoc = conShowAtTop ? 0.4 : 0.3;
+    conGradient.locations = [0.0, myMiddleLoc, 1]
 
     let myAlphaA = 0.3;
     let startColorA1 = new Color(conRedValue, 1.0);
