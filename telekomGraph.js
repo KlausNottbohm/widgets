@@ -15,13 +15,13 @@ async function run() {
     // do not make longer (space restrictions)
     const conVersion = "V221123";
     /**default UI: 
-     * "": original magenta, grad: gradient, info at bottom, top: gradient, info at top  */
-    let myShowGradient = "grad";
+     * nograd: original magenta, grad: gradient, info at bottom, top: gradient, info at top  */
+    let myShowUI = "grad";
     /**default test case */
     let myTestCase = "";
     if (args.widgetParameter) {
         let myArgs = args.widgetParameter.split(',');
-        myShowGradient = myArgs[0];
+        myShowUI = myArgs[0];
         myTestCase = myArgs[1];
     }
 
@@ -38,8 +38,9 @@ async function run() {
     const conIsTest = myTestCase ? myTestCase : ""; //"empty";
     const conShowLog = false;
     /** nograd: original magenta, grad: gradient, info at bottom, top: gradient, info at top */
-    const conShowGradient = myShowGradient ? myShowGradient : "nograd";
-    console.log("conShowGradient: " + conShowGradient);
+    const conShowGradient = myShowUI !== "nograd";
+    const conShowAtTop = myShowUI === "top";
+    console.log("myShowUI: " + myShowUI);
 
     const conMagentaValue = "#E20074"; //
     const conLightMagentaValue = "#FF77FF";
@@ -74,7 +75,7 @@ async function run() {
 
     // choose a color fitting to conWidgetBackgroundColor (alternatives for conAntiqueWhite after comment signs//)
     /**color for normal font at the bottom*/
-    const conAccentColor1 = conShowGradient !== "nograd" ? Color.black() : Color.white(); //conAntiqueWhite Color.black()
+    const conAccentColor1 = conShowGradient ? Color.black() : Color.white(); //conAntiqueWhite Color.black()
     /** textcolor at top */
     const conAccentColor1Top = Color.white();
     /**weekend color */
@@ -85,7 +86,7 @@ async function run() {
     // middle blue : #6190E6
     const conMiddleBlue = new Color("#6190E6");
     /**color for link */
-    const conLinkColor = conShowGradient !== "nograd" ? conVeryLightBlue : conLightBlue; // conAntiqueWhite Color.blue()
+    const conLinkColor = conShowGradient ? conVeryLightBlue : conLightBlue; // conAntiqueWhite Color.blue()
     // light red : #FF7F7F
     /**color for low data value */
     const conAlertColor = new Color("#FF7F7F"); // conAntiqueWhite Color.red()
@@ -104,7 +105,7 @@ async function run() {
     const widgetWidth = 720;
     const vertLineWeight = 18;
     /** lower bound of graphic */
-    const graphLow = conShowGradient === "top" ? 250 : 210;
+    const graphLow = conShowAtTop ? 250 : 210;
     const graphHeight = 110;
     const spaceBetweenDays = 22;
     // #endregion
@@ -358,7 +359,7 @@ async function run() {
 
         const widget = new ListWidget();
         widget.url = conTelekomURL;
-        if (conShowGradient !== "nograd") {
+        if (conShowGradient) {
             widget.backgroundGradient = conGradient;
         }
         else {
@@ -367,7 +368,7 @@ async function run() {
         let myPackageEmpty = checkPackageEmpty(myStoredData);
         if (myPackageEmpty) {
             // alert!
-            if (conShowGradient !== "nograd") {
+            if (conShowGradient) {
                 widget.backgroundGradient = conGradientAlert;
             }
             else {
@@ -375,7 +376,7 @@ async function run() {
             }
         }
         else {
-            if (conShowGradient !== "nograd") {
+            if (conShowGradient) {
                 widget.backgroundGradient = conGradient;
             }
             else {
@@ -392,7 +393,7 @@ async function run() {
 
         showHeader(myMainStack, fresh, myStoredData);
 
-        if (conShowGradient !== "top") {
+        if (!conShowAtTop) {
             showStoredDataBottom(myStoredData, myDrawContext);
         }
         else {
@@ -573,7 +574,7 @@ async function run() {
      * @param {StoredData} pStoredData
      */
     function showHeader(pStack, fresh, pStoredData) {
-        let myHeight = conShowGradient === "top" ? -10 : 150;
+        let myHeight = conShowAtTop ? -10 : 150;
         let myTextArea = pStack.addStack();
         myTextArea.topAlignContent();
         myTextArea.size = new Size(widgetWidth, myHeight);
@@ -591,7 +592,7 @@ async function run() {
                 showTitle(myTextArea, "Telekom Data");
             }
         }
-        if (conShowGradient === "top") {
+        if (conShowAtTop) {
             let { myRestData, myRestTime, myEndDate } = getRestInfo(pStoredData);
             // if test show here
             let myInitialVolume = conIsTest ? `Test ${conIsTest}` : pStoredData.data.initialVolumeStr;
