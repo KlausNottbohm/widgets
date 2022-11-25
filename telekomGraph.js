@@ -15,7 +15,7 @@ async function run() {
     // do not make longer (space restrictions)
     const conVersion = "V221123";
     /**default UI: 
-     * nograd: original magenta, grad: gradient, info at bottom, top: gradient, info at top  */
+     * nograd: original magenta, nogradtop: original magenta, info at top, grad: gradient, info at bottom, top: gradient, info at top  */
     let myShowUI = "grad";
     /**default test case */
     let myTestCase = "";
@@ -38,8 +38,8 @@ async function run() {
     const conIsTest = myTestCase ? myTestCase : ""; //"empty";
     const conShowLog = false;
     /** nograd: original magenta, grad: gradient, info at bottom, top: gradient, info at top */
-    const conShowGradient = myShowUI !== "nograd";
-    const conShowAtTop = myShowUI === "top";
+    const conShowGradient = myShowUI.slice(0,6) !== "nograd";
+    const conShowAtTop = myShowUI.indexOf("top") >= 0;
     console.log("myShowUI: " + myShowUI);
 
     const conMagentaValue = "#E20074"; //
@@ -397,8 +397,10 @@ async function run() {
             showStoredDataBottom(myStoredData, myDrawContext);
         }
         else {
-            showStoredDataTop(myStoredData, myDrawContext);
+            showStoredDataAtTop(myStoredData, myMainStack);
         }
+
+        showVersionInfo(myStoredData, myDrawContext);
 
         showHistoryDatas(myHistoryDatas, myDrawContext);
 
@@ -476,9 +478,9 @@ async function run() {
     /**
      * show info about current status at bottom
      * @param {StoredData} pStoredData StoredData
-     * @param {DrawContext} drawContext
+     * @param {DrawContext} pDrawContext
      */
-    function showStoredDataBottom(pStoredData, drawContext) {
+    function showStoredDataBottom(pStoredData, pDrawContext) {
         let { myRestData, myRestTime, myEndDate } = getRestInfo(pStoredData);
 
         let myTextColor = conAccentColor1;
@@ -500,72 +502,47 @@ async function run() {
         let myInitialVolume = conIsTest ? `Test ${conIsTest}` : pStoredData.data.initialVolumeStr;
         // expired? show empty data
         let myUsedString = myRestTime > 0 ? `Used ${pStoredData.data.usedVolumeStr} / ${myInitialVolume}` : `No data / ${myInitialVolume}`;
-        drawTextR(drawContext, myUsedString, myRestDataRect, myTextColor, Font.mediumSystemFont(26));
+        drawTextR(pDrawContext, myUsedString, myRestDataRect, myTextColor, Font.mediumSystemFont(26));
 
         let myEndDateRect = new Rect(conBottomTextPadding + conStart2ndWordRow1, conBottomText - conFirstLineBottom, widgetWidth - 2 * conBottomTextPadding - conStart2ndWordRow1, conLineHeight);
         let myDateString = myRestTime <= 0 ? `Expired! ${dateStringNoSeconds(myEndDate)}` : `Expires ${dateStringNoSeconds(myEndDate)}`;
-        drawTextR(drawContext, myDateString, myEndDateRect, myTextColor, Font.mediumSystemFont(26), true);
+        drawTextR(pDrawContext, myDateString, myEndDateRect, myTextColor, Font.mediumSystemFont(26), true);
 
-        let myRefreshString = `Refresh Server: ${niceDateString(new Date(pStoredData.data.usedAt))}/ App: ${niceDateString(new Date())}`;
+        //let myRefreshString = `Refresh Server: ${niceDateString(new Date(pStoredData.data.usedAt))}/ App: ${niceDateString(new Date())}`;
 
-        const conWidthFirstWordRow2 = widgetWidth / 2 + 200;
-        const conStart2ndWordRow2 = conWidthFirstWordRow2 + 10;
-        let myWidth = widgetWidth - 2 * conBottomTextPadding - conStart2ndWordRow2;
+        //const conWidthFirstWordRow2 = widgetWidth / 2 + 200;
+        //const conStart2ndWordRow2 = conWidthFirstWordRow2 + 10;
+        //let myWidth = widgetWidth - 2 * conBottomTextPadding - conStart2ndWordRow2;
 
-        let myAppInfoRect = new Rect(conBottomTextPadding, conBottomText - conSecondLineBottom, conWidthFirstWordRow2, conLineHeight);
-        drawTextR(drawContext, myRefreshString, myAppInfoRect, myTextColor, Font.mediumSystemFont(22));
+        //let myAppInfoRect = new Rect(conBottomTextPadding, conBottomText - conSecondLineBottom, conWidthFirstWordRow2, conLineHeight);
+        //drawTextR(drawContext, myRefreshString, myAppInfoRect, myTextColor, Font.mediumSystemFont(22));
 
-        let myVersionInfoRect = new Rect(conBottomTextPadding + conStart2ndWordRow2, conBottomText - conSecondLineBottom, myWidth, conLineHeight);
-        drawTextR(drawContext, conVersion, myVersionInfoRect, myTextColor, Font.italicSystemFont(20), true);
+        //let myVersionInfoRect = new Rect(conBottomTextPadding + conStart2ndWordRow2, conBottomText - conSecondLineBottom, myWidth, conLineHeight);
+        //drawTextR(drawContext, conVersion, myVersionInfoRect, myTextColor, Font.italicSystemFont(20), true);
     }
 
     /**
-     * show info about current status at bottom
+     * show info about current status (last read, version) at bottom of drawContext
      * @param {StoredData} pStoredData StoredData
-     * @param {DrawContext} drawContext
+     * @param {DrawContext} pDrawContext
      */
-    function showStoredDataTop(pStoredData, drawContext) {
-        let { myRestData, myRestTime, myEndDate } = getRestInfo(pStoredData);
-
+    function showVersionInfo(pStoredData, pDrawContext) {
         let myTextColor = conAccentColor1;
-        let myTextColorUpper = conAccentColor1; //new Color(conAntiqueWhiteValue, 1);
-        //if (myRestData < myRestTime) {
-        //    myTextColor = Color.red();
-        //}
         const conBottomText = 290;
         const conBottomTextPadding = 32;
 
         const conLineHeight = 26;
-        // conFirstLineBottom greater conLineHeight
-        const conFirstLineBottom = 220;
         const conSecondLineBottom = 0;
-        const conWidthFirstWordRow1 = widgetWidth / 2 - 70;
-        const conStart2ndWordRow1 = conWidthFirstWordRow1 + 10;
-        //if (conShowGradient !== "top") {
-        //    let myRestDataRect = new Rect(conBottomTextPadding, conBottomText - conFirstLineBottom, conWidthFirstWordRow1, conLineHeight);
-        //    // if test show here
-        //    let myInitialVolume = conIsTest ? `Test ${conIsTest}` : pStoredData.data.initialVolumeStr;
-        //    // expired? show empty data
-        //    let myUsedString = myRestTime > 0 ? `Used ${pStoredData.data.usedVolumeStr} / ${myInitialVolume}` : `No data / ${myInitialVolume}`;
-        //    drawTextR(drawContext, myUsedString, myRestDataRect, myTextColorUpper, Font.mediumSystemFont(26));
-
-        //    let myEndDateRect = new Rect(conBottomTextPadding + conStart2ndWordRow1, conBottomText - conFirstLineBottom, widgetWidth - 2 * conBottomTextPadding - conStart2ndWordRow1, conLineHeight);
-        //    let myEndDateStr = dateStringNoSeconds(myEndDate);
-        //    let myDateString = myRestTime <= 0 ? `Expired! ${myEndDateStr}` : `Expires ${myEndDateStr}`;
-        //    drawTextR(drawContext, myDateString, myEndDateRect, myTextColorUpper, Font.mediumSystemFont(26), true);
-        //}
-
-        let myRefreshString = `Refresh Server: ${niceDateString(new Date(pStoredData.data.usedAt))}/ App: ${niceDateString(new Date())}`;
-
         const conWidthFirstWordRow2 = widgetWidth / 2 + 200;
         const conStart2ndWordRow2 = conWidthFirstWordRow2 + 10;
         let myWidth = widgetWidth - 2 * conBottomTextPadding - conStart2ndWordRow2;
 
         let myAppInfoRect = new Rect(conBottomTextPadding, conBottomText - conSecondLineBottom, conWidthFirstWordRow2, conLineHeight);
-        drawTextR(drawContext, myRefreshString, myAppInfoRect, myTextColor, Font.mediumSystemFont(22));
+        let myRefreshString = `Refresh Server: ${niceDateString(new Date(pStoredData.data.usedAt))}/ App: ${niceDateString(new Date())}`;
+        drawTextR(pDrawContext, myRefreshString, myAppInfoRect, myTextColor, Font.mediumSystemFont(22));
 
         let myVersionInfoRect = new Rect(conBottomTextPadding + conStart2ndWordRow2, conBottomText - conSecondLineBottom, myWidth, conLineHeight);
-        drawTextR(drawContext, conVersion, myVersionInfoRect, myTextColor, Font.italicSystemFont(20), true);
+        drawTextR(pDrawContext, conVersion, myVersionInfoRect, myTextColor, Font.italicSystemFont(20), true);
     }
     /**
      * show title or link
@@ -592,22 +569,28 @@ async function run() {
                 showTitle(myTextArea, "Telekom Data");
             }
         }
-        if (conShowAtTop) {
-            let { myRestData, myRestTime, myEndDate } = getRestInfo(pStoredData);
-            // if test show here
-            let myInitialVolume = conIsTest ? `Test ${conIsTest}` : pStoredData.data.initialVolumeStr;
-            // expired? show empty data
-            let myUsedString = myRestTime > 0 ? `Used ${pStoredData.data.usedVolumeStr} / ${myInitialVolume}` : `No data / ${myInitialVolume}`;
-            let myEndDateStrNice = dateStringNoSeconds(myEndDate);
-            let myDateString = myRestTime <= 0 ? `Expired! ${myEndDateStrNice}` : `Expires ${myEndDateStrNice}`;
+    }
 
-            let myUsedArea = pStack.addStack();
-            myUsedArea.size = new Size(widgetWidth, 120);
-            showText(myUsedArea, myUsedString);
-            myUsedArea.addSpacer(24)
+    /**
+     * 
+     * @param {StoredData} pStoredData
+     * @param {WidgetStack} pStack
+     */
+    function showStoredDataAtTop(pStoredData, pStack) {
+        let { myRestData, myRestTime, myEndDate } = getRestInfo(pStoredData);
+        // if test show here
+        let myInitialVolume = conIsTest ? `Test ${conIsTest}` : pStoredData.data.initialVolumeStr;
+        // expired? show empty data
+        let myUsedString = myRestTime > 0 ? `Used ${pStoredData.data.usedVolumeStr} / ${myInitialVolume}` : `No data / ${myInitialVolume}`;
+        let myEndDateStrNice = dateStringNoSeconds(myEndDate);
+        let myDateString = myRestTime <= 0 ? `Expired! ${myEndDateStrNice}` : `Expires ${myEndDateStrNice}`;
 
-            showText(myUsedArea, myDateString);
-        }
+        let myStoredDataArea = pStack.addStack();
+        myStoredDataArea.size = new Size(widgetWidth, 120);
+        showText(myStoredDataArea, myUsedString);
+        myStoredDataArea.addSpacer(24);
+
+        showText(myStoredDataArea, myDateString);
     }
 
     // #region UI helpers
