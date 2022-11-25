@@ -16,7 +16,7 @@ async function run() {
     const conVersion = "V221123";
     /**default UI: 
      * "": original magenta, grad: gradient, info at bottom, top: gradient, info at top  */
-    let myShowGradient = "";
+    let myShowGradient = "grad";
     /**default test case */
     let myTestCase = "";
     if (args.widgetParameter) {
@@ -502,7 +502,7 @@ async function run() {
         drawTextR(drawContext, myUsedString, myRestDataRect, myTextColor, Font.mediumSystemFont(26));
 
         let myEndDateRect = new Rect(conBottomTextPadding + conStart2ndWordRow1, conBottomText - conFirstLineBottom, widgetWidth - 2 * conBottomTextPadding - conStart2ndWordRow1, conLineHeight);
-        let myDateString = myRestTime <= 0 ? `Expired! ${myEndDate.toLocaleString("DE-de")}` : `Expires ${myEndDate.toLocaleString("DE-de")}`;
+        let myDateString = myRestTime <= 0 ? `Expired! ${dateStringNoSeconds(myEndDate)}` : `Expires ${dateStringNoSeconds(myEndDate)}`;
         drawTextR(drawContext, myDateString, myEndDateRect, myTextColor, Font.mediumSystemFont(26), true);
 
         let myRefreshString = `Refresh Server: ${niceDateString(new Date(pStoredData.data.usedAt))}/ App: ${niceDateString(new Date())}`;
